@@ -28,6 +28,9 @@ const colorOptions = [
   '#F97316', // Orange
 ];
 
+// Hex color validation regex
+const hexColorRegex = /^#[A-Fa-f0-9]{6}$/;
+
 export const CategoryForm: React.FC<CategoryFormProps> = ({
   isOpen,
   onClose,
@@ -47,12 +50,39 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
     level: category?.level || 0,
   });
 
+  const [colorError, setColorError] = useState('');
+
+  const validateColor = (color: string) => {
+    if (!hexColorRegex.test(color)) {
+      setColorError('Color must be a valid 6-digit hex code (e.g., #FF0000)');
+      return false;
+    }
+    setColorError('');
+    return true;
+  };
+
+  const handleColorChange = (color: string) => {
+    setFormData({ ...formData, color });
+    validateColor(color);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
+    
+    // Validate color before submission
+    if (!validateColor(formData.color)) {
+      return;
+    }
 
     // Set level based on parent selection
     const level = formData.parent_id !== 'none' ? 1 : 0;
+
+    console.log('Submitting category with data:', {
+      ...formData,
+      parent_id: formData.parent_id === 'none' ? undefined : formData.parent_id,
+      level,
+    });
 
     onSubmit({
       ...formData,
@@ -69,6 +99,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       parent_id: 'none',
       level: 0,
     });
+    setColorError('');
     onClose();
   };
 
@@ -82,6 +113,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       parent_id: category?.parent_id || 'none',
       level: category?.level || 0,
     });
+    setColorError('');
     onClose();
   };
 
@@ -149,9 +181,22 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                     formData.color === color ? 'border-gray-900 dark:border-gray-100' : 'border-gray-300'
                   }`}
                   style={{ backgroundColor: color }}
-                  onClick={() => setFormData({ ...formData, color })}
+                  onClick={() => handleColorChange(color)}
                 />
               ))}
+            </div>
+            <div className="mt-2">
+              <Label htmlFor="custom-color">Custom Color (Hex)</Label>
+              <Input
+                id="custom-color"
+                value={formData.color}
+                onChange={(e) => handleColorChange(e.target.value)}
+                placeholder="#FF0000"
+                className={colorError ? 'border-red-500' : ''}
+              />
+              {colorError && (
+                <p className="text-sm text-red-500 mt-1">{colorError}</p>
+              )}
             </div>
           </div>
 
@@ -170,7 +215,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
             <Button type="button" variant="outline" onClick={handleClose}>
               Cancel
             </Button>
-            <Button type="submit">
+            <Button type="submit" disabled={!!colorError}>
               {category ? 'Update Category' : 'Create Category'}
             </Button>
           </DialogFooter>
