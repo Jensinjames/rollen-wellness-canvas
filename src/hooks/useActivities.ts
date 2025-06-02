@@ -13,6 +13,19 @@ export interface Activity {
   notes?: string;
   created_at: string;
   updated_at: string;
+  categories?: {
+    id: string;
+    name: string;
+    color: string;
+    level: number;
+    path: string[];
+    parent_id?: string;
+    parent?: {
+      id: string;
+      name: string;
+      color: string;
+    };
+  };
 }
 
 export const useActivities = () => {
@@ -30,7 +43,15 @@ export const useActivities = () => {
           categories (
             id,
             name,
-            color
+            color,
+            level,
+            path,
+            parent_id,
+            parent:parent_id (
+              id,
+              name,
+              color
+            )
           )
         `)
         .order('date_time', { ascending: false });

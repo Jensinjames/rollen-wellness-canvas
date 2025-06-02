@@ -60,7 +60,10 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean | null
+          level: number
           name: string
+          parent_id: string | null
+          path: string[] | null
           sort_order: number | null
           updated_at: string | null
           user_id: string
@@ -71,7 +74,10 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          level?: number
           name: string
+          parent_id?: string | null
+          path?: string[] | null
           sort_order?: number | null
           updated_at?: string | null
           user_id: string
@@ -82,12 +88,23 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          level?: number
           name?: string
+          parent_id?: string | null
+          path?: string[] | null
           sort_order?: number | null
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       habit_logs: {
         Row: {

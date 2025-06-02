@@ -5,24 +5,25 @@ import { AppSidebar } from '@/components/Sidebar';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { CategoryForm } from '@/components/categories/CategoryForm';
-import { CategoryCard } from '@/components/categories/CategoryCard';
+import { HierarchicalCategoryCard } from '@/components/categories/HierarchicalCategoryCard';
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory, Category } from '@/hooks/useCategories';
 import { Loader2 } from 'lucide-react';
 
 const Categories = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | undefined>(undefined);
+  const [parentForNewSubcategory, setParentForNewSubcategory] = useState<Category | undefined>(undefined);
 
   const { data: categories, isLoading } = useCategories();
   const createCategoryMutation = useCreateCategory();
   const updateCategoryMutation = useUpdateCategory();
   const deleteCategoryMutation = useDeleteCategory();
 
-  const handleCreateCategory = (categoryData: Omit<Category, 'id' | 'created_at' | 'updated_at'>) => {
+  const handleCreateCategory = (categoryData: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'path' | 'children'>) => {
     createCategoryMutation.mutate(categoryData);
   };
 
-  const handleUpdateCategory = (categoryData: Omit<Category, 'id' | 'created_at' | 'updated_at'>) => {
+  const handleUpdateCategory = (categoryData: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'path' | 'children'>) => {
     if (editingCategory) {
       updateCategoryMutation.mutate({
         id: editingCategory.id,
@@ -34,6 +35,13 @@ const Categories = () => {
 
   const handleEditCategory = (category: Category) => {
     setEditingCategory(category);
+    setParentForNewSubcategory(undefined);
+    setIsFormOpen(true);
+  };
+
+  const handleAddSubcategory = (parentCategory: Category) => {
+    setParentForNewSubcategory(parentCategory);
+    setEditingCategory(undefined);
     setIsFormOpen(true);
   };
 
@@ -49,6 +57,31 @@ const Categories = () => {
   const handleCloseForm = () => {
     setIsFormOpen(false);
     setEditingCategory(undefined);
+    setParentForNewSubcategory(undefined);
+  };
+
+  const getFormTitle = () => {
+    if (editingCategory) {
+      return editingCategory.level === 0 ? 'Edit Category' : 'Edit Subcategory';
+    }
+    if (parentForNewSubcategory) {
+      return `Add Subcategory to ${parentForNewSubcategory.name}`;
+    }
+    return 'Create New Category';
+  };
+
+  const getFormCategory = () => {
+    if (editingCategory) {
+      return editingCategory;
+    }
+    if (parentForNewSubcategory) {
+      return {
+        ...editingCategory,
+        parent_id: parentForNewSubcategory.id,
+        level: 1,
+      } as Category;
+    }
+    return undefined;
   };
 
   if (isLoading) {
@@ -76,7 +109,7 @@ const Categories = () => {
                 <SidebarTrigger className="text-white hover:bg-white/10" />
                 <div>
                   <h1 className="text-2xl font-bold">Category Management</h1>
-                  <p className="text-blue-100">Organize your wellness activities</p>
+                  <p className="text-blue-100">Organize your wellness activities with hierarchical categories</p>
                 </div>
               </div>
               <Button 
@@ -91,14 +124,15 @@ const Categories = () => {
 
           <div className="p-6">
             {categories && categories.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="space-y-6">
                 {categories.map((category) => (
-                  <CategoryCard
+                  <HierarchicalCategoryCard
                     key={category.id}
                     category={category}
                     onEdit={handleEditCategory}
                     onArchive={handleArchiveCategory}
                     onDelete={handleDeleteCategory}
+                    onAddSubcategory={handleAddSubcategory}
                     activityCount={0} // TODO: Add activity count from database
                   />
                 ))}
@@ -118,8 +152,8 @@ const Categories = () => {
             isOpen={isFormOpen}
             onClose={handleCloseForm}
             onSubmit={editingCategory ? handleUpdateCategory : handleCreateCategory}
-            category={editingCategory}
-            title={editingCategory ? 'Edit Category' : 'Create New Category'}
+            category={getFormCategory()}
+            title={getFormTitle()}
           />
         </main>
       </div>
