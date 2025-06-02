@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +17,11 @@ interface Preferences {
   timeFormat: "12h" | "24h";
 }
 
+interface SleepPreferences {
+  sleep_duration: number;
+  sleep_quality: number;
+}
+
 export const PreferencesSettings = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -30,6 +34,10 @@ export const PreferencesSettings = () => {
     showWeekends: true,
     timeFormat: "12h",
   });
+  const [sleepPreferences, setSleepPreferences] = useState<SleepPreferences>({
+    sleep_duration: 0,
+    sleep_quality: 0,
+  });
 
   useEffect(() => {
     if (user) {
@@ -41,7 +49,7 @@ export const PreferencesSettings = () => {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("preferences")
+        .select("preferences, sleep_preferences")
         .eq("id", user?.id)
         .single();
 
@@ -50,14 +58,17 @@ export const PreferencesSettings = () => {
       }
 
       if (data?.preferences) {
-        // Safely merge preferences, ensuring we have an object to spread
         const savedPreferences = data.preferences as Record<string, any>;
         if (savedPreferences && typeof savedPreferences === 'object') {
           setPreferences(prevPreferences => ({ ...prevPreferences, ...savedPreferences }));
         }
       }
+
+      // Load sleep preferences if they exist
+      if (data?.sleep_preferences) {
+        setSleepPreferences(data.sleep_preferences as any);
+      }
     } catch (error) {
-      // Log error without exposing sensitive details
       if (process.env.NODE_ENV === 'development') {
         console.error("Error fetching preferences:", error);
       }
@@ -76,7 +87,8 @@ export const PreferencesSettings = () => {
         .from("profiles")
         .upsert({
           id: user?.id,
-          preferences: preferences as any, // Cast to satisfy Json type
+          preferences: preferences as any,
+          sleep_preferences: sleepPreferences,
           updated_at: new Date().toISOString(),
         });
 
@@ -87,7 +99,6 @@ export const PreferencesSettings = () => {
         description: "Preferences saved successfully",
       });
     } catch (error) {
-      // Log error without exposing sensitive details
       if (process.env.NODE_ENV === 'development') {
         console.error("Error saving preferences:", error);
       }

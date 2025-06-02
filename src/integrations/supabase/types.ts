@@ -112,6 +112,42 @@ export type Database = {
           },
         ]
       }
+      daily_scores: {
+        Row: {
+          created_at: string
+          daily_score_percentage: number | null
+          health_balance_percentage: number | null
+          id: string
+          motivation_level_percentage: number | null
+          score_date: string
+          sleep_score_percentage: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          daily_score_percentage?: number | null
+          health_balance_percentage?: number | null
+          id?: string
+          motivation_level_percentage?: number | null
+          score_date: string
+          sleep_score_percentage?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          daily_score_percentage?: number | null
+          health_balance_percentage?: number | null
+          id?: string
+          motivation_level_percentage?: number | null
+          score_date?: string
+          sleep_score_percentage?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       habit_logs: {
         Row: {
           actual_value: number | null
@@ -213,6 +249,7 @@ export type Database = {
           display_name: string | null
           id: string
           preferences: Json | null
+          sleep_preferences: Json | null
           updated_at: string | null
         }
         Insert: {
@@ -221,6 +258,7 @@ export type Database = {
           display_name?: string | null
           id: string
           preferences?: Json | null
+          sleep_preferences?: Json | null
           updated_at?: string | null
         }
         Update: {
@@ -229,7 +267,47 @@ export type Database = {
           display_name?: string | null
           id?: string
           preferences?: Json | null
+          sleep_preferences?: Json | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sleep_entries: {
+        Row: {
+          bedtime: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          sleep_date: string
+          sleep_duration_minutes: number
+          sleep_quality: number | null
+          updated_at: string
+          user_id: string
+          wake_time: string | null
+        }
+        Insert: {
+          bedtime?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          sleep_date: string
+          sleep_duration_minutes: number
+          sleep_quality?: number | null
+          updated_at?: string
+          user_id: string
+          wake_time?: string | null
+        }
+        Update: {
+          bedtime?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          sleep_date?: string
+          sleep_duration_minutes?: number
+          sleep_quality?: number | null
+          updated_at?: string
+          user_id?: string
+          wake_time?: string | null
         }
         Relationships: []
       }
