@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Category, useParentCategories } from '@/hooks/useCategories';
 import { ColorPicker } from './ColorPicker';
-import { CategoryTypeSelector } from './CategoryTypeSelector';
+import { CategoryTypeSwitch } from './CategoryTypeSwitch';
 import { CategoryNameField, CategoryDescriptionField } from './CategoryFormFields';
 import { TimeGoalFields } from './TimeGoalFields';
 
@@ -110,18 +110,20 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
             {category ? 'Update your category details.' : 'Create a new category to organize your activities.'}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <CategoryTypeSelector
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <CategoryTypeSwitch
             value={formData.parent_id}
             onChange={(value) => setFormData({ ...formData, parent_id: value })}
             parentCategories={parentCategories}
+            isEditing={!!category}
+            currentCategory={category}
           />
 
           <CategoryNameField

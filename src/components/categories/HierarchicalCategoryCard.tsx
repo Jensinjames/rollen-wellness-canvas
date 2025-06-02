@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Edit, Archive, Trash2, ChevronDown, ChevronRight, Plus } from 'lucide-react';
-import { Category } from '@/hooks/useCategories';
+import { Category, useCreateCategory } from '@/hooks/useCategories';
 import { CategoryCard } from './CategoryCard';
 import { SubcategoryList } from './SubcategoryList';
 
@@ -27,6 +27,8 @@ export const HierarchicalCategoryCard: React.FC<HierarchicalCategoryCardProps> =
   activityCount = 0,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
+  const createCategoryMutation = useCreateCategory();
+  
   const hasChildren = category.children && category.children.length > 0;
 
   if (category.level === 1) {
@@ -41,6 +43,20 @@ export const HierarchicalCategoryCard: React.FC<HierarchicalCategoryCardProps> =
       />
     );
   }
+
+  const handleQuickAddSubcategory = (data: { name: string; color: string; parent_id: string; level: number }) => {
+    createCategoryMutation.mutate({
+      name: data.name,
+      color: data.color,
+      description: '',
+      is_active: true,
+      sort_order: category.children?.length || 0,
+      parent_id: data.parent_id,
+      level: data.level,
+      daily_time_goal_minutes: undefined,
+      weekly_time_goal_minutes: undefined,
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -104,7 +120,7 @@ export const HierarchicalCategoryCard: React.FC<HierarchicalCategoryCardProps> =
             </CardDescription>
           )}
           <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {category.daily_time_goal_minutes && (
                 <Badge variant="outline">
                   Daily: {category.daily_time_goal_minutes}m
@@ -136,7 +152,7 @@ export const HierarchicalCategoryCard: React.FC<HierarchicalCategoryCardProps> =
       </Card>
 
       {/* Subcategories */}
-      {hasChildren && isExpanded && (
+      {isExpanded && (
         <div className="ml-6 space-y-3">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-4 h-px bg-border"></div>
@@ -144,10 +160,12 @@ export const HierarchicalCategoryCard: React.FC<HierarchicalCategoryCardProps> =
             <div className="flex-1 h-px bg-border"></div>
           </div>
           <SubcategoryList
-            subcategories={category.children!}
+            subcategories={category.children || []}
             onEdit={onEdit}
             onArchive={onArchive}
             onDelete={onDelete}
+            onQuickAdd={handleQuickAddSubcategory}
+            parentCategory={category}
           />
         </div>
       )}
