@@ -1,5 +1,6 @@
 
 import { useState, useMemo } from "react";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/Sidebar";
 import { OverviewCard } from "@/components/OverviewCard";
 import { ActivityTracking } from "@/components/ActivityTracking";
@@ -92,59 +93,64 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AppSidebar />
-      <div className="pl-64">
-        <div className="p-8">
-          {/* Header with Add Entry Button */}
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Wellness Dashboard</h1>
-              <p className="text-gray-600 mt-1">Track your daily wellness activities and progress</p>
-            </div>
-            <Button 
-              onClick={() => setAddEntryOpen(true)}
-              className="bg-blue-500 hover:bg-blue-600 text-white flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Add Entry
-            </Button>
-          </div>
-
-          {/* Overview Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-            {overviewData.map((item, index) => (
-              <OverviewCard
-                key={index}
-                title={item.title}
-                value={item.value}
-                subtitle={item.subtitle}
-                icon={item.icon}
-                iconColor={item.iconColor}
-                bgColor={item.bgColor}
-              />
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ActivityTracking />
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h3 className="text-lg font-semibold mb-4">Calendar View</h3>
-              <p className="text-gray-600">Visit the Calendar page to see your activities in calendar format.</p>
-              <Button className="mt-4" onClick={() => window.location.href = '/calendar'}>
-                Go to Calendar
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-gray-50">
+        <AppSidebar />
+        <SidebarInset>
+          <div className="p-6">
+            {/* Header with Sidebar Trigger */}
+            <div className="flex justify-between items-center mb-8">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger />
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">Wellness Dashboard</h1>
+                  <p className="text-gray-600 mt-1">Track your daily wellness activities and progress</p>
+                </div>
+              </div>
+              <Button 
+                onClick={() => setAddEntryOpen(true)}
+                className="bg-blue-500 hover:bg-blue-600 text-white flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add Entry
               </Button>
             </div>
-          </div>
 
-          {/* Add Entry Modal */}
-          <AddEntryModal 
-            open={addEntryOpen} 
-            onOpenChange={setAddEntryOpen} 
-          />
-        </div>
+            {/* Overview Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+              {overviewData.map((item, index) => (
+                <OverviewCard
+                  key={index}
+                  title={item.title}
+                  value={item.value}
+                  subtitle={item.subtitle}
+                  icon={item.icon}
+                  iconColor={item.iconColor}
+                  bgColor={item.bgColor}
+                />
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <ActivityTracking />
+              <div className="bg-white rounded-lg p-6 shadow-sm">
+                <h3 className="text-lg font-semibold mb-4">Calendar View</h3>
+                <p className="text-gray-600">Visit the Calendar page to see your activities in calendar format.</p>
+                <Button className="mt-4" onClick={() => window.location.href = '/calendar'}>
+                  Go to Calendar
+                </Button>
+              </div>
+            </div>
+
+            {/* Add Entry Modal */}
+            <AddEntryModal 
+              open={addEntryOpen} 
+              onOpenChange={setAddEntryOpen} 
+            />
+          </div>
+        </SidebarInset>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 
