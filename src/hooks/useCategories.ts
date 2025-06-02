@@ -1,8 +1,8 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { validateCategoryData, logCategoryOperation } from '@/components/categories/CategoryValidation';
 
 export interface Category {
   id: string;
@@ -133,6 +133,17 @@ export const useCreateCategory = () => {
     mutationFn: async (categoryData: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'path' | 'children'>) => {
       if (!user) throw new Error('User not authenticated');
 
+      // Validate category data
+      const isSubcategory = categoryData.level === 1 || !!categoryData.parent_id;
+      const validation = validateCategoryData(categoryData, isSubcategory);
+      
+      if (!validation.isValid) {
+        throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+      }
+
+      // Log the operation
+      logCategoryOperation('create', categoryData, isSubcategory ? 'subcategory' : 'top-level category');
+
       const { data, error } = await supabase
         .from('categories')
         .insert([{
@@ -145,16 +156,17 @@ export const useCreateCategory = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast.success('Category created successfully');
+      const categoryType = data.level === 1 ? 'Subcategory' : 'Category';
+      toast.success(`${categoryType} created successfully`);
     },
     onError: (error) => {
       // Log error without exposing sensitive details
       if (process.env.NODE_ENV === 'development') {
         console.error('Error creating category:', error);
       }
-      toast.error('Failed to create category');
+      toast.error(`Failed to create category: ${error.message}`);
     },
   });
 };
@@ -164,6 +176,9 @@ export const useUpdateCategory = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Category> & { id: string }) => {
+      // Log the operation
+      logCategoryOperation('update', { id, ...updates });
+
       const { data, error } = await supabase
         .from('categories')
         .update(updates)

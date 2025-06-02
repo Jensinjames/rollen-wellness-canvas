@@ -14,6 +14,7 @@ interface CategoryFormProps {
   onSubmit: (data: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'path' | 'children'>) => void;
   category?: Category;
   title: string;
+  forceParent?: Category; // When adding subcategory, this locks the parent
 }
 
 export const CategoryForm: React.FC<CategoryFormProps> = ({
@@ -22,8 +23,12 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
   onSubmit,
   category,
   title,
+  forceParent,
 }) => {
   const { data: parentCategories } = useParentCategories();
+  
+  // When forceParent is provided, we're adding a subcategory
+  const isAddingSubcategory = !!forceParent;
   
   const [formData, setFormData] = useState({
     name: category?.name || '',
@@ -31,8 +36,8 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
     description: category?.description || '',
     is_active: category?.is_active ?? true,
     sort_order: category?.sort_order || 0,
-    parent_id: category?.parent_id || 'none',
-    level: category?.level || 0,
+    parent_id: forceParent?.id || category?.parent_id || 'none',
+    level: forceParent ? 1 : (category?.level || 0),
     daily_time_goal_minutes: category?.daily_time_goal_minutes,
     weekly_time_goal_minutes: category?.weekly_time_goal_minutes,
   });
@@ -60,29 +65,40 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       return;
     }
 
-    // Set level based on parent selection
-    const level = formData.parent_id !== 'none' ? 1 : 0;
+    // Critical validation for subcategories
+    if (isAddingSubcategory || formData.parent_id !== 'none') {
+      if (!formData.parent_id || formData.parent_id === 'none') {
+        console.error('Subcategory must have a parent_id');
+        return;
+      }
+      // Force level to 1 for subcategories
+      formData.level = 1;
+    } else {
+      // Force level to 0 for top-level categories
+      formData.level = 0;
+    }
 
     console.log('Submitting category with data:', {
       ...formData,
       parent_id: formData.parent_id === 'none' ? undefined : formData.parent_id,
-      level,
+      level: formData.level,
     });
 
     onSubmit({
       ...formData,
       parent_id: formData.parent_id === 'none' ? undefined : formData.parent_id,
-      level,
+      level: formData.level,
     });
     
+    // Reset form
     setFormData({
       name: '',
       color: '#10B981',
       description: '',
       is_active: true,
       sort_order: 0,
-      parent_id: 'none',
-      level: 0,
+      parent_id: forceParent?.id || 'none',
+      level: forceParent ? 1 : 0,
       daily_time_goal_minutes: undefined,
       weekly_time_goal_minutes: undefined,
     });
@@ -97,8 +113,8 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       description: category?.description || '',
       is_active: category?.is_active ?? true,
       sort_order: category?.sort_order || 0,
-      parent_id: category?.parent_id || 'none',
-      level: category?.level || 0,
+      parent_id: forceParent?.id || category?.parent_id || 'none',
+      level: forceParent ? 1 : (category?.level || 0),
       daily_time_goal_minutes: category?.daily_time_goal_minutes,
       weekly_time_goal_minutes: category?.weekly_time_goal_minutes,
     });
@@ -114,17 +130,43 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            {category ? 'Update your category details.' : 'Create a new category to organize your activities.'}
+            {isAddingSubcategory 
+              ? `Create a new subcategory under "${forceParent.name}".`
+              : category 
+                ? 'Update your category details.' 
+                : 'Create a new category to organize your activities.'
+            }
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <CategoryTypeSwitch
-            value={formData.parent_id}
-            onChange={(value) => setFormData({ ...formData, parent_id: value })}
-            parentCategories={parentCategories}
-            isEditing={!!category}
-            currentCategory={category}
-          />
+          {!isAddingSubcategory && (
+            <CategoryTypeSwitch
+              value={formData.parent_id}
+              onChange={(value) => setFormData({ ...formData, parent_id: value, level: value === 'none' ? 0 : 1 })}
+              parentCategories={parentCategories}
+              isEditing={!!category}
+              currentCategory={category}
+            />
+          )}
+
+          {isAddingSubcategory && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Category Type</label>
+              <div className="p-3 bg-muted rounded-md">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: forceParent.color }}
+                  />
+                  <span className="font-medium">{forceParent.name}</span>
+                  <span className="text-muted-foreground">→ Subcategory</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  This will be created as a subcategory under {forceParent.name}
+                </p>
+              </div>
+            </div>
+          )}
 
           <CategoryNameField
             value={formData.name}
@@ -156,7 +198,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
               Cancel
             </Button>
             <Button type="submit" disabled={!!colorError}>
-              {category ? 'Update Category' : 'Create Category'}
+              {category ? 'Update Category' : (isAddingSubcategory ? 'Create Subcategory' : 'Create Category')}
             </Button>
           </DialogFooter>
         </form>

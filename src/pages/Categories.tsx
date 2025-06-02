@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/Sidebar';
@@ -20,6 +19,15 @@ const Categories = () => {
   const deleteCategoryMutation = useDeleteCategory();
 
   const handleCreateCategory = (categoryData: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'path' | 'children'>) => {
+    // Validate subcategory creation
+    if (parentForNewSubcategory) {
+      if (!categoryData.parent_id || categoryData.level !== 1) {
+        console.error('Invalid subcategory data:', categoryData);
+        return;
+      }
+    }
+    
+    console.log('Creating category:', categoryData);
     createCategoryMutation.mutate(categoryData);
   };
 
@@ -40,6 +48,7 @@ const Categories = () => {
   };
 
   const handleAddSubcategory = (parentCategory: Category) => {
+    console.log('Adding subcategory to parent:', parentCategory.name);
     setParentForNewSubcategory(parentCategory);
     setEditingCategory(undefined);
     setIsFormOpen(true);
@@ -68,20 +77,6 @@ const Categories = () => {
       return `Add Subcategory to ${parentForNewSubcategory.name}`;
     }
     return 'Create New Category';
-  };
-
-  const getFormCategory = () => {
-    if (editingCategory) {
-      return editingCategory;
-    }
-    if (parentForNewSubcategory) {
-      return {
-        ...editingCategory,
-        parent_id: parentForNewSubcategory.id,
-        level: 1,
-      } as Category;
-    }
-    return undefined;
   };
 
   if (isLoading) {
@@ -152,8 +147,9 @@ const Categories = () => {
             isOpen={isFormOpen}
             onClose={handleCloseForm}
             onSubmit={editingCategory ? handleUpdateCategory : handleCreateCategory}
-            category={getFormCategory()}
+            category={editingCategory}
             title={getFormTitle()}
+            forceParent={parentForNewSubcategory}
           />
         </main>
       </div>
