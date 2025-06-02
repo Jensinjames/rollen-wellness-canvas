@@ -17,12 +17,22 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
+import { validateTextInput, validateNumber } from "@/utils/validation";
+import { logResourceEvent } from "@/utils/auditLog";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ActivityModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedDate: Date | null;
   activityId: string | null;
+}
+
+interface FormErrors {
+  name?: string;
+  categoryId?: string;
+  duration?: string;
+  notes?: string;
 }
 
 export function ActivityModal({ 
@@ -35,6 +45,7 @@ export function ActivityModal({
   const { data: categories } = useCategories();
   const createActivity = useCreateActivity();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -42,6 +53,8 @@ export function ActivityModal({
     duration: "",
     notes: "",
   });
+
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
 
   const activity = activityId ? activities?.find(a => a.id === activityId) : null;
   const isEditing = !!activityId && !!activity;
@@ -64,8 +77,53 @@ export function ActivityModal({
           notes: "",
         });
       }
+      setFormErrors({});
     }
   }, [isOpen, isEditing, activity]);
+
+  const validateForm = (): boolean => {
+    const errors: FormErrors = {};
+
+    // Validate name
+    const nameValidation = validateTextInput(formData.name, {
+      required: true,
+      minLength: 1,
+      maxLength: 100,
+      allowEmpty: false
+    });
+    if (!nameValidation.isValid) {
+      errors.name = nameValidation.error;
+    }
+
+    // Validate category selection
+    if (!formData.categoryId) {
+      errors.categoryId = 'Please select a category';
+    }
+
+    // Validate duration
+    const durationValidation = validateNumber(formData.duration, {
+      required: true,
+      min: 1,
+      max: 1440, // Max 24 hours
+      integer: true
+    });
+    if (!durationValidation.isValid) {
+      errors.duration = durationValidation.error;
+    }
+
+    // Validate notes (optional)
+    if (formData.notes) {
+      const notesValidation = validateTextInput(formData.notes, {
+        maxLength: 500
+      });
+      if (!notesValidation.isValid) {
+        errors.notes = notesValidation.error;
+      }
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const updateActivityMutation = useMutation({
     mutationFn: async (data: { id: string; updates: Partial<Activity> }) => {
@@ -78,6 +136,14 @@ export function ActivityModal({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['activities'] });
+      
+      if (user) {
+        logResourceEvent('activity.update', user.id, activityId!, {
+          name: formData.name,
+          duration: formData.duration
+        });
+      }
+      
       toast.success('Activity updated successfully');
       onClose();
     },
@@ -98,6 +164,11 @@ export function ActivityModal({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['activities'] });
+      
+      if (user) {
+        logResourceEvent('activity.delete', user.id, activityId!);
+      }
+      
       toast.success('Activity deleted successfully');
       onClose();
     },
@@ -110,14 +181,21 @@ export function ActivityModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.categoryId || !formData.duration || !selectedDate) {
-      toast.error('Please fill in all required fields');
+    if (!validateForm() || !selectedDate) {
+      if (!selectedDate) {
+        toast.error('Please select a date');
+      }
       return;
     }
 
     const duration = parseInt(formData.duration);
-    if (isNaN(duration) || duration <= 0) {
-      toast.error('Duration must be a positive number');
+    
+    // Sanitize inputs
+    const nameValidation = validateTextInput(formData.name, { required: true, maxLength: 100 });
+    const notesValidation = validateTextInput(formData.notes, { maxLength: 500 });
+    
+    if (!nameValidation.isValid || !notesValidation.isValid) {
+      toast.error('Invalid input detected');
       return;
     }
 
@@ -125,19 +203,19 @@ export function ActivityModal({
       updateActivityMutation.mutate({
         id: activity.id,
         updates: {
-          name: formData.name,
+          name: nameValidation.sanitized,
           category_id: formData.categoryId,
           duration_minutes: duration,
-          notes: formData.notes || null,
+          notes: notesValidation.sanitized || null,
         }
       });
     } else {
       createActivity.mutate({
-        name: formData.name,
+        name: nameValidation.sanitized,
         category_id: formData.categoryId,
         date_time: selectedDate.toISOString(),
         duration_minutes: duration,
-        notes: formData.notes || null,
+        notes: notesValidation.sanitized || null,
       });
     }
   };
@@ -173,7 +251,11 @@ export function ActivityModal({
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               placeholder="e.g., Morning workout"
               required
+              maxLength={100}
             />
+            {formErrors.name && (
+              <p className="text-sm text-red-600 mt-1">{formErrors.name}</p>
+            )}
           </div>
 
           <div>
@@ -192,6 +274,9 @@ export function ActivityModal({
                 </option>
               ))}
             </select>
+            {formErrors.categoryId && (
+              <p className="text-sm text-red-600 mt-1">{formErrors.categoryId}</p>
+            )}
           </div>
 
           <div>
@@ -200,11 +285,15 @@ export function ActivityModal({
               id="duration"
               type="number"
               min="1"
+              max="1440"
               value={formData.duration}
               onChange={(e) => setFormData(prev => ({ ...prev, duration: e.target.value }))}
               placeholder="30"
               required
             />
+            {formErrors.duration && (
+              <p className="text-sm text-red-600 mt-1">{formErrors.duration}</p>
+            )}
           </div>
 
           <div>
@@ -215,7 +304,14 @@ export function ActivityModal({
               onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
               placeholder="Optional notes about this activity"
               rows={3}
+              maxLength={500}
             />
+            {formErrors.notes && (
+              <p className="text-sm text-red-600 mt-1">{formErrors.notes}</p>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              {formData.notes.length}/500 characters
+            </p>
           </div>
 
           <div className="flex justify-between gap-3 pt-4">

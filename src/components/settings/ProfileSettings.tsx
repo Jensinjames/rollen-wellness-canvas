@@ -9,11 +9,18 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { User, Camera } from "lucide-react";
+import { validateTextInput } from "@/utils/validation";
+import { logResourceEvent } from "@/utils/auditLog";
+
+interface FormErrors {
+  display_name?: string;
+}
 
 export const ProfileSettings = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [profile, setProfile] = useState({
     display_name: "",
     avatar_url: "",
@@ -50,19 +57,64 @@ export const ProfileSettings = () => {
     }
   };
 
+  const validateForm = (): boolean => {
+    const errors: FormErrors = {};
+
+    // Validate display name
+    const nameValidation = validateTextInput(profile.display_name, {
+      required: false,
+      minLength: 0,
+      maxLength: 50,
+      allowEmpty: true
+    });
+    
+    if (!nameValidation.isValid) {
+      errors.display_name = nameValidation.error;
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const updateProfile = async () => {
+    if (!validateForm()) {
+      toast({
+        title: "Validation Error",
+        description: "Please correct the errors before saving",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
+      // Sanitize input
+      const nameValidation = validateTextInput(profile.display_name, { maxLength: 50 });
+      
+      if (!nameValidation.isValid) {
+        throw new Error(nameValidation.error);
+      }
+
       const { error } = await supabase
         .from("profiles")
         .upsert({
           id: user?.id,
-          display_name: profile.display_name,
+          display_name: nameValidation.sanitized,
           avatar_url: profile.avatar_url,
           updated_at: new Date().toISOString(),
         });
 
       if (error) throw error;
+
+      // Log the profile update
+      if (user) {
+        logResourceEvent('profile.update', user.id, user.id, {
+          display_name_changed: nameValidation.sanitized !== profile.display_name
+        });
+      }
+
+      // Update local state with sanitized value
+      setProfile(prev => ({ ...prev, display_name: nameValidation.sanitized }));
 
       toast({
         title: "Success",
@@ -137,7 +189,14 @@ export const ProfileSettings = () => {
                   setProfile({ ...profile, display_name: e.target.value })
                 }
                 placeholder="Enter your display name"
+                maxLength={50}
               />
+              {formErrors.display_name && (
+                <p className="text-sm text-red-600">{formErrors.display_name}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                {profile.display_name.length}/50 characters
+              </p>
             </div>
           </div>
 

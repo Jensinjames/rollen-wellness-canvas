@@ -2,6 +2,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { validateEmail, validatePassword } from '@/utils/validation';
+import { logAuthEvent, auditLogger } from '@/utils/auditLog';
 
 interface AuthContextType {
   user: User | null;
@@ -27,6 +29,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (process.env.NODE_ENV === 'development') {
           console.log('Auth state changed:', event);
         }
+
+        // Log auth events for audit
+        if (event === 'SIGNED_IN') {
+          logAuthEvent('auth.login', session?.user?.id);
+        } else if (event === 'SIGNED_OUT') {
+          logAuthEvent('auth.logout', user?.id);
+        }
+
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -41,9 +51,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [user?.id]);
 
   const signUp = async (email: string, password: string) => {
+    // Validate inputs
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      const error = new Error(emailValidation.error);
+      logAuthEvent('auth.signup', undefined, { error: emailValidation.error, email_domain: email.split('@')[1] });
+      return { error };
+    }
+
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      const error = new Error(passwordValidation.error);
+      logAuthEvent('auth.signup', undefined, { error: passwordValidation.error });
+      return { error };
+    }
+
     const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signUp({
@@ -53,18 +78,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         emailRedirectTo: redirectUrl
       }
     });
+
+    if (error) {
+      logAuthEvent('auth.signup', undefined, { 
+        error: error.message, 
+        email_domain: email.split('@')[1] 
+      });
+    } else {
+      logAuthEvent('auth.signup', undefined, { 
+        success: true, 
+        email_domain: email.split('@')[1] 
+      });
+    }
+
     return { error };
   };
 
   const signIn = async (email: string, password: string) => {
+    // Validate inputs
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      const error = new Error(emailValidation.error);
+      logAuthEvent('auth.login', undefined, { error: emailValidation.error });
+      return { error };
+    }
+
+    // Check for suspicious activity
+    if (auditLogger.checkSuspiciousActivity(email)) {
+      const error = new Error('Too many failed attempts. Please try again later.');
+      return { error };
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+
+    if (error) {
+      logAuthEvent('auth.login', undefined, { 
+        error: error.message, 
+        email_domain: email.split('@')[1] 
+      });
+    }
+
     return { error };
   };
 
   const signOut = async () => {
+    logAuthEvent('auth.logout', user?.id);
     await supabase.auth.signOut();
   };
 
