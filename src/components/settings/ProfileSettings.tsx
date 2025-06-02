@@ -45,7 +45,10 @@ export const ProfileSettings = () => {
       }
 
       if (data) {
-        setProfile(data);
+        setProfile({
+          display_name: data.display_name || "",
+          avatar_url: data.avatar_url || "",
+        });
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -59,9 +62,10 @@ export const ProfileSettings = () => {
 
   const validateForm = (): boolean => {
     const errors: FormErrors = {};
+    const displayName = profile.display_name || "";
 
     // Validate display name
-    const nameValidation = validateTextInput(profile.display_name, {
+    const nameValidation = validateTextInput(displayName, {
       required: false,
       minLength: 0,
       maxLength: 50,
@@ -88,8 +92,10 @@ export const ProfileSettings = () => {
 
     setLoading(true);
     try {
+      const displayName = profile.display_name || "";
+      
       // Sanitize input
-      const nameValidation = validateTextInput(profile.display_name, { maxLength: 50 });
+      const nameValidation = validateTextInput(displayName, { maxLength: 50 });
       
       if (!nameValidation.isValid) {
         throw new Error(nameValidation.error);
@@ -109,7 +115,7 @@ export const ProfileSettings = () => {
       // Log the profile update
       if (user) {
         logResourceEvent('profile.update', user.id, user.id, {
-          display_name_changed: nameValidation.sanitized !== profile.display_name
+          display_name_changed: nameValidation.sanitized !== displayName
         });
       }
 
@@ -134,6 +140,8 @@ export const ProfileSettings = () => {
 
   if (!user) return null;
 
+  const displayName = profile.display_name || "";
+
   return (
     <div className="space-y-6">
       <div>
@@ -150,7 +158,7 @@ export const ProfileSettings = () => {
             <Avatar className="h-20 w-20">
               <AvatarImage src={profile.avatar_url} />
               <AvatarFallback className="text-lg">
-                {profile.display_name ? profile.display_name.charAt(0).toUpperCase() : <User className="h-8 w-8" />}
+                {displayName ? displayName.charAt(0).toUpperCase() : <User className="h-8 w-8" />}
               </AvatarFallback>
             </Avatar>
             <div className="space-y-2">
@@ -184,7 +192,7 @@ export const ProfileSettings = () => {
               <Label htmlFor="display-name">Display Name</Label>
               <Input
                 id="display-name"
-                value={profile.display_name}
+                value={displayName}
                 onChange={(e) =>
                   setProfile({ ...profile, display_name: e.target.value })
                 }
@@ -195,7 +203,7 @@ export const ProfileSettings = () => {
                 <p className="text-sm text-red-600">{formErrors.display_name}</p>
               )}
               <p className="text-xs text-muted-foreground">
-                {profile.display_name.length}/50 characters
+                {displayName.length}/50 characters
               </p>
             </div>
           </div>
