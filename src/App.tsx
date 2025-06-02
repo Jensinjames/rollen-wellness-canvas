@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Categories from "./pages/Categories";
 import Analytics from "./pages/Analytics";
 import Calendar from "./pages/Calendar";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,11 @@ const App = () => (
           <Route path="/calendar" element={
             <ProtectedRoute>
               <Calendar />
+            </ProtectedRoute>
+          } />
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <Settings />
             </ProtectedRoute>
           } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
