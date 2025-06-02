@@ -43,7 +43,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
     description: category?.description || '',
     is_active: category?.is_active ?? true,
     sort_order: category?.sort_order || 0,
-    parent_id: category?.parent_id || '',
+    parent_id: category?.parent_id || 'none',
     level: category?.level || 0,
   });
 
@@ -52,11 +52,11 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
     if (!formData.name.trim()) return;
 
     // Set level based on parent selection
-    const level = formData.parent_id ? 1 : 0;
+    const level = formData.parent_id !== 'none' ? 1 : 0;
 
     onSubmit({
       ...formData,
-      parent_id: formData.parent_id || undefined,
+      parent_id: formData.parent_id === 'none' ? undefined : formData.parent_id,
       level,
     });
     
@@ -66,7 +66,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       description: '',
       is_active: true,
       sort_order: 0,
-      parent_id: '',
+      parent_id: 'none',
       level: 0,
     });
     onClose();
@@ -79,13 +79,13 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       description: category?.description || '',
       is_active: category?.is_active ?? true,
       sort_order: category?.sort_order || 0,
-      parent_id: category?.parent_id || '',
+      parent_id: category?.parent_id || 'none',
       level: category?.level || 0,
     });
     onClose();
   };
 
-  const isSubcategory = formData.parent_id !== '';
+  const isSubcategory = formData.parent_id !== 'none';
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -107,7 +107,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                 <SelectValue placeholder="Select category type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Top-level Category</SelectItem>
+                <SelectItem value="none">Top-level Category</SelectItem>
                 {parentCategories?.map((parent) => (
                   <SelectItem key={parent.id} value={parent.id}>
                     <div className="flex items-center gap-2">
