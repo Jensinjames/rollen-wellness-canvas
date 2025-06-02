@@ -50,7 +50,11 @@ export const PreferencesSettings = () => {
       }
 
       if (data?.preferences) {
-        setPreferences({ ...preferences, ...data.preferences });
+        // Safely merge preferences, ensuring we have an object to spread
+        const savedPreferences = data.preferences as Record<string, any>;
+        if (savedPreferences && typeof savedPreferences === 'object') {
+          setPreferences(prevPreferences => ({ ...prevPreferences, ...savedPreferences }));
+        }
       }
     } catch (error) {
       console.error("Error fetching preferences:", error);
@@ -64,7 +68,7 @@ export const PreferencesSettings = () => {
         .from("profiles")
         .upsert({
           id: user?.id,
-          preferences,
+          preferences: preferences as any, // Cast to satisfy Json type
           updated_at: new Date().toISOString(),
         });
 
@@ -90,7 +94,7 @@ export const PreferencesSettings = () => {
     key: K,
     value: Preferences[K]
   ) => {
-    setPreferences({ ...preferences, [key]: value });
+    setPreferences(prevPreferences => ({ ...prevPreferences, [key]: value }));
   };
 
   return (
