@@ -1,8 +1,9 @@
+
 import { useState, useMemo } from "react";
-import { Sidebar } from "@/components/Sidebar";
+import { AppSidebar } from "@/components/Sidebar";
 import { OverviewCard } from "@/components/OverviewCard";
 import { ActivityTracking } from "@/components/ActivityTracking";
-import { Calendar } from "@/components/Calendar";
+import { Button } from "@/components/ui/button";
 import {
   TrendingUp,
   Moon,
@@ -92,7 +93,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Sidebar />
+      <AppSidebar />
       <div className="pl-64">
         <div className="p-8">
           {/* Header with Add Entry Button */}
@@ -127,7 +128,13 @@ const Index = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ActivityTracking />
-            <Calendar />
+            <div className="bg-white rounded-lg p-6 shadow-sm">
+              <h3 className="text-lg font-semibold mb-4">Calendar View</h3>
+              <p className="text-gray-600">Visit the Calendar page to see your activities in calendar format.</p>
+              <Button className="mt-4" onClick={() => window.location.href = '/calendar'}>
+                Go to Calendar
+              </Button>
+            </div>
           </div>
 
           {/* Add Entry Modal */}

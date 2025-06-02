@@ -17,6 +17,15 @@ export interface SleepEntry {
   updated_at: string;
 }
 
+interface SleepPreferences {
+  target_sleep_hours: number;
+  acceptable_range_min: number;
+  acceptable_range_max: number;
+  sleep_quality_weight: number;
+  sleep_duration_weight: number;
+  motivation_boost_threshold: number;
+}
+
 export const useSleepEntries = () => {
   const { user } = useAuth();
 
@@ -85,7 +94,7 @@ const recalculateDailyScores = async (userId: string, sleepDate: string) => {
       .eq('id', userId)
       .single();
 
-    const sleepPrefs = profile?.sleep_preferences || {
+    const defaultPrefs: SleepPreferences = {
       target_sleep_hours: 8,
       acceptable_range_min: 6,
       acceptable_range_max: 10,
@@ -93,6 +102,12 @@ const recalculateDailyScores = async (userId: string, sleepDate: string) => {
       sleep_duration_weight: 0.7,
       motivation_boost_threshold: 7
     };
+
+    let sleepPrefs: SleepPreferences = defaultPrefs;
+    
+    if (profile?.sleep_preferences && typeof profile.sleep_preferences === 'object') {
+      sleepPrefs = { ...defaultPrefs, ...(profile.sleep_preferences as Record<string, any>) };
+    }
 
     // Get the sleep entry for this date
     const { data: sleepEntry } = await supabase

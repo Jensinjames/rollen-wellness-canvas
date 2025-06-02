@@ -1,42 +1,34 @@
+
 import { useState, useEffect } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-
-interface Preferences {
-  theme: "light" | "dark" | "system";
-  defaultView: "month" | "week" | "day";
-  weekStartsOn: "sunday" | "monday";
-  notifications: boolean;
-  showWeekends: boolean;
-  timeFormat: "12h" | "24h";
-}
 
 interface SleepPreferences {
-  sleep_duration: number;
-  sleep_quality: number;
+  target_sleep_hours: number;
+  acceptable_range_min: number;
+  acceptable_range_max: number;
+  sleep_quality_weight: number;
+  sleep_duration_weight: number;
+  motivation_boost_threshold: number;
 }
 
 export const PreferencesSettings = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [preferences, setPreferences] = useState<Preferences>({
-    theme: "system",
-    defaultView: "month",
-    weekStartsOn: "sunday",
-    notifications: true,
-    showWeekends: true,
-    timeFormat: "12h",
-  });
+  
   const [sleepPreferences, setSleepPreferences] = useState<SleepPreferences>({
-    sleep_duration: 0,
-    sleep_quality: 0,
+    target_sleep_hours: 8,
+    acceptable_range_min: 6,
+    acceptable_range_max: 10,
+    sleep_quality_weight: 0.3,
+    sleep_duration_weight: 0.7,
+    motivation_boost_threshold: 7,
   });
 
   useEffect(() => {
@@ -49,7 +41,7 @@ export const PreferencesSettings = () => {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("preferences, sleep_preferences")
+        .select("sleep_preferences")
         .eq("id", user?.id)
         .single();
 
@@ -57,16 +49,9 @@ export const PreferencesSettings = () => {
         throw error;
       }
 
-      if (data?.preferences) {
-        const savedPreferences = data.preferences as Record<string, any>;
-        if (savedPreferences && typeof savedPreferences === 'object') {
-          setPreferences(prevPreferences => ({ ...prevPreferences, ...savedPreferences }));
-        }
-      }
-
-      // Load sleep preferences if they exist
       if (data?.sleep_preferences) {
-        setSleepPreferences(data.sleep_preferences as any);
+        const prefs = data.sleep_preferences as Record<string, any>;
+        setSleepPreferences(prev => ({ ...prev, ...prefs }));
       }
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
@@ -85,12 +70,11 @@ export const PreferencesSettings = () => {
     try {
       const { error } = await supabase
         .from("profiles")
-        .upsert({
-          id: user?.id,
-          preferences: preferences as any,
-          sleep_preferences: sleepPreferences,
+        .update({
+          sleep_preferences: sleepPreferences as any,
           updated_at: new Date().toISOString(),
-        });
+        })
+        .eq("id", user?.id);
 
       if (error) throw error;
 
@@ -112,170 +96,87 @@ export const PreferencesSettings = () => {
     }
   };
 
-  const updatePreference = <K extends keyof Preferences>(
-    key: K,
-    value: Preferences[K]
-  ) => {
-    setPreferences(prevPreferences => ({ ...prevPreferences, [key]: value }));
-  };
-
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium">Application Preferences</h3>
-        <p className="text-sm text-muted-foreground">
-          Customize your app experience and default settings.
-        </p>
-      </div>
-
-      <Card className="p-6">
-        <div className="space-y-6">
-          {/* Appearance */}
-          <div className="space-y-4">
-            <h4 className="font-medium">Appearance</h4>
-            <div className="grid gap-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Theme</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Choose your preferred theme
-                  </p>
-                </div>
-                <Select
-                  value={preferences.theme}
-                  onValueChange={(value: "light" | "dark" | "system") =>
-                    updatePreference("theme", value)
-                  }
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="dark">Dark</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Sleep Preferences</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="target_sleep_hours">Target Sleep (hours)</Label>
+              <Input
+                id="target_sleep_hours"
+                type="number"
+                min="1"
+                max="12"
+                step="0.5"
+                value={sleepPreferences.target_sleep_hours}
+                onChange={(e) => setSleepPreferences(prev => ({
+                  ...prev,
+                  target_sleep_hours: parseFloat(e.target.value)
+                }))}
+              />
             </div>
-          </div>
-
-          {/* Calendar Settings */}
-          <div className="space-y-4">
-            <h4 className="font-medium">Calendar Settings</h4>
-            <div className="grid gap-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Default View</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Default calendar view when opening the page
-                  </p>
-                </div>
-                <Select
-                  value={preferences.defaultView}
-                  onValueChange={(value: "month" | "week" | "day") =>
-                    updatePreference("defaultView", value)
-                  }
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="month">Month</SelectItem>
-                    <SelectItem value="week">Week</SelectItem>
-                    <SelectItem value="day">Day</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Week Starts On</Label>
-                  <p className="text-sm text-muted-foreground">
-                    First day of the week
-                  </p>
-                </div>
-                <Select
-                  value={preferences.weekStartsOn}
-                  onValueChange={(value: "sunday" | "monday") =>
-                    updatePreference("weekStartsOn", value)
-                  }
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sunday">Sunday</SelectItem>
-                    <SelectItem value="monday">Monday</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Time Format</Label>
-                  <p className="text-sm text-muted-foreground">
-                    12-hour or 24-hour time format
-                  </p>
-                </div>
-                <Select
-                  value={preferences.timeFormat}
-                  onValueChange={(value: "12h" | "24h") =>
-                    updatePreference("timeFormat", value)
-                  }
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="12h">12 Hour</SelectItem>
-                    <SelectItem value="24h">24 Hour</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="show-weekends">Show Weekends</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Display weekends in calendar views
-                  </p>
-                </div>
-                <Switch
-                  id="show-weekends"
-                  checked={preferences.showWeekends}
-                  onCheckedChange={(checked) =>
-                    updatePreference("showWeekends", checked)
-                  }
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Notifications */}
-          <div className="space-y-4">
-            <h4 className="font-medium">Notifications</h4>
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="notifications">Enable Notifications</Label>
-                <p className="text-sm text-muted-foreground">
-                  Receive notifications for reminders and updates
-                </p>
-              </div>
-              <Switch
-                id="notifications"
-                checked={preferences.notifications}
-                onCheckedChange={(checked) =>
-                  updatePreference("notifications", checked)
-                }
+            <div>
+              <Label htmlFor="motivation_boost_threshold">Motivation Boost Threshold (hours)</Label>
+              <Input
+                id="motivation_boost_threshold"
+                type="number"
+                min="1"
+                max="12"
+                step="0.5"
+                value={sleepPreferences.motivation_boost_threshold}
+                onChange={(e) => setSleepPreferences(prev => ({
+                  ...prev,
+                  motivation_boost_threshold: parseFloat(e.target.value)
+                }))}
               />
             </div>
           </div>
 
-          <Button onClick={savePreferences} disabled={loading}>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="acceptable_range_min">Minimum Acceptable (hours)</Label>
+              <Input
+                id="acceptable_range_min"
+                type="number"
+                min="1"
+                max="12"
+                step="0.5"
+                value={sleepPreferences.acceptable_range_min}
+                onChange={(e) => setSleepPreferences(prev => ({
+                  ...prev,
+                  acceptable_range_min: parseFloat(e.target.value)
+                }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="acceptable_range_max">Maximum Acceptable (hours)</Label>
+              <Input
+                id="acceptable_range_max"
+                type="number"
+                min="1"
+                max="15"
+                step="0.5"
+                value={sleepPreferences.acceptable_range_max}
+                onChange={(e) => setSleepPreferences(prev => ({
+                  ...prev,
+                  acceptable_range_max: parseFloat(e.target.value)
+                }))}
+              />
+            </div>
+          </div>
+
+          <Button 
+            onClick={savePreferences} 
+            disabled={loading}
+            className="w-full"
+          >
             {loading ? "Saving..." : "Save Preferences"}
           </Button>
-        </div>
+        </CardContent>
       </Card>
     </div>
   );
