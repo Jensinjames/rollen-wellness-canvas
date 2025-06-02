@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, Edit, Archive, Trash2, ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { Category } from '@/hooks/useCategories';
 import { CategoryCard } from './CategoryCard';
+import { SubcategoryList } from './SubcategoryList';
 
 interface HierarchicalCategoryCardProps {
   category: Category;
@@ -42,7 +43,7 @@ export const HierarchicalCategoryCard: React.FC<HierarchicalCategoryCardProps> =
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Parent Category Card */}
       <Card className="h-full">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -102,33 +103,52 @@ export const HierarchicalCategoryCard: React.FC<HierarchicalCategoryCardProps> =
               {category.description}
             </CardDescription>
           )}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              {category.daily_time_goal_minutes && (
+                <Badge variant="outline">
+                  Daily: {category.daily_time_goal_minutes}m
+                </Badge>
+              )}
+              {category.weekly_time_goal_minutes && (
+                <Badge variant="outline">
+                  Weekly: {Math.floor(category.weekly_time_goal_minutes / 60)}h {category.weekly_time_goal_minutes % 60}m
+                </Badge>
+              )}
+            </div>
+            <Badge variant="default">Parent Category</Badge>
+          </div>
           <div className="flex items-center justify-between">
             <Badge variant="secondary">
               {hasChildren ? `${category.children!.length} subcategories` : 'No subcategories'}
             </Badge>
-            <Badge variant="default">Parent Category</Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onAddSubcategory(category)}
+              className="text-xs"
+            >
+              <Plus className="mr-1 h-3 w-3" />
+              Add Subcategory
+            </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Subcategories */}
       {hasChildren && isExpanded && (
-        <div className="ml-8 space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {category.children!.map((subcategory) => (
-              <div key={subcategory.id} className="relative">
-                <div className="absolute -left-6 top-6 w-4 h-px bg-border"></div>
-                <div className="absolute -left-6 top-6 w-px h-6 bg-border"></div>
-                <CategoryCard
-                  category={subcategory}
-                  onEdit={onEdit}
-                  onArchive={onArchive}
-                  onDelete={onDelete}
-                  activityCount={0} // TODO: Add activity count for subcategories
-                />
-              </div>
-            ))}
+        <div className="ml-6 space-y-3">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-4 h-px bg-border"></div>
+            <h4 className="text-sm font-medium text-muted-foreground">Subcategories</h4>
+            <div className="flex-1 h-px bg-border"></div>
           </div>
+          <SubcategoryList
+            subcategories={category.children!}
+            onEdit={onEdit}
+            onArchive={onArchive}
+            onDelete={onDelete}
+          />
         </div>
       )}
     </div>

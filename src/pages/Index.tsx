@@ -1,4 +1,3 @@
-
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/Sidebar";
 import { OverviewCard } from "@/components/OverviewCard";
@@ -50,37 +49,24 @@ const Index = () => {
     }
   ];
 
-  // Flatten hierarchical categories for display
-  const flattenCategories = (cats: any[]) => {
-    const flattened: any[] = [];
-    
-    cats?.forEach(category => {
-      // Add parent category
-      flattened.push(category);
-      
-      // Add subcategories if they exist
-      if (category.children && category.children.length > 0) {
-        category.children.forEach((subcategory: any) => {
-          flattened.push(subcategory);
-        });
-      }
-    });
-    
-    return flattened;
-  };
+  // Only show parent categories (level 0) on dashboard, not subcategories
+  const parentCategories = categories?.filter(category => category.level === 0) || [];
 
-  // Transform categories for enhanced cards using real data
-  const enhancedCategoryData = flattenCategories(categories || []).map(category => ({
+  // Transform parent categories for enhanced cards using real data
+  const enhancedCategoryData = parentCategories.map(category => ({
     title: category.name,
     icon: Heart, // You can map specific icons based on category name
-    goal: "10h",
-    actual: "2.5h",
-    progress: 25,
+    goal: category.daily_time_goal_minutes ? `${Math.floor(category.daily_time_goal_minutes / 60)}h ${category.daily_time_goal_minutes % 60}m` : "No goal",
+    actual: "2.5h", // TODO: Calculate from activities
+    progress: 25, // TODO: Calculate actual progress
     color: category.color,
-    bgColor: category.color, // Use hex color directly
-    items: [
-      { name: "Sample Activity", target: "15 mins", actual: "15 mins", progress: 100 },
-    ]
+    bgColor: category.color, // Use database color directly
+    items: category.children?.map(subcategory => ({
+      name: subcategory.name,
+      target: subcategory.daily_time_goal_minutes ? `${subcategory.daily_time_goal_minutes}m` : "No target",
+      actual: "15 mins", // TODO: Calculate from activities
+      progress: 50 // TODO: Calculate actual progress
+    })) || []
   }));
 
   return (

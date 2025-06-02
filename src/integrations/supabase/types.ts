@@ -57,6 +57,7 @@ export type Database = {
         Row: {
           color: string
           created_at: string | null
+          daily_time_goal_minutes: number | null
           description: string | null
           id: string
           is_active: boolean | null
@@ -67,10 +68,12 @@ export type Database = {
           sort_order: number | null
           updated_at: string | null
           user_id: string
+          weekly_time_goal_minutes: number | null
         }
         Insert: {
           color?: string
           created_at?: string | null
+          daily_time_goal_minutes?: number | null
           description?: string | null
           id?: string
           is_active?: boolean | null
@@ -81,10 +84,12 @@ export type Database = {
           sort_order?: number | null
           updated_at?: string | null
           user_id: string
+          weekly_time_goal_minutes?: number | null
         }
         Update: {
           color?: string
           created_at?: string | null
+          daily_time_goal_minutes?: number | null
           description?: string | null
           id?: string
           is_active?: boolean | null
@@ -95,6 +100,7 @@ export type Database = {
           sort_order?: number | null
           updated_at?: string | null
           user_id?: string
+          weekly_time_goal_minutes?: number | null
         }
         Relationships: [
           {

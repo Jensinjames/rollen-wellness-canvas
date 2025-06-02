@@ -6,6 +6,7 @@ import { Category, useParentCategories } from '@/hooks/useCategories';
 import { ColorPicker } from './ColorPicker';
 import { CategoryTypeSelector } from './CategoryTypeSelector';
 import { CategoryNameField, CategoryDescriptionField } from './CategoryFormFields';
+import { TimeGoalFields } from './TimeGoalFields';
 
 interface CategoryFormProps {
   isOpen: boolean;
@@ -32,6 +33,8 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
     sort_order: category?.sort_order || 0,
     parent_id: category?.parent_id || 'none',
     level: category?.level || 0,
+    daily_time_goal_minutes: category?.daily_time_goal_minutes,
+    weekly_time_goal_minutes: category?.weekly_time_goal_minutes,
   });
 
   const [colorError, setColorError] = useState('');
@@ -80,6 +83,8 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       sort_order: 0,
       parent_id: 'none',
       level: 0,
+      daily_time_goal_minutes: undefined,
+      weekly_time_goal_minutes: undefined,
     });
     setColorError('');
     onClose();
@@ -94,6 +99,8 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       sort_order: category?.sort_order || 0,
       parent_id: category?.parent_id || 'none',
       level: category?.level || 0,
+      daily_time_goal_minutes: category?.daily_time_goal_minutes,
+      weekly_time_goal_minutes: category?.weekly_time_goal_minutes,
     });
     setColorError('');
     onClose();
@@ -103,7 +110,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
@@ -133,6 +140,13 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
             value={formData.description}
             onChange={(value) => setFormData({ ...formData, description: value })}
             isSubcategory={isSubcategory}
+          />
+
+          <TimeGoalFields
+            dailyGoal={formData.daily_time_goal_minutes}
+            weeklyGoal={formData.weekly_time_goal_minutes}
+            onDailyGoalChange={(value) => setFormData({ ...formData, daily_time_goal_minutes: value })}
+            onWeeklyGoalChange={(value) => setFormData({ ...formData, weekly_time_goal_minutes: value })}
           />
 
           <DialogFooter>

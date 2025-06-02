@@ -14,6 +14,8 @@ export interface Category {
   parent_id?: string;
   level: number;
   path: string[];
+  daily_time_goal_minutes?: number;
+  weekly_time_goal_minutes?: number;
   created_at: string;
   updated_at: string;
   children?: Category[];

@@ -67,17 +67,20 @@ export function EnhancedCategoryCard({ title, icon: Icon, goal, actual, progress
           "transition-all duration-300 ease-out overflow-hidden",
           isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
         )}>
-          <div className="space-y-3 mb-6">
-            {items.map((item, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="font-medium">{item.name}</span>
-                  <span className="text-muted-foreground">{item.actual} / {item.target}</span>
+          {items.length > 0 && (
+            <div className="space-y-3 mb-6">
+              <h4 className="text-sm font-medium text-muted-foreground">Subcategories</h4>
+              {items.map((item, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="font-medium">{item.name}</span>
+                    <span className="text-muted-foreground">{item.actual} / {item.target}</span>
+                  </div>
+                  <CategoryProgress value={item.progress} color={color} className="h-1" />
                 </div>
-                <CategoryProgress value={item.progress} color={color} className="h-1" />
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex justify-center">
