@@ -21,7 +21,7 @@ export function EnhancedCategoryCard({ title, icon: Icon, goal, actual, progress
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-all duration-300">
-      <div className={`${bgColor} p-4 text-white`}>
+      <div className="p-4 text-white" style={{ backgroundColor: bgColor }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">

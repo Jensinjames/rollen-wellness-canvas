@@ -50,19 +50,38 @@ const Index = () => {
     }
   ];
 
+  // Flatten hierarchical categories for display
+  const flattenCategories = (cats: any[]) => {
+    const flattened: any[] = [];
+    
+    cats?.forEach(category => {
+      // Add parent category
+      flattened.push(category);
+      
+      // Add subcategories if they exist
+      if (category.children && category.children.length > 0) {
+        category.children.forEach((subcategory: any) => {
+          flattened.push(subcategory);
+        });
+      }
+    });
+    
+    return flattened;
+  };
+
   // Transform categories for enhanced cards using real data
-  const enhancedCategoryData = categories?.map(category => ({
+  const enhancedCategoryData = flattenCategories(categories || []).map(category => ({
     title: category.name,
     icon: Heart, // You can map specific icons based on category name
     goal: "10h",
     actual: "2.5h",
     progress: 25,
     color: category.color,
-    bgColor: `bg-${category.color}`, // This might need adjustment
+    bgColor: category.color, // Use hex color directly
     items: [
       { name: "Sample Activity", target: "15 mins", actual: "15 mins", progress: 100 },
     ]
-  })) || [];
+  }));
 
   return (
     <SidebarProvider>
