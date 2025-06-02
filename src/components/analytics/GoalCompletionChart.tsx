@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
 import { useActivities } from "@/hooks/useActivities";
 import { useCategories } from "@/hooks/useCategories";
 import { useMemo } from "react";
@@ -100,9 +100,12 @@ export function GoalCompletionChart() {
                 />
                 <Bar 
                   dataKey="completion" 
-                  fill={(entry: any) => entry.color}
                   radius={[4, 4, 0, 0]}
-                />
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </ChartContainer>
