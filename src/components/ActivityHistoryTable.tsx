@@ -1,41 +1,57 @@
+
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, TrendingUp, TrendingDown, Minus, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface ActivityHistoryItem {
-  id: string;
-  activity: string;
-  category: string;
-  date: string;
-  value: string;
-  trend: 'up' | 'down' | 'flat';
-  categoryColor: string;
-}
-
-const mockHistoryData: ActivityHistoryItem[] = [
-  { id: '1', activity: 'Daily Prayer', category: 'Faith', date: '2025-01-02', value: '15 mins', trend: 'up', categoryColor: '#26c485' },
-  { id: '2', activity: 'Exercise', category: 'Health', date: '2025-01-02', value: '45 mins', trend: 'up', categoryColor: '#f94892' },
-  { id: '3', activity: 'Work Focus', category: 'Work', date: '2025-01-02', value: '6 hrs', trend: 'down', categoryColor: '#fd6f53' },
-  { id: '4', activity: 'Family Time', category: 'Life', date: '2025-01-01', value: '2 hrs', trend: 'flat', categoryColor: '#ffcc29' },
-  { id: '5', activity: 'Meditation', category: 'Faith', date: '2025-01-01', value: '10 mins', trend: 'up', categoryColor: '#26c485' },
-  { id: '6', activity: 'Sleep', category: 'Health', date: '2025-01-01', value: '7 hrs', trend: 'up', categoryColor: '#f94892' },
-];
+import { useActivities } from "@/hooks/useActivities";
+import { useCategories } from "@/hooks/useCategories";
+import { useMemo } from "react";
 
 export function ActivityHistoryTable() {
+  const { data: activities } = useActivities();
+  const { data: categories } = useCategories();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
-  const filteredData = mockHistoryData.filter(item => {
+  const processedActivities = useMemo(() => {
+    if (!activities || !categories) return [];
+
+    const flatCategories = categories.flatMap(cat => [cat, ...(cat.children || [])]);
+    const categoryMap = new Map(flatCategories.map(cat => [cat.id, cat]));
+
+    return activities.slice(0, 20).map(activity => {
+      const category = categoryMap.get(activity.category_id);
+      const date = new Date(activity.date_time);
+      
+      // Simple trend calculation based on duration (placeholder logic)
+      const trend = activity.duration_minutes > 60 ? 'up' : 
+                   activity.duration_minutes < 30 ? 'down' : 'flat';
+
+      return {
+        id: activity.id,
+        activity: activity.name,
+        category: category?.name || 'Unknown',
+        date: date.toLocaleDateString(),
+        value: activity.duration_minutes >= 60 
+          ? `${Math.round(activity.duration_minutes / 60 * 10) / 10}h`
+          : `${activity.duration_minutes}m`,
+        trend,
+        categoryColor: category?.color || '#3B82F6'
+      };
+    });
+  }, [activities, categories]);
+
+  const filteredData = processedActivities.filter(item => {
     const matchesSearch = item.activity.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.category.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const categories = Array.from(new Set(mockHistoryData.map(item => item.category)));
+  const availableCategories = useMemo(() => {
+    return Array.from(new Set(processedActivities.map(item => item.category)));
+  }, [processedActivities]);
 
   const getTrendIcon = (trend: string, color: string) => {
     switch (trend) {
@@ -70,7 +86,7 @@ export function ActivityHistoryTable() {
               className="px-3 py-2 border rounded-lg bg-background"
             >
               <option value="all">All Categories</option>
-              {categories.map(category => (
+              {availableCategories.map(category => (
                 <option key={category} value={category}>{category}</option>
               ))}
             </select>
@@ -85,7 +101,7 @@ export function ActivityHistoryTable() {
               <TableHead className="font-semibold">Activity</TableHead>
               <TableHead className="font-semibold">Category</TableHead>
               <TableHead className="font-semibold">Date</TableHead>
-              <TableHead className="font-semibold">Value</TableHead>
+              <TableHead className="font-semibold">Duration</TableHead>
               <TableHead className="font-semibold">Trend</TableHead>
             </TableRow>
           </TableHeader>
@@ -123,7 +139,12 @@ export function ActivityHistoryTable() {
       {filteredData.length === 0 && (
         <div className="p-8 text-center text-muted-foreground">
           <Filter className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p>No activities found matching your criteria.</p>
+          <p>
+            {processedActivities.length === 0 
+              ? "No activities found. Start logging activities to see them here."
+              : "No activities found matching your criteria."
+            }
+          </p>
         </div>
       )}
     </Card>
