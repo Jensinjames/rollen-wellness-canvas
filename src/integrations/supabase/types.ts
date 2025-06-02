@@ -9,7 +9,207 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      activities: {
+        Row: {
+          category_id: string
+          created_at: string | null
+          date_time: string
+          duration_minutes: number
+          id: string
+          name: string
+          notes: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string | null
+          date_time: string
+          duration_minutes: number
+          id?: string
+          name: string
+          notes?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string | null
+          date_time?: string
+          duration_minutes?: number
+          id?: string
+          name?: string
+          notes?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activities_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      categories: {
+        Row: {
+          color: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          sort_order: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          sort_order?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          sort_order?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      habit_logs: {
+        Row: {
+          actual_value: number | null
+          completed: boolean | null
+          created_at: string | null
+          habit_id: string
+          id: string
+          log_date: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          actual_value?: number | null
+          completed?: boolean | null
+          created_at?: string | null
+          habit_id: string
+          id?: string
+          log_date: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          actual_value?: number | null
+          completed?: boolean | null
+          created_at?: string | null
+          habit_id?: string
+          id?: string
+          log_date?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_logs_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habits: {
+        Row: {
+          category_id: string | null
+          color: string | null
+          created_at: string | null
+          frequency_days: number[] | null
+          frequency_type: Database["public"]["Enums"]["frequency_type"] | null
+          id: string
+          is_active: boolean | null
+          name: string
+          target_unit: string | null
+          target_value: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category_id?: string | null
+          color?: string | null
+          created_at?: string | null
+          frequency_days?: number[] | null
+          frequency_type?: Database["public"]["Enums"]["frequency_type"] | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          target_unit?: string | null
+          target_value?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category_id?: string | null
+          color?: string | null
+          created_at?: string | null
+          frequency_days?: number[] | null
+          frequency_type?: Database["public"]["Enums"]["frequency_type"] | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          target_unit?: string | null
+          target_value?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habits_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string
+          preferences: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id: string
+          preferences?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          preferences?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +218,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      frequency_type: "daily" | "weekly" | "custom"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +334,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      frequency_type: ["daily", "weekly", "custom"],
+    },
   },
 } as const

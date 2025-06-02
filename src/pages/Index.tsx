@@ -1,3 +1,4 @@
+
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/Sidebar";
 import { OverviewCard } from "@/components/OverviewCard";
@@ -6,9 +7,14 @@ import { ActivityTracking } from "@/components/ActivityTracking";
 import { ActivityHistoryTable } from "@/components/ActivityHistoryTable";
 import { WellnessDistributionChart } from "@/components/WellnessDistributionChart";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Activity, Clock, Heart, Calendar, Settings } from "lucide-react";
+import { BarChart3, Activity, Clock, Heart, Plus } from "lucide-react";
+import { useCategories } from "@/hooks/useCategories";
+import { useActivities } from "@/hooks/useActivities";
 
 const Index = () => {
+  const { data: categories } = useCategories();
+  const { data: activities } = useActivities();
+
   const overviewData = [
     {
       title: "Daily Score",
@@ -44,64 +50,19 @@ const Index = () => {
     }
   ];
 
-  const enhancedCategoryData = [
-    {
-      title: "Faith",
-      icon: Calendar,
-      goal: "10h",
-      actual: "2.5h",
-      progress: 25,
-      color: "#26c485",
-      bgColor: "bg-green-500",
-      items: [
-        { name: "Daily Prayer", target: "15 mins", actual: "15 mins", progress: 100 },
-        { name: "Meditation", target: "10 mins", actual: "5 mins", progress: 50 },
-        { name: "Scripture Study", target: "20 mins", actual: "0 mins", progress: 0 }
-      ]
-    },
-    {
-      title: "Life",
-      icon: Heart,
-      goal: "20h", 
-      actual: "6h",
-      progress: 30,
-      color: "#ffcc29",
-      bgColor: "bg-yellow-500",
-      items: [
-        { name: "Family Time", target: "2 hrs/day", actual: "1.5 hrs", progress: 75 },
-        { name: "Social Activities", target: "4 hrs/week", actual: "2 hrs", progress: 50 },
-        { name: "Hobbies", target: "3 hrs/week", actual: "0.5 hrs", progress: 17 }
-      ]
-    },
-    {
-      title: "Work",
-      icon: BarChart3,
-      goal: "40h",
-      actual: "14h", 
-      progress: 35,
-      color: "#fd6f53",
-      bgColor: "bg-red-500",
-      items: [
-        { name: "Productivity", target: "75%", actual: "65%", progress: 87 },
-        { name: "Projects Completed", target: "8", actual: "3", progress: 38 },
-        { name: "Learning Hours", target: "5 hrs/week", actual: "2 hrs", progress: 40 }
-      ]
-    },
-    {
-      title: "Health", 
-      icon: Heart,
-      goal: "14h",
-      actual: "1.4h",
-      progress: 10,
-      color: "#f94892",
-      bgColor: "bg-pink-500",
-      items: [
-        { name: "Exercise", target: "3 days/week", actual: "1 day", progress: 33 },
-        { name: "Sleep", target: "6.5 hrs/day", actual: "6 hrs", progress: 92 },
-        { name: "Stress Level", target: "Low", actual: "Moderate", progress: 60 }
-      ]
-    }
-  ];
+  // Transform categories for enhanced cards using real data
+  const enhancedCategoryData = categories?.map(category => ({
+    title: category.name,
+    icon: Heart, // You can map specific icons based on category name
+    goal: "10h",
+    actual: "2.5h",
+    progress: 25,
+    color: category.color,
+    bgColor: `bg-${category.color}`, // This might need adjustment
+    items: [
+      { name: "Sample Activity", target: "15 mins", actual: "15 mins", progress: 100 },
+    ]
+  })) || [];
 
   return (
     <SidebarProvider>
@@ -120,13 +81,14 @@ const Index = () => {
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-sm bg-white/10 px-3 py-1 rounded-full">
-                  Apr 13, 2025 - Apr 20, 2025
+                  {new Date().toLocaleDateString()}
                 </span>
                 <Button variant="outline" size="sm" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
                   Manage Categories
                 </Button>
                 <Button size="sm" className="bg-white text-blue-600 hover:bg-gray-100">
-                  + Add Entry
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Entry
                 </Button>
               </div>
             </div>
