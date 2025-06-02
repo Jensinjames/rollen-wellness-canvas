@@ -57,7 +57,15 @@ export const PreferencesSettings = () => {
         }
       }
     } catch (error) {
-      console.error("Error fetching preferences:", error);
+      // Log error without exposing sensitive details
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Error fetching preferences:", error);
+      }
+      toast({
+        title: "Error",
+        description: "Failed to load preferences",
+        variant: "destructive",
+      });
     }
   };
 
@@ -79,7 +87,10 @@ export const PreferencesSettings = () => {
         description: "Preferences saved successfully",
       });
     } catch (error) {
-      console.error("Error saving preferences:", error);
+      // Log error without exposing sensitive details
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Error saving preferences:", error);
+      }
       toast({
         title: "Error",
         description: "Failed to save preferences",

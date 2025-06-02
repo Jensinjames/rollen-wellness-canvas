@@ -150,7 +150,10 @@ export const useCreateCategory = () => {
       toast.success('Category created successfully');
     },
     onError: (error) => {
-      console.error('Error creating category:', error);
+      // Log error without exposing sensitive details
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error creating category:', error);
+      }
       toast.error('Failed to create category');
     },
   });
@@ -176,7 +179,10 @@ export const useUpdateCategory = () => {
       toast.success('Category updated successfully');
     },
     onError: (error) => {
-      console.error('Error updating category:', error);
+      // Log error without exposing sensitive details
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error updating category:', error);
+      }
       toast.error('Failed to update category');
     },
   });
@@ -199,7 +205,10 @@ export const useDeleteCategory = () => {
       toast.success('Category archived successfully');
     },
     onError: (error) => {
-      console.error('Error archiving category:', error);
+      // Log error without exposing sensitive details
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error archiving category:', error);
+      }
       toast.error('Failed to archive category');
     },
   });

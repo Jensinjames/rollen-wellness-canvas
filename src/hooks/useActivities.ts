@@ -88,7 +88,10 @@ export const useCreateActivity = () => {
       toast.success('Activity logged successfully');
     },
     onError: (error) => {
-      console.error('Error creating activity:', error);
+      // Log error without exposing sensitive details
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error creating activity:', error);
+      }
       toast.error('Failed to log activity');
     },
   });
