@@ -25,13 +25,17 @@ export const SecurityMonitor: React.FC<SecurityMonitorProps> = ({ children }) =>
     const handleVisibilityChange = async () => {
       if (document.hidden && user) {
         await securityLogger.logSecurityEvent('security.page_hidden', {
-          session_active: sessionState.isActive,
-          timestamp: new Date().toISOString(),
+          event_details: {
+            session_active: sessionState.isActive,
+            timestamp: new Date().toISOString(),
+          }
         });
       } else if (!document.hidden && user) {
         await securityLogger.logSecurityEvent('security.page_visible', {
-          session_active: sessionState.isActive,
-          timestamp: new Date().toISOString(),
+          event_details: {
+            session_active: sessionState.isActive,
+            timestamp: new Date().toISOString(),
+          }
         });
       }
     };
@@ -65,8 +69,7 @@ export const SecurityMonitor: React.FC<SecurityMonitorProps> = ({ children }) =>
       }, 1000);
     };
 
-    // Monitor for console manipulation attempts
-    const originalConsole = { ...console };
+    // Monitor for console access attempts
     let consoleAccessCount = 0;
 
     const monitorConsole = () => {
@@ -84,13 +87,34 @@ export const SecurityMonitor: React.FC<SecurityMonitorProps> = ({ children }) =>
       }
     };
 
+    // Store original console methods for restoration
+    const originalConsole = {
+      log: console.log,
+      warn: console.warn,
+      error: console.error,
+      debug: console.debug,
+    };
+
     // Override console methods to detect manipulation
-    ['log', 'warn', 'error', 'debug'].forEach(method => {
-      console[method as keyof Console] = (...args: any[]) => {
-        monitorConsole();
-        return (originalConsole[method as keyof typeof originalConsole] as any)(...args);
-      };
-    });
+    console.log = (...args: any[]) => {
+      monitorConsole();
+      return originalConsole.log(...args);
+    };
+
+    console.warn = (...args: any[]) => {
+      monitorConsole();
+      return originalConsole.warn(...args);
+    };
+
+    console.error = (...args: any[]) => {
+      monitorConsole();
+      return originalConsole.error(...args);
+    };
+
+    console.debug = (...args: any[]) => {
+      monitorConsole();
+      return originalConsole.debug(...args);
+    };
 
     document.addEventListener('click', handleRapidClicks);
 
@@ -98,8 +122,11 @@ export const SecurityMonitor: React.FC<SecurityMonitorProps> = ({ children }) =>
       document.removeEventListener('click', handleRapidClicks);
       clearTimeout(clickTimer);
       
-      // Restore original console
-      Object.assign(console, originalConsole);
+      // Restore original console methods
+      console.log = originalConsole.log;
+      console.warn = originalConsole.warn;
+      console.error = originalConsole.error;
+      console.debug = originalConsole.debug;
     };
   }, [user, logSecurityEvent]);
 

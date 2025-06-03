@@ -63,11 +63,12 @@ export const SecurityDashboard: React.FC = () => {
         new Date(event.created_at) > oneHourAgo
       ) || [];
 
-      const threatEvents = recentEvents.filter(event =>
-        event.event_type.includes('threat') || 
-        event.event_type.includes('suspicious') ||
-        event.details?.risk_level === 'high'
-      );
+      const threatEvents = recentEvents.filter(event => {
+        const details = event.details as any;
+        return event.event_type.includes('threat') || 
+               event.event_type.includes('suspicious') ||
+               (details && typeof details === 'object' && details.risk_level === 'high');
+      });
 
       const riskLevel = 
         threatEvents.length > 5 ? 'high' :
