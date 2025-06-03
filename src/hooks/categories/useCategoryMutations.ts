@@ -116,74 +116,39 @@ export const useSeedDefaultCategories = () => {
 
   return useMutation({
     mutationFn: async () => {
-      // ENHANCED AUTHENTICATION DIAGNOSTICS
-      console.log('=== SEED DEFAULT CATEGORIES AUTHENTICATION CHECK ===');
-      console.log('Auth loading state:', loading);
-      console.log('User object:', user);
-      console.log('User ID:', user?.id);
-      console.log('User email:', user?.email);
-      console.log('User metadata:', user?.user_metadata);
-      console.log('User app metadata:', user?.app_metadata);
-      console.log('Timestamp:', new Date().toISOString());
-      console.log('====================================================');
-
-      // STRICT AUTHENTICATION GUARDS
       if (loading) {
-        const errorMsg = 'Authentication is still loading. Cannot proceed with seeding.';
-        console.error('SEED BLOCKED:', errorMsg);
-        throw new Error(errorMsg);
+        throw new Error('Authentication is still loading. Please wait a moment and try again.');
       }
 
       if (!user) {
-        const errorMsg = 'No user authenticated. Please log in to add default categories.';
-        console.error('SEED BLOCKED:', errorMsg);
-        throw new Error(errorMsg);
+        throw new Error('No user authenticated. Please log in to add default categories.');
       }
 
       if (!user.id) {
-        const errorMsg = 'User ID is missing from authentication context.';
-        console.error('SEED BLOCKED:', errorMsg, 'User object:', user);
-        throw new Error(errorMsg);
+        throw new Error('User ID is missing from authentication context.');
       }
 
-      console.log('✅ All authentication checks passed. Proceeding with seed_default_categories function.');
-      console.log('Calling with user_id:', user.id);
+      console.log('Seeding default categories for user:', user.id);
 
-      // Call the database function with enhanced error logging
+      // Call the database function
       const { data, error } = await supabase.rpc('seed_default_categories', {
         user_id_param: user.id
       });
 
       if (error) {
-        console.error('=== SUPABASE RPC ERROR DETAILS ===');
-        console.error('Error message:', error.message);
-        console.error('Error code:', error.code);
-        console.error('Error details:', error.details);
-        console.error('Error hint:', error.hint);
-        console.error('Full error object:', error);
-        console.error('=================================');
-        
-        // Throw the actual Supabase error message instead of a generic one
+        console.error('Supabase RPC error:', error);
         throw new Error(`Database error: ${error.message}${error.details ? ` (${error.details})` : ''}${error.hint ? ` Hint: ${error.hint}` : ''}`);
       }
 
-      console.log('✅ Seed function completed successfully. Result:', data);
+      console.log('Default categories seeded successfully');
       return data;
     },
     onSuccess: () => {
-      console.log('✅ Seed mutation success - invalidating queries');
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       toast.success('Default categories added successfully');
     },
     onError: (error) => {
-      console.error('=== SEED MUTATION ERROR DETAILS ===');
-      console.error('Error type:', typeof error);
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-      console.error('Full error object:', error);
-      console.error('==================================');
-      
-      // Display the actual error message to the user
+      console.error('Seed mutation error:', error);
       toast.error(`Failed to add default categories: ${error.message}`);
     },
   });
