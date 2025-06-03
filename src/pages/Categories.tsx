@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/Sidebar';
@@ -7,6 +8,7 @@ import { CategoryForm } from '@/components/categories/CategoryForm';
 import { HierarchicalCategoryCard } from '@/components/categories/HierarchicalCategoryCard';
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory, Category } from '@/hooks/useCategories';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const Categories = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -19,16 +21,31 @@ const Categories = () => {
   const deleteCategoryMutation = useDeleteCategory();
 
   const handleCreateCategory = (categoryData: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'path' | 'children'>) => {
-    // Validate subcategory creation
+    // Enhanced validation before submission
     if (parentForNewSubcategory) {
       if (!categoryData.parent_id || categoryData.level !== 1) {
         console.error('Invalid subcategory data:', categoryData);
+        toast.error('Invalid subcategory configuration');
         return;
       }
     }
     
     console.log('Creating category:', categoryData);
-    createCategoryMutation.mutate(categoryData);
+    createCategoryMutation.mutate(categoryData, {
+      onSuccess: () => {
+        handleCloseForm();
+        toast.success(`${categoryData.level === 1 ? 'Subcategory' : 'Category'} created successfully!`);
+      },
+      onError: (error: any) => {
+        // Handle database constraint violations
+        if (error.message.includes('already exists')) {
+          toast.error(error.message);
+        } else {
+          toast.error('Failed to create category. Please try again.');
+        }
+        console.error('Category creation error:', error);
+      }
+    });
   };
 
   const handleUpdateCategory = (categoryData: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'path' | 'children'>) => {
@@ -36,8 +53,20 @@ const Categories = () => {
       updateCategoryMutation.mutate({
         id: editingCategory.id,
         ...categoryData,
+      }, {
+        onSuccess: () => {
+          handleCloseForm();
+          toast.success('Category updated successfully!');
+        },
+        onError: (error: any) => {
+          if (error.message.includes('already exists')) {
+            toast.error(error.message);
+          } else {
+            toast.error('Failed to update category. Please try again.');
+          }
+          console.error('Category update error:', error);
+        }
       });
-      setEditingCategory(undefined);
     }
   };
 
@@ -55,12 +84,26 @@ const Categories = () => {
   };
 
   const handleArchiveCategory = (id: string) => {
-    deleteCategoryMutation.mutate(id);
+    deleteCategoryMutation.mutate(id, {
+      onSuccess: () => {
+        toast.success('Category archived successfully');
+      },
+      onError: () => {
+        toast.error('Failed to archive category');
+      }
+    });
   };
 
   const handleDeleteCategory = (id: string) => {
     // For now, we'll just archive - permanent deletion can be added later
-    deleteCategoryMutation.mutate(id);
+    deleteCategoryMutation.mutate(id, {
+      onSuccess: () => {
+        toast.success('Category archived successfully');
+      },
+      onError: () => {
+        toast.error('Failed to archive category');
+      }
+    });
   };
 
   const handleCloseForm = () => {
@@ -76,8 +119,11 @@ const Categories = () => {
     if (parentForNewSubcategory) {
       return `Add Subcategory to ${parentForNewSubcategory.name}`;
     }
-    return 'Create New Category';
+    return 'Create New Subcategory';
   };
+
+  // Only allow subcategory creation if there are parent categories
+  const canCreateSubcategory = categories && categories.length > 0;
 
   if (isLoading) {
     return (
@@ -104,16 +150,18 @@ const Categories = () => {
                 <SidebarTrigger className="text-white hover:bg-white/10" />
                 <div>
                   <h1 className="text-2xl font-bold">Category Management</h1>
-                  <p className="text-blue-100">Organize your wellness activities with hierarchical categories</p>
+                  <p className="text-blue-100">Organize your wellness activities with subcategories</p>
                 </div>
               </div>
-              <Button 
-                onClick={() => setIsFormOpen(true)}
-                className="bg-white text-blue-600 hover:bg-gray-100"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Category
-              </Button>
+              {canCreateSubcategory && (
+                <Button 
+                  onClick={() => setIsFormOpen(true)}
+                  className="bg-white text-blue-600 hover:bg-gray-100"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Subcategory
+                </Button>
+              )}
             </div>
           </div>
 
@@ -134,11 +182,13 @@ const Categories = () => {
               </div>
             ) : (
               <div className="text-center py-12">
-                <div className="text-gray-500 mb-4">No categories found</div>
-                <Button onClick={() => setIsFormOpen(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Your First Category
-                </Button>
+                <div className="text-gray-500 mb-4">
+                  You have the default parent categories: Faith, Life, Work, and Health. 
+                  You can now create subcategories under these.
+                </div>
+                <p className="text-sm text-gray-400 mb-4">
+                  Parent categories are locked to maintain the wellness tracking structure.
+                </p>
               </div>
             )}
           </div>

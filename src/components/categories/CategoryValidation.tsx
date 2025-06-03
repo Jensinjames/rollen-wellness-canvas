@@ -3,13 +3,39 @@ import { Category } from '@/hooks/useCategories';
 
 export const validateCategoryData = (
   categoryData: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'path' | 'children'>,
-  isSubcategory: boolean
+  isSubcategory: boolean,
+  existingCategories: Category[] = []
 ): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
 
   // Basic validation
   if (!categoryData.name?.trim()) {
     errors.push('Category name is required');
+  }
+
+  // Check for duplicate names in the same parent scope
+  if (categoryData.name?.trim()) {
+    const duplicateExists = existingCategories.some(existing => {
+      // Same name check
+      if (existing.name.toLowerCase() !== categoryData.name.toLowerCase()) {
+        return false;
+      }
+      
+      // Same parent scope check
+      if (isSubcategory) {
+        return existing.parent_id === categoryData.parent_id;
+      } else {
+        return existing.parent_id === null;
+      }
+    });
+
+    if (duplicateExists) {
+      if (isSubcategory) {
+        errors.push('A subcategory with this name already exists under this parent');
+      } else {
+        errors.push('A top-level category with this name already exists');
+      }
+    }
   }
 
   // Color validation

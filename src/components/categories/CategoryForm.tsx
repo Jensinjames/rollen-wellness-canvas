@@ -1,12 +1,14 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Category, useParentCategories } from '@/hooks/useCategories';
+import { Category, useParentCategories, useAllCategories } from '@/hooks/useCategories';
 import { ColorPicker } from './ColorPicker';
 import { CategoryTypeSwitch } from './CategoryTypeSwitch';
 import { CategoryNameField, CategoryDescriptionField } from './CategoryFormFields';
 import { TimeGoalFields } from './TimeGoalFields';
+import { validateCategoryData, logCategoryOperation } from './CategoryValidation';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 interface CategoryFormProps {
   isOpen: boolean;
@@ -26,6 +28,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
   forceParent,
 }) => {
   const { data: parentCategories } = useParentCategories();
+  const { data: allCategories } = useAllCategories();
   
   // When forceParent is provided, we're adding a subcategory
   const isAddingSubcategory = !!forceParent;
@@ -36,59 +39,57 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
     description: category?.description || '',
     is_active: category?.is_active ?? true,
     sort_order: category?.sort_order || 0,
-    parent_id: forceParent?.id || category?.parent_id || 'none',
+    parent_id: forceParent?.id || category?.parent_id || (isAddingSubcategory ? '' : 'none'),
     level: forceParent ? 1 : (category?.level || 0),
     daily_time_goal_minutes: category?.daily_time_goal_minutes,
     weekly_time_goal_minutes: category?.weekly_time_goal_minutes,
   });
 
-  const [colorError, setColorError] = useState('');
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   const handleColorChange = (color: string) => {
     setFormData({ ...formData, color });
-    // Validate color
-    const hexColorRegex = /^#[A-Fa-f0-9]{6}$/;
-    if (!hexColorRegex.test(color)) {
-      setColorError('Color must be a valid 6-digit hex code (e.g., #FF0000)');
-    } else {
-      setColorError('');
+    // Clear validation errors when user makes changes
+    if (validationErrors.length > 0) {
+      setValidationErrors([]);
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!formData.name.trim()) return;
     
-    // Validate color before submission
-    const hexColorRegex = /^#[A-Fa-f0-9]{6}$/;
-    if (!hexColorRegex.test(formData.color)) {
+    // Determine if this is a subcategory
+    const isSubcategory = isAddingSubcategory || formData.parent_id !== 'none';
+    
+    // Set correct level and parent_id
+    const submissionData = {
+      ...formData,
+      level: isSubcategory ? 1 : 0,
+      parent_id: isSubcategory ? (formData.parent_id === 'none' ? forceParent?.id : formData.parent_id) : undefined,
+    };
+
+    // Validate the form data including duplicate checking
+    const validation = validateCategoryData(
+      submissionData, 
+      isSubcategory, 
+      allCategories || []
+    );
+    
+    if (!validation.isValid) {
+      setValidationErrors(validation.errors);
       return;
     }
 
-    // Critical validation for subcategories
-    if (isAddingSubcategory || formData.parent_id !== 'none') {
-      if (!formData.parent_id || formData.parent_id === 'none') {
-        console.error('Subcategory must have a parent_id');
-        return;
-      }
-      // Force level to 1 for subcategories
-      formData.level = 1;
-    } else {
-      // Force level to 0 for top-level categories
-      formData.level = 0;
-    }
+    // Log the operation
+    logCategoryOperation(
+      category ? 'update' : 'create', 
+      submissionData, 
+      isSubcategory ? 'subcategory' : 'top-level category'
+    );
 
-    console.log('Submitting category with data:', {
-      ...formData,
-      parent_id: formData.parent_id === 'none' ? undefined : formData.parent_id,
-      level: formData.level,
-    });
-
-    onSubmit({
-      ...formData,
-      parent_id: formData.parent_id === 'none' ? undefined : formData.parent_id,
-      level: formData.level,
-    });
+    onSubmit(submissionData);
     
     // Reset form
     setFormData({
@@ -102,27 +103,17 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       daily_time_goal_minutes: undefined,
       weekly_time_goal_minutes: undefined,
     });
-    setColorError('');
+    setValidationErrors([]);
     onClose();
   };
 
   const handleClose = () => {
-    setFormData({
-      name: category?.name || '',
-      color: category?.color || '#10B981',
-      description: category?.description || '',
-      is_active: category?.is_active ?? true,
-      sort_order: category?.sort_order || 0,
-      parent_id: forceParent?.id || category?.parent_id || 'none',
-      level: forceParent ? 1 : (category?.level || 0),
-      daily_time_goal_minutes: category?.daily_time_goal_minutes,
-      weekly_time_goal_minutes: category?.weekly_time_goal_minutes,
-    });
-    setColorError('');
+    // ... keep existing code (reset form data)
+    setValidationErrors([]);
     onClose();
   };
 
-  const isSubcategory = formData.parent_id !== 'none';
+  const isSubcategory = isAddingSubcategory || formData.parent_id !== 'none';
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -134,12 +125,28 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
               ? `Create a new subcategory under "${forceParent.name}".`
               : category 
                 ? 'Update your category details.' 
-                : 'Create a new category to organize your activities.'
+                : 'Categories can only be subcategories under existing parent categories.'
             }
           </DialogDescription>
         </DialogHeader>
+
+        {/* Validation Errors */}
+        {validationErrors.length > 0 && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <ul className="list-disc list-inside space-y-1">
+                {validationErrors.map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
-          {!isAddingSubcategory && (
+          {/* Only show category type selector if not adding subcategory and not editing existing */}
+          {!isAddingSubcategory && !category && (
             <CategoryTypeSwitch
               value={formData.parent_id}
               onChange={(value) => setFormData({ ...formData, parent_id: value, level: value === 'none' ? 0 : 1 })}
@@ -170,14 +177,19 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
 
           <CategoryNameField
             value={formData.name}
-            onChange={(value) => setFormData({ ...formData, name: value })}
+            onChange={(value) => {
+              setFormData({ ...formData, name: value });
+              if (validationErrors.length > 0) {
+                setValidationErrors([]);
+              }
+            }}
             isSubcategory={isSubcategory}
           />
 
           <ColorPicker
             value={formData.color}
             onChange={handleColorChange}
-            error={colorError}
+            error={validationErrors.find(error => error.includes('color')) || ''}
           />
 
           <CategoryDescriptionField
@@ -197,7 +209,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
             <Button type="button" variant="outline" onClick={handleClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!!colorError}>
+            <Button type="submit" disabled={validationErrors.length > 0}>
               {category ? 'Update Category' : (isAddingSubcategory ? 'Create Subcategory' : 'Create Category')}
             </Button>
           </DialogFooter>
