@@ -64,6 +64,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [session, sessionWarningShown, user?.id]);
 
   useEffect(() => {
+    console.log('AuthProvider initializing...');
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -91,10 +93,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
       console.log('=== INITIAL SESSION CHECK ===');
       console.log('Initial session:', session);
       console.log('Initial user:', session?.user);
+      console.log('Session error:', error);
       console.log('=============================');
       
       setSession(session);
@@ -106,10 +109,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('AuthProvider cleanup - unsubscribing');
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string) => {
+    console.log('SignUp attempt for:', email);
+    
     // Validate inputs
     const emailValidation = validateEmail(email);
     if (!emailValidation.isValid) {
@@ -126,6 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const redirectUrl = `${window.location.origin}/`;
+    console.log('SignUp redirect URL:', redirectUrl);
     
     const { error } = await supabase.auth.signUp({
       email,
@@ -144,6 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email_domain: email.split('@')[1] 
       });
     } else {
+      console.log('SignUp successful');
       logAuthEvent('auth.signup', undefined, { 
         success: true, 
         email_domain: email.split('@')[1] 
@@ -154,6 +164,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signIn = async (email: string, password: string) => {
+    console.log('SignIn attempt for:', email);
+    
     // Validate inputs
     const emailValidation = validateEmail(email);
     if (!emailValidation.isValid) {
@@ -181,18 +193,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         error: error.message, 
         email_domain: email.split('@')[1] 
       });
+    } else {
+      console.log('SignIn successful');
     }
 
     return { error };
   };
 
   const signOut = async () => {
+    console.log('SignOut initiated');
     logAuthEvent('auth.logout', user?.id);
     await securityLogger.logAuthEvent('auth.logout', user?.id);
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('SignOut error:', error);
+    }
   };
 
-  // Log authentication state on every render for diagnostics
+  // Log authentication state on every render for diagnostics in development
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       logAuthenticationState('RENDER_CYCLE');

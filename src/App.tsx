@@ -30,6 +30,8 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  console.log('App component rendering');
+  
   return (
     <QueryClientProvider client={queryClient}>
       <TimerProvider>
