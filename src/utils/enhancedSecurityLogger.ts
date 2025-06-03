@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export type SecurityEventType = 
@@ -27,6 +26,13 @@ interface SecurityLogDetails {
   event_details?: Record<string, any>;
   risk_level?: 'low' | 'medium' | 'high' | 'critical';
   session_id?: string;
+  // Additional properties for specific security events
+  error?: string;
+  expires_at?: number;
+  identifier?: string;
+  current_count?: number;
+  max_requests?: number;
+  window_seconds?: number;
 }
 
 class EnhancedSecurityLogger {
