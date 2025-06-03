@@ -116,66 +116,72 @@ export const useSeedDefaultCategories = () => {
 
   return useMutation({
     mutationFn: async () => {
-      // DIAGNOSTIC LOGGING - Log complete auth state
-      console.log('=== SEED DEFAULT CATEGORIES DEBUG ===');
+      // ENHANCED AUTHENTICATION DIAGNOSTICS
+      console.log('=== SEED DEFAULT CATEGORIES AUTHENTICATION CHECK ===');
       console.log('Auth loading state:', loading);
       console.log('User object:', user);
       console.log('User ID:', user?.id);
       console.log('User email:', user?.email);
+      console.log('User metadata:', user?.user_metadata);
+      console.log('User app metadata:', user?.app_metadata);
       console.log('Timestamp:', new Date().toISOString());
-      console.log('=====================================');
+      console.log('====================================================');
 
-      // AUTHENTICATION GUARDS
+      // STRICT AUTHENTICATION GUARDS
       if (loading) {
-        const error = new Error('Authentication is still loading. Please wait.');
-        console.error('SEED FAILED: Auth still loading');
-        throw error;
+        const errorMsg = 'Authentication is still loading. Cannot proceed with seeding.';
+        console.error('SEED BLOCKED:', errorMsg);
+        throw new Error(errorMsg);
       }
 
       if (!user) {
-        const error = new Error('User not authenticated. Please log in first.');
-        console.error('SEED FAILED: No user object');
-        throw error;
+        const errorMsg = 'No user authenticated. Please log in to add default categories.';
+        console.error('SEED BLOCKED:', errorMsg);
+        throw new Error(errorMsg);
       }
 
       if (!user.id) {
-        const error = new Error('User ID is missing from authentication context.');
-        console.error('SEED FAILED: User object exists but no ID:', user);
-        throw error;
+        const errorMsg = 'User ID is missing from authentication context.';
+        console.error('SEED BLOCKED:', errorMsg, 'User object:', user);
+        throw new Error(errorMsg);
       }
 
-      console.log('Auth checks passed. Calling seed function with user_id:', user.id);
+      console.log('✅ All authentication checks passed. Proceeding with seed_default_categories function.');
+      console.log('Calling with user_id:', user.id);
 
-      // Call the database function with detailed error handling
+      // Call the database function with enhanced error logging
       const { data, error } = await supabase.rpc('seed_default_categories', {
         user_id_param: user.id
       });
 
       if (error) {
-        console.error('SEED FUNCTION ERROR:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-          fullError: error
-        });
-        throw new Error(`Database error: ${error.message}${error.details ? ` (${error.details})` : ''}`);
+        console.error('=== SUPABASE RPC ERROR DETAILS ===');
+        console.error('Error message:', error.message);
+        console.error('Error code:', error.code);
+        console.error('Error details:', error.details);
+        console.error('Error hint:', error.hint);
+        console.error('Full error object:', error);
+        console.error('=================================');
+        
+        // Throw the actual Supabase error message instead of a generic one
+        throw new Error(`Database error: ${error.message}${error.details ? ` (${error.details})` : ''}${error.hint ? ` Hint: ${error.hint}` : ''}`);
       }
 
-      console.log('Seed function completed successfully:', data);
+      console.log('✅ Seed function completed successfully. Result:', data);
       return data;
     },
     onSuccess: () => {
-      console.log('Seed mutation success - invalidating queries');
+      console.log('✅ Seed mutation success - invalidating queries');
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       toast.success('Default categories added successfully');
     },
     onError: (error) => {
-      console.error('=== SEED MUTATION ERROR ===');
+      console.error('=== SEED MUTATION ERROR DETAILS ===');
       console.error('Error type:', typeof error);
       console.error('Error message:', error.message);
-      console.error('Error object:', error);
-      console.error('========================');
+      console.error('Error stack:', error.stack);
+      console.error('Full error object:', error);
+      console.error('==================================');
       
       // Display the actual error message to the user
       toast.error(`Failed to add default categories: ${error.message}`);

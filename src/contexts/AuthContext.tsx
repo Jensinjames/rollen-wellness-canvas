@@ -4,6 +4,8 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { validateEmail, validatePassword } from '@/utils/validation';
 import { logAuthEvent, auditLogger } from '@/utils/auditLog';
+import { securityLogger } from '@/utils/enhancedSecurityLogger';
+import { SECURITY_CONFIG } from '@/utils/securityConfig';
 
 interface AuthContextType {
   user: User | null;
@@ -20,38 +22,92 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionWarningShown, setSessionWarningShown] = useState(false);
+
+  // Enhanced authentication state logging
+  const logAuthenticationState = (context: string) => {
+    console.log(`=== AUTH STATE DIAGNOSTIC [${context}] ===`);
+    console.log('Loading:', loading);
+    console.log('User object:', user);
+    console.log('User ID:', user?.id);
+    console.log('User email:', user?.email);
+    console.log('Session object:', session);
+    console.log('Session expires at:', session?.expires_at);
+    console.log('Timestamp:', new Date().toISOString());
+    console.log('===========================================');
+  };
+
+  // Session timeout monitoring (merged from EnhancedAuthContext)
+  useEffect(() => {
+    if (!session) return;
+
+    const checkSessionExpiry = () => {
+      const now = Date.now() / 1000;
+      const expiresAt = session.expires_at || 0;
+      const timeUntilExpiry = (expiresAt - now) * 1000;
+
+      // Show warning 5 minutes before expiry
+      if (timeUntilExpiry <= SECURITY_CONFIG.SESSION_TIMEOUT_WARNING && !sessionWarningShown) {
+        setSessionWarningShown(true);
+        console.warn('Session will expire soon. Please save your work.');
+      }
+
+      // Auto-logout when session expires
+      if (timeUntilExpiry <= 0) {
+        securityLogger.logAuthEvent('auth.session_expired', user?.id);
+        signOut();
+      }
+    };
+
+    const interval = setInterval(checkSessionExpiry, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, [session, sessionWarningShown, user?.id]);
 
   useEffect(() => {
-    // Set up auth state listener
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        // Remove sensitive logging - only log non-sensitive info in development
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Auth state changed:', event);
-        }
-
-        // Log auth events for audit
-        if (event === 'SIGNED_IN') {
-          logAuthEvent('auth.login', session?.user?.id);
-        } else if (event === 'SIGNED_OUT') {
-          logAuthEvent('auth.logout', user?.id);
-        }
+      async (event, session) => {
+        console.log('=== AUTH STATE CHANGE EVENT ===');
+        console.log('Event:', event);
+        console.log('Session:', session);
+        console.log('User:', session?.user);
+        console.log('==============================');
 
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        setSessionWarningShown(false);
+
+        // Log authentication events
+        if (event === 'SIGNED_OUT') {
+          await logAuthEvent('auth.logout', session?.user?.id);
+          await securityLogger.logAuthEvent('auth.logout', session?.user?.id);
+        } else if (event === 'TOKEN_REFRESHED') {
+          console.log('Session refreshed');
+        } else if (event === 'SIGNED_IN') {
+          logAuthenticationState('SIGNED_IN_EVENT');
+        }
       }
     );
 
-    // Check for existing session
+    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('=== INITIAL SESSION CHECK ===');
+      console.log('Initial session:', session);
+      console.log('Initial user:', session?.user);
+      console.log('=============================');
+      
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      
+      if (session?.user) {
+        logAuthenticationState('INITIAL_SESSION');
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, [user?.id]);
+  }, []);
 
   const signUp = async (email: string, password: string) => {
     // Validate inputs
@@ -80,6 +136,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     if (error) {
+      console.error('=== SIGNUP ERROR ===');
+      console.error('Error:', error);
+      console.error('===================');
       logAuthEvent('auth.signup', undefined, { 
         error: error.message, 
         email_domain: email.split('@')[1] 
@@ -115,6 +174,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     if (error) {
+      console.error('=== SIGNIN ERROR ===');
+      console.error('Error:', error);
+      console.error('===================');
       logAuthEvent('auth.login', undefined, { 
         error: error.message, 
         email_domain: email.split('@')[1] 
@@ -126,8 +188,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     logAuthEvent('auth.logout', user?.id);
+    await securityLogger.logAuthEvent('auth.logout', user?.id);
     await supabase.auth.signOut();
   };
+
+  // Log authentication state on every render for diagnostics
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      logAuthenticationState('RENDER_CYCLE');
+    }
+  });
 
   const value = {
     user,

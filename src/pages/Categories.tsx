@@ -22,6 +22,11 @@ const Categories = () => {
   const deleteCategoryMutation = useDeleteCategory();
   const seedDefaultCategories = useSeedDefaultCategories();
 
+  // Authentication guard helper
+  const isAuthReady = () => {
+    return !authLoading && user && user.id;
+  };
+
   const handleCreateCategory = (categoryData: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'path' | 'children'>) => {
     console.log('Creating category:', categoryData);
     createCategoryMutation.mutate(categoryData, {
@@ -88,34 +93,29 @@ const Categories = () => {
   };
 
   const handleAddDefaultCategories = () => {
-    // COMPREHENSIVE AUTHENTICATION LOGGING
-    console.log('=== ADD DEFAULT CATEGORIES CLICKED ===');
-    console.log('Auth loading:', authLoading);
-    console.log('User:', user);
-    console.log('User ID:', user?.id);
-    console.log('Seed mutation pending:', seedDefaultCategories.isPending);
-    console.log('=====================================');
-
-    // PREVENT EXECUTION IF AUTH NOT READY
-    if (authLoading) {
-      console.warn('BLOCKED: Authentication still loading');
-      toast.error('Please wait for authentication to complete');
+    // AUTHENTICATION GUARD - PREVENT EXECUTION IF NOT READY
+    if (!isAuthReady()) {
+      console.warn('=== ADD DEFAULT CATEGORIES BLOCKED ===');
+      console.warn('Auth loading:', authLoading);
+      console.warn('User:', user);
+      console.warn('User ID:', user?.id);
+      console.warn('=====================================');
+      
+      if (authLoading) {
+        toast.error('Please wait for authentication to complete');
+      } else if (!user) {
+        toast.error('Please log in to add categories');
+      } else if (!user.id) {
+        toast.error('Authentication error: User ID missing');
+      }
       return;
     }
 
-    if (!user) {
-      console.warn('BLOCKED: No user authenticated');
-      toast.error('Please log in to add categories');
-      return;
-    }
-
-    if (!user.id) {
-      console.warn('BLOCKED: User exists but no ID');
-      toast.error('Authentication error: User ID missing');
-      return;
-    }
-
-    console.log('All auth checks passed - proceeding with seed mutation');
+    console.log('=== ADD DEFAULT CATEGORIES PROCEEDING ===');
+    console.log('Auth ready - proceeding with seed mutation');
+    console.log('User ID:', user.id);
+    console.log('========================================');
+    
     seedDefaultCategories.mutate();
   };
 
@@ -177,7 +177,7 @@ const Categories = () => {
               <Button
                 onClick={() => setIsFormOpen(true)}
                 className="bg-white text-blue-600 hover:bg-blue-50"
-                disabled={authLoading || !user}
+                disabled={!isAuthReady()}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Category
@@ -210,7 +210,7 @@ const Categories = () => {
                   <Button
                     onClick={() => setIsFormOpen(true)}
                     className="mr-3"
-                    disabled={authLoading || !user}
+                    disabled={!isAuthReady()}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Create Category
@@ -218,21 +218,20 @@ const Categories = () => {
                   <Button
                     onClick={handleAddDefaultCategories}
                     variant="outline"
-                    disabled={authLoading || !user || seedDefaultCategories.isPending}
+                    disabled={!isAuthReady() || seedDefaultCategories.isPending}
                   >
                     <Sparkles className="h-4 w-4 mr-2" />
                     {seedDefaultCategories.isPending ? 'Adding...' : 'Add Suggested Categories'}
                   </Button>
                 </div>
-                {authLoading ? (
+                {!isAuthReady() && (
                   <p className="text-sm text-gray-400 mt-4">
-                    Please wait for authentication to complete...
+                    {authLoading ? 'Please wait for authentication to complete...' :
+                     !user ? 'Please log in to add categories' :
+                     'Authentication error: User ID missing'}
                   </p>
-                ) : !user ? (
-                  <p className="text-sm text-gray-400 mt-4">
-                    Please log in to add categories
-                  </p>
-                ) : (
+                )}
+                {isAuthReady() && (
                   <p className="text-sm text-gray-400 mt-4">
                     Or start with suggested categories: Faith, Life, Work, and Health
                   </p>
