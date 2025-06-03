@@ -17,7 +17,8 @@ import { format } from "date-fns";
 
 const activitySchema = z.object({
   name: z.string().min(1, "Activity name is required"),
-  category_id: z.string().min(1, "Category is required"),
+  category_id: z.string().min(1, "Parent category is required"),
+  subcategory_id: z.string().min(1, "Subcategory is required"),
   date_time: z.string().min(1, "Date and time is required"),
   duration_minutes: z.coerce.number().min(1, "Duration must be at least 1 minute"),
   notes: z.string().optional(),
@@ -34,17 +35,26 @@ export function ActivityEntryForm({ onSuccess }: ActivityEntryFormProps) {
   const { data: categories } = useCategories();
   const createActivity = useCreateActivity();
   const [loading, setLoading] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
 
   const form = useForm<ActivityFormData>({
     resolver: zodResolver(activitySchema),
     defaultValues: {
       name: "",
       category_id: "",
+      subcategory_id: "",
       date_time: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
       duration_minutes: 30,
       notes: "",
     },
   });
+
+  // Get available parent categories (level 0)
+  const parentCategories = categories?.filter(cat => cat.level === 0 && cat.is_active) || [];
+  
+  // Get subcategories for selected parent
+  const selectedParentCategory = parentCategories.find(cat => cat.id === selectedCategoryId);
+  const availableSubcategories = selectedParentCategory?.children?.filter(sub => sub.is_active) || [];
 
   const onSubmit = async (data: ActivityFormData) => {
     setLoading(true);
@@ -79,6 +89,7 @@ export function ActivityEntryForm({ onSuccess }: ActivityEntryFormProps) {
       await createActivity.mutateAsync({
         name: nameValidation.sanitized,
         category_id: data.category_id,
+        subcategory_id: data.subcategory_id,
         date_time: new Date(data.date_time).toISOString(),
         duration_minutes: durationValidation.value!,
         notes: notesValidation.sanitized || undefined,
@@ -87,6 +98,7 @@ export function ActivityEntryForm({ onSuccess }: ActivityEntryFormProps) {
       // Log the activity creation
       logResourceEvent('activity.create', user?.id || '', data.category_id, {
         activity_name: nameValidation.sanitized,
+        subcategory_id: data.subcategory_id,
         duration_minutes: durationValidation.value,
       });
 
@@ -98,7 +110,15 @@ export function ActivityEntryForm({ onSuccess }: ActivityEntryFormProps) {
     }
   };
 
-  const availableCategories = categories?.filter(cat => cat.is_active) || [];
+  const handleCategoryChange = (categoryId: string) => {
+    setSelectedCategoryId(categoryId);
+    form.setValue("category_id", categoryId);
+    form.setValue("subcategory_id", ""); // Reset subcategory when parent changes
+  };
+
+  const handleSubcategoryChange = (subcategoryId: string) => {
+    form.setValue("subcategory_id", subcategoryId);
+  };
 
   return (
     <Form {...form}>
@@ -122,28 +142,74 @@ export function ActivityEntryForm({ onSuccess }: ActivityEntryFormProps) {
           name="category_id"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Category</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <FormLabel>Parent Category</FormLabel>
+              <Select onValueChange={handleCategoryChange} value={selectedCategoryId}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
+                    <SelectValue placeholder="Select a parent category" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {availableCategories.map((category) => (
+                  {parentCategories.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       <div className="flex items-center gap-2">
                         <div 
                           className="w-3 h-3 rounded-full" 
                           style={{ backgroundColor: category.color }}
                         />
-                        {category.path.join(" > ")}
+                        {category.name}
                       </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="subcategory_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Subcategory</FormLabel>
+              <Select 
+                onValueChange={handleSubcategoryChange} 
+                value={field.value}
+                disabled={!selectedCategoryId}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder={
+                      !selectedCategoryId 
+                        ? "Select a parent category first" 
+                        : availableSubcategories.length === 0
+                          ? "No subcategories available - create one first"
+                          : "Select a subcategory"
+                    } />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {availableSubcategories.map((subcategory) => (
+                    <SelectItem key={subcategory.id} value={subcategory.id}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: subcategory.color }}
+                        />
+                        {subcategory.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+              {selectedCategoryId && availableSubcategories.length === 0 && (
+                <p className="text-sm text-amber-600">
+                  No subcategories found. Please create a subcategory for this parent category first.
+                </p>
+              )}
             </FormItem>
           )}
         />
@@ -200,7 +266,7 @@ export function ActivityEntryForm({ onSuccess }: ActivityEntryFormProps) {
         <div className="flex justify-end gap-2 pt-4">
           <Button 
             type="submit" 
-            disabled={loading}
+            disabled={loading || !selectedCategoryId || availableSubcategories.length === 0}
             className="bg-blue-500 hover:bg-blue-600"
           >
             {loading ? "Creating..." : "Create Activity"}

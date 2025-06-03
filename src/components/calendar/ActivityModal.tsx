@@ -31,6 +31,7 @@ interface ActivityModalProps {
 interface FormErrors {
   name?: string;
   categoryId?: string;
+  subcategoryId?: string;
   duration?: string;
   notes?: string;
 }
@@ -50,6 +51,7 @@ export function ActivityModal({
   const [formData, setFormData] = useState({
     name: "",
     categoryId: "",
+    subcategoryId: "",
     duration: "",
     notes: "",
   });
@@ -59,6 +61,13 @@ export function ActivityModal({
   const activity = activityId ? activities?.find(a => a.id === activityId) : null;
   const isEditing = !!activityId && !!activity;
 
+  // Get available parent categories (level 0)
+  const parentCategories = categories?.filter(cat => cat.level === 0 && cat.is_active) || [];
+  
+  // Get subcategories for selected parent
+  const selectedParentCategory = parentCategories.find(cat => cat.id === formData.categoryId);
+  const availableSubcategories = selectedParentCategory?.children?.filter(sub => sub.is_active) || [];
+
   // Reset form when modal opens/closes
   useEffect(() => {
     if (isOpen) {
@@ -66,6 +75,7 @@ export function ActivityModal({
         setFormData({
           name: activity.name,
           categoryId: activity.category_id,
+          subcategoryId: activity.subcategory_id,
           duration: activity.duration_minutes.toString(),
           notes: activity.notes || "",
         });
@@ -73,6 +83,7 @@ export function ActivityModal({
         setFormData({
           name: "",
           categoryId: "",
+          subcategoryId: "",
           duration: "",
           notes: "",
         });
@@ -98,6 +109,11 @@ export function ActivityModal({
     // Validate category selection
     if (!formData.categoryId) {
       errors.categoryId = 'Please select a category';
+    }
+
+    // Validate subcategory selection
+    if (!formData.subcategoryId) {
+      errors.subcategoryId = 'Please select a subcategory';
     }
 
     // Validate duration
@@ -205,6 +221,7 @@ export function ActivityModal({
         updates: {
           name: nameValidation.sanitized,
           category_id: formData.categoryId,
+          subcategory_id: formData.subcategoryId,
           duration_minutes: duration,
           notes: notesValidation.sanitized || null,
         }
@@ -213,6 +230,7 @@ export function ActivityModal({
       createActivity.mutate({
         name: nameValidation.sanitized,
         category_id: formData.categoryId,
+        subcategory_id: formData.subcategoryId,
         date_time: selectedDate.toISOString(),
         duration_minutes: duration,
         notes: notesValidation.sanitized || null,
@@ -226,7 +244,13 @@ export function ActivityModal({
     }
   };
 
-  const allCategories = categories?.flatMap(cat => [cat, ...(cat.children || [])]) || [];
+  const handleCategoryChange = (categoryId: string) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      categoryId, 
+      subcategoryId: "" // Reset subcategory when parent changes
+    }));
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -259,16 +283,16 @@ export function ActivityModal({
           </div>
 
           <div>
-            <Label htmlFor="category">Category *</Label>
+            <Label htmlFor="category">Parent Category *</Label>
             <select
               id="category"
               value={formData.categoryId}
-              onChange={(e) => setFormData(prev => ({ ...prev, categoryId: e.target.value }))}
+              onChange={(e) => handleCategoryChange(e.target.value)}
               className="w-full px-3 py-2 border border-input rounded-md bg-background"
               required
             >
-              <option value="">Select a category</option>
-              {allCategories.map(category => (
+              <option value="">Select a parent category</option>
+              {parentCategories.map(category => (
                 <option key={category.id} value={category.id}>
                   {category.name}
                 </option>
@@ -276,6 +300,35 @@ export function ActivityModal({
             </select>
             {formErrors.categoryId && (
               <p className="text-sm text-red-600 mt-1">{formErrors.categoryId}</p>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="subcategory">Subcategory *</Label>
+            <select
+              id="subcategory"
+              value={formData.subcategoryId}
+              onChange={(e) => setFormData(prev => ({ ...prev, subcategoryId: e.target.value }))}
+              className="w-full px-3 py-2 border border-input rounded-md bg-background"
+              required
+              disabled={!formData.categoryId}
+            >
+              <option value="">
+                {!formData.categoryId 
+                  ? "Select a parent category first" 
+                  : availableSubcategories.length === 0
+                    ? "No subcategories available - create one first"
+                    : "Select a subcategory"
+                }
+              </option>
+              {availableSubcategories.map(subcategory => (
+                <option key={subcategory.id} value={subcategory.id}>
+                  {subcategory.name}
+                </option>
+              ))}
+            </select>
+            {formErrors.subcategoryId && (
+              <p className="text-sm text-red-600 mt-1">{formErrors.subcategoryId}</p>
             )}
           </div>
 
@@ -334,7 +387,7 @@ export function ActivityModal({
               </Button>
               <Button 
                 type="submit" 
-                disabled={createActivity.isPending || updateActivityMutation.isPending}
+                disabled={createActivity.isPending || updateActivityMutation.isPending || !formData.categoryId || availableSubcategories.length === 0}
               >
                 {isEditing ? 'Update' : 'Add'} Activity
               </Button>
