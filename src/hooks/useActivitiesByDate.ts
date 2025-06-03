@@ -1,8 +1,8 @@
 
-import { useMemo } from "react";
-import { useActivities } from "@/hooks/useActivities";
-import { ActivityFilters } from "@/hooks/useActivityFilters";
-import { format } from "date-fns";
+import { useMemo } from 'react';
+import { useActivities, Activity } from '@/hooks/useActivities';
+import { ActivityFilters } from '@/hooks/useActivityFilters';
+import { format, isWithinInterval, parseISO } from 'date-fns';
 
 export const useActivitiesByDate = (filters: ActivityFilters) => {
   const { data: activities, isLoading } = useActivities();
@@ -10,21 +10,27 @@ export const useActivitiesByDate = (filters: ActivityFilters) => {
   const activitiesByDate = useMemo(() => {
     if (!activities) return {};
 
-    // Filter activities based on filters
-    const filteredActivities = activities.filter(activity => {
+    const filtered = activities.filter((activity: Activity) => {
+      // Date range filter
+      if (filters.dateRange?.from && filters.dateRange?.to) {
+        const activityDate = parseISO(activity.date_time);
+        const isInRange = isWithinInterval(activityDate, {
+          start: filters.dateRange.from,
+          end: filters.dateRange.to,
+        });
+        if (!isInRange) return false;
+      }
+
       // Category filter
-      if (filters.categoryIds.length > 0) {
+      if (filters.categoryIds && filters.categoryIds.length > 0) {
         if (!filters.categoryIds.includes(activity.category_id)) {
           return false;
         }
       }
 
-      // Search filter
-      if (filters.searchTerm) {
-        const searchLower = filters.searchTerm.toLowerCase();
-        const matchesName = activity.name.toLowerCase().includes(searchLower);
-        const matchesNotes = activity.notes?.toLowerCase().includes(searchLower);
-        if (!matchesName && !matchesNotes) {
+      // Subcategory filter
+      if (filters.subcategoryIds && filters.subcategoryIds.length > 0) {
+        if (!filters.subcategoryIds.includes(activity.subcategory_id)) {
           return false;
         }
       }
@@ -32,22 +38,19 @@ export const useActivitiesByDate = (filters: ActivityFilters) => {
       return true;
     });
 
-    // Group by date
-    const groupedByDate: Record<string, typeof filteredActivities> = {};
+    // Group activities by date
+    const grouped: { [key: string]: Activity[] } = {};
     
-    filteredActivities.forEach(activity => {
-      const dateKey = format(new Date(activity.date_time), 'yyyy-MM-dd');
-      if (!groupedByDate[dateKey]) {
-        groupedByDate[dateKey] = [];
+    filtered.forEach((activity) => {
+      const dateKey = format(parseISO(activity.date_time), 'yyyy-MM-dd');
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = [];
       }
-      groupedByDate[dateKey].push(activity);
+      grouped[dateKey].push(activity);
     });
 
-    return groupedByDate;
+    return grouped;
   }, [activities, filters]);
 
-  return {
-    activitiesByDate,
-    isLoading,
-  };
+  return { activitiesByDate, isLoading };
 };
