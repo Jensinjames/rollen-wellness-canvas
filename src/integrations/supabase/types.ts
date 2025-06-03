@@ -18,6 +18,7 @@ export type Database = {
           id: string
           name: string
           notes: string | null
+          subcategory_id: string | null
           updated_at: string | null
           user_id: string
         }
@@ -29,6 +30,7 @@ export type Database = {
           id?: string
           name: string
           notes?: string | null
+          subcategory_id?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -40,6 +42,7 @@ export type Database = {
           id?: string
           name?: string
           notes?: string | null
+          subcategory_id?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -47,6 +50,13 @@ export type Database = {
           {
             foreignKeyName: "activities_category_id_fkey"
             columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_activities_subcategory"
+            columns: ["subcategory_id"]
             isOneToOne: false
             referencedRelation: "categories"
             referencedColumns: ["id"]

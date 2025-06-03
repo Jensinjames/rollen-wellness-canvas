@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 export interface Activity {
   id: string;
   category_id: string;
+  subcategory_id: string;
   name: string;
   date_time: string;
   duration_minutes: number;
@@ -26,6 +27,13 @@ export interface Activity {
       color: string;
     };
   };
+  subcategories?: {
+    id: string;
+    name: string;
+    color: string;
+    level: number;
+    parent_id: string;
+  };
 }
 
 export const useActivities = () => {
@@ -40,7 +48,7 @@ export const useActivities = () => {
         .from('activities')
         .select(`
           *,
-          categories (
+          categories!activities_category_id_fkey (
             id,
             name,
             color,
@@ -52,6 +60,13 @@ export const useActivities = () => {
               name,
               color
             )
+          ),
+          subcategories:categories!activities_subcategory_id_fkey (
+            id,
+            name,
+            color,
+            level,
+            parent_id
           )
         `)
         .order('date_time', { ascending: false });
@@ -77,22 +92,55 @@ export const useCreateActivity = () => {
           ...activityData,
           user_id: user.id,
         }])
-        .select()
+        .select(`
+          *,
+          categories!activities_category_id_fkey (
+            id,
+            name,
+            color,
+            level,
+            path,
+            parent_id
+          ),
+          subcategories:categories!activities_subcategory_id_fkey (
+            id,
+            name,
+            color,
+            level,
+            parent_id
+          )
+        `)
         .single();
 
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['activities'] });
-      toast.success('Activity logged successfully');
+      queryClient.invalidateQueries({ queryKey: ['category-activity-data'] });
+      
+      // Trigger animated update notification
+      if (data.categories && data.subcategories) {
+        const updateEvent = new CustomEvent('activityLogged', {
+          detail: {
+            id: data.id,
+            categoryName: data.categories.name,
+            subcategoryName: data.subcategories.name,
+            duration: data.duration_minutes,
+            timestamp: data.date_time,
+            color: data.subcategories.color,
+          }
+        });
+        window.dispatchEvent(updateEvent);
+      }
+      
+      toast.success('Time logged successfully');
     },
     onError: (error) => {
-      // Log error without exposing sensitive details
       if (process.env.NODE_ENV === 'development') {
         console.error('Error creating activity:', error);
       }
-      toast.error('Failed to log activity');
+      toast.error('Failed to log time');
     },
   });
 };

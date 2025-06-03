@@ -5,6 +5,7 @@ import { AppSidebar } from "@/components/Sidebar";
 import { OverviewCard } from "@/components/OverviewCard";
 import { ActivityTracking } from "@/components/ActivityTracking";
 import { CategoryProgressCard } from "@/components/dashboard/CategoryProgressCard";
+import { LiveProgressIndicator } from "@/components/dashboard/LiveProgressIndicator";
 import { Button } from "@/components/ui/button";
 import {
   TrendingUp,
@@ -21,6 +22,7 @@ import { useSleepEntries } from "@/hooks/useSleepEntries";
 import { useActivities } from "@/hooks/useActivities";
 import { useCategories } from "@/hooks/useCategories";
 import { useCategoryActivityData } from "@/hooks/useCategoryActivityData";
+import { useActivityTimezoneData } from "@/hooks/useActivityTimezoneData";
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -33,6 +35,7 @@ const Index = () => {
   const { data: activities } = useActivities();
   const { data: categories } = useCategories();
   const categoryActivityData = useCategoryActivityData();
+  const { timezoneActivityData, timeRemainingToday } = useActivityTimezoneData();
 
   // Calculate real metrics
   const averageSleepDuration = useMemo(() => {
@@ -117,7 +120,7 @@ const Index = () => {
                 className="bg-blue-500 hover:bg-blue-600 text-white flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />
-                Add Entry
+                Log Time
               </Button>
             </div>
 
@@ -135,6 +138,30 @@ const Index = () => {
                 />
               ))}
             </div>
+
+            {/* Live Progress Indicators */}
+            {categories && categories.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Live Progress Today</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {categories.map((category) => {
+                    const activityData = timezoneActivityData[category.id];
+                    if (!activityData) return null;
+
+                    return (
+                      <LiveProgressIndicator
+                        key={category.id}
+                        categoryName={category.name}
+                        dailyGoal={category.daily_time_goal_minutes}
+                        actualTime={activityData.dailyTime}
+                        color={category.color}
+                        timeRemaining={timeRemainingToday}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Category Progress Cards */}
             {categories && categories.length > 0 && (
