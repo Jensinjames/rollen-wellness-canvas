@@ -112,25 +112,73 @@ export const useDeleteCategory = () => {
 
 export const useSeedDefaultCategories = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
   return useMutation({
     mutationFn: async () => {
-      if (!user) throw new Error('User not authenticated');
+      // DIAGNOSTIC LOGGING - Log complete auth state
+      console.log('=== SEED DEFAULT CATEGORIES DEBUG ===');
+      console.log('Auth loading state:', loading);
+      console.log('User object:', user);
+      console.log('User ID:', user?.id);
+      console.log('User email:', user?.email);
+      console.log('Timestamp:', new Date().toISOString());
+      console.log('=====================================');
 
-      const { error } = await supabase.rpc('seed_default_categories', {
+      // AUTHENTICATION GUARDS
+      if (loading) {
+        const error = new Error('Authentication is still loading. Please wait.');
+        console.error('SEED FAILED: Auth still loading');
+        throw error;
+      }
+
+      if (!user) {
+        const error = new Error('User not authenticated. Please log in first.');
+        console.error('SEED FAILED: No user object');
+        throw error;
+      }
+
+      if (!user.id) {
+        const error = new Error('User ID is missing from authentication context.');
+        console.error('SEED FAILED: User object exists but no ID:', user);
+        throw error;
+      }
+
+      console.log('Auth checks passed. Calling seed function with user_id:', user.id);
+
+      // Call the database function with detailed error handling
+      const { data, error } = await supabase.rpc('seed_default_categories', {
         user_id_param: user.id
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('SEED FUNCTION ERROR:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          fullError: error
+        });
+        throw new Error(`Database error: ${error.message}${error.details ? ` (${error.details})` : ''}`);
+      }
+
+      console.log('Seed function completed successfully:', data);
+      return data;
     },
     onSuccess: () => {
+      console.log('Seed mutation success - invalidating queries');
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       toast.success('Default categories added successfully');
     },
     onError: (error) => {
-      console.error('Error seeding default categories:', error);
-      toast.error('Failed to add default categories');
+      console.error('=== SEED MUTATION ERROR ===');
+      console.error('Error type:', typeof error);
+      console.error('Error message:', error.message);
+      console.error('Error object:', error);
+      console.error('========================');
+      
+      // Display the actual error message to the user
+      toast.error(`Failed to add default categories: ${error.message}`);
     },
   });
 };
