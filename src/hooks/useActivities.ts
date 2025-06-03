@@ -44,41 +44,62 @@ export const useActivities = () => {
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
+      // First get activities
+      const { data: activities, error: activitiesError } = await supabase
         .from('activities')
-        .select(`
-          *,
-          category:categories!activities_category_id_fkey (
-            id,
-            name,
-            color,
-            level,
-            path,
-            parent_id,
-            parent:categories!categories_parent_id_fkey (
-              id,
-              name,
-              color
-            )
-          ),
-          subcategory:categories!activities_subcategory_id_fkey (
-            id,
-            name,
-            color,
-            level,
-            parent_id
-          )
-        `)
+        .select('*')
         .order('date_time', { ascending: false });
 
-      if (error) throw error;
-      
-      // Transform the data to match our Activity interface
-      return data?.map(activity => ({
-        ...activity,
-        categories: activity.category,
-        subcategories: activity.subcategory
-      })) || [];
+      if (activitiesError) throw activitiesError;
+      if (!activities) return [];
+
+      // Get all unique category and subcategory IDs
+      const categoryIds = [...new Set(activities.map(a => a.category_id))];
+      const subcategoryIds = [...new Set(activities.map(a => a.subcategory_id).filter(Boolean))];
+
+      // Fetch categories
+      const { data: categories, error: categoriesError } = await supabase
+        .from('categories')
+        .select('*')
+        .in('id', [...categoryIds, ...subcategoryIds]);
+
+      if (categoriesError) throw categoriesError;
+
+      // Create lookup maps
+      const categoryMap = new Map(categories?.map(cat => [cat.id, cat]) || []);
+
+      // Transform activities with category data
+      return activities.map(activity => {
+        const category = categoryMap.get(activity.category_id);
+        const subcategory = categoryMap.get(activity.subcategory_id);
+        
+        // Get parent category for subcategory if it exists
+        const parent = subcategory?.parent_id ? categoryMap.get(subcategory.parent_id) : undefined;
+
+        return {
+          ...activity,
+          categories: category ? {
+            id: category.id,
+            name: category.name,
+            color: category.color,
+            level: category.level,
+            path: category.path || [],
+            parent_id: category.parent_id,
+            parent: parent ? {
+              id: parent.id,
+              name: parent.name,
+              color: parent.color,
+            } : undefined,
+          } : undefined,
+          subcategories: subcategory ? {
+            id: subcategory.id,
+            name: subcategory.name,
+            color: subcategory.color,
+            level: subcategory.level,
+            parent_id: subcategory.parent_id,
+          } : undefined,
+        };
+      });
     },
     enabled: !!user,
   });
@@ -92,39 +113,53 @@ export const useCreateActivity = () => {
     mutationFn: async (activityData: Omit<Activity, 'id' | 'created_at' | 'updated_at'>) => {
       if (!user) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
+      // Create the activity
+      const { data: activity, error: activityError } = await supabase
         .from('activities')
         .insert([{
           ...activityData,
           user_id: user.id,
         }])
-        .select(`
-          *,
-          category:categories!activities_category_id_fkey (
-            id,
-            name,
-            color,
-            level,
-            path,
-            parent_id
-          ),
-          subcategory:categories!activities_subcategory_id_fkey (
-            id,
-            name,
-            color,
-            level,
-            parent_id
-          )
-        `)
+        .select()
         .single();
 
-      if (error) throw error;
-      
-      // Transform the data to match our Activity interface
+      if (activityError) throw activityError;
+
+      // Fetch category and subcategory data
+      const { data: categories, error: categoriesError } = await supabase
+        .from('categories')
+        .select('*')
+        .in('id', [activity.category_id, activity.subcategory_id].filter(Boolean));
+
+      if (categoriesError) throw categoriesError;
+
+      const categoryMap = new Map(categories?.map(cat => [cat.id, cat]) || []);
+      const category = categoryMap.get(activity.category_id);
+      const subcategory = categoryMap.get(activity.subcategory_id);
+      const parent = subcategory?.parent_id ? categoryMap.get(subcategory.parent_id) : undefined;
+
       return {
-        ...data,
-        categories: data.category,
-        subcategories: data.subcategory
+        ...activity,
+        categories: category ? {
+          id: category.id,
+          name: category.name,
+          color: category.color,
+          level: category.level,
+          path: category.path || [],
+          parent_id: category.parent_id,
+          parent: parent ? {
+            id: parent.id,
+            name: parent.name,
+            color: parent.color,
+          } : undefined,
+        } : undefined,
+        subcategories: subcategory ? {
+          id: subcategory.id,
+          name: subcategory.name,
+          color: subcategory.color,
+          level: subcategory.level,
+          parent_id: subcategory.parent_id,
+        } : undefined,
       };
     },
     onSuccess: (data) => {
