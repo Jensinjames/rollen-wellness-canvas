@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/Sidebar";
@@ -6,6 +5,7 @@ import { OverviewCard } from "@/components/OverviewCard";
 import { ActivityTracking } from "@/components/ActivityTracking";
 import { CategoryProgressCard } from "@/components/dashboard/CategoryProgressCard";
 import { LiveProgressIndicator } from "@/components/dashboard/LiveProgressIndicator";
+import { TimerDisplay } from "@/components/timer/TimerDisplay";
 import { Button } from "@/components/ui/button";
 import {
   TrendingUp,
@@ -16,6 +16,7 @@ import {
   Plus,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { TimerProvider } from "@/contexts/TimerContext";
 import { AddEntryModal } from "@/components/AddEntryModal";
 import { useDailyScores, useLatestDailyScore } from "@/hooks/useDailyScores";
 import { useSleepEntries } from "@/hooks/useSleepEntries";
@@ -101,112 +102,117 @@ const Index = () => {
   ];
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gray-50">
-        <AppSidebar />
-        <SidebarInset>
-          <div className="p-6">
-            {/* Header with Sidebar Trigger */}
-            <div className="flex justify-between items-center mb-8">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger />
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">Wellness Dashboard</h1>
-                  <p className="text-gray-600 mt-1">Track your daily wellness activities and progress</p>
+    <TimerProvider>
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full bg-gray-50">
+          <AppSidebar />
+          <SidebarInset>
+            <div className="p-6">
+              {/* Header with Sidebar Trigger */}
+              <div className="flex justify-between items-center mb-8">
+                <div className="flex items-center gap-4">
+                  <SidebarTrigger />
+                  <div>
+                    <h1 className="text-3xl font-bold text-gray-900">Wellness Dashboard</h1>
+                    <p className="text-gray-600 mt-1">Track your daily wellness activities and progress</p>
+                  </div>
                 </div>
-              </div>
-              <Button 
-                onClick={() => setAddEntryOpen(true)}
-                className="bg-blue-500 hover:bg-blue-600 text-white flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Log Time
-              </Button>
-            </div>
-
-            {/* Overview Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-              {overviewData.map((item, index) => (
-                <OverviewCard
-                  key={index}
-                  title={item.title}
-                  value={item.value}
-                  subtitle={item.subtitle}
-                  icon={item.icon}
-                  iconColor={item.iconColor}
-                  bgColor={item.bgColor}
-                />
-              ))}
-            </div>
-
-            {/* Live Progress Indicators */}
-            {categories && categories.length > 0 && (
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Live Progress Today</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {categories.map((category) => {
-                    const activityData = timezoneActivityData[category.id];
-                    if (!activityData) return null;
-
-                    return (
-                      <LiveProgressIndicator
-                        key={category.id}
-                        categoryName={category.name}
-                        dailyGoal={category.daily_time_goal_minutes}
-                        actualTime={activityData.dailyTime}
-                        color={category.color}
-                        timeRemaining={timeRemainingToday}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Category Progress Cards */}
-            {categories && categories.length > 0 && (
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Category Progress</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {categories.map((category) => {
-                    const activityData = categoryActivityData[category.id];
-                    const actualTime = activityData ? activityData.dailyTime : 0;
-                    const subcategoryTimes = activityData ? activityData.subcategoryTimes : {};
-
-                    return (
-                      <CategoryProgressCard
-                        key={category.id}
-                        category={category}
-                        actualTime={actualTime}
-                        subcategoryTimes={subcategoryTimes}
-                        className="h-full"
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ActivityTracking />
-              <div className="bg-white rounded-lg p-6 shadow-sm">
-                <h3 className="text-lg font-semibold mb-4">Calendar View</h3>
-                <p className="text-gray-600">Visit the Calendar page to see your activities in calendar format.</p>
-                <Button className="mt-4" onClick={() => window.location.href = '/calendar'}>
-                  Go to Calendar
+                <Button 
+                  onClick={() => setAddEntryOpen(true)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Log Time
                 </Button>
               </div>
-            </div>
 
-            {/* Add Entry Modal */}
-            <AddEntryModal 
-              open={addEntryOpen} 
-              onOpenChange={setAddEntryOpen} 
-            />
-          </div>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+              {/* Overview Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+                {overviewData.map((item, index) => (
+                  <OverviewCard
+                    key={index}
+                    title={item.title}
+                    value={item.value}
+                    subtitle={item.subtitle}
+                    icon={item.icon}
+                    iconColor={item.iconColor}
+                    bgColor={item.bgColor}
+                  />
+                ))}
+              </div>
+
+              {/* Live Progress Indicators */}
+              {categories && categories.length > 0 && (
+                <div className="mb-8">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Live Progress Today</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {categories.map((category) => {
+                      const activityData = timezoneActivityData[category.id];
+                      if (!activityData) return null;
+
+                      return (
+                        <LiveProgressIndicator
+                          key={category.id}
+                          categoryName={category.name}
+                          dailyGoal={category.daily_time_goal_minutes}
+                          actualTime={activityData.dailyTime}
+                          color={category.color}
+                          timeRemaining={timeRemainingToday}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Category Progress Cards */}
+              {categories && categories.length > 0 && (
+                <div className="mb-8">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Category Progress</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {categories.map((category) => {
+                      const activityData = categoryActivityData[category.id];
+                      const actualTime = activityData ? activityData.dailyTime : 0;
+                      const subcategoryTimes = activityData ? activityData.subcategoryTimes : {};
+
+                      return (
+                        <CategoryProgressCard
+                          key={category.id}
+                          category={category}
+                          actualTime={actualTime}
+                          subcategoryTimes={subcategoryTimes}
+                          className="h-full"
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <ActivityTracking />
+                <div className="bg-white rounded-lg p-6 shadow-sm">
+                  <h3 className="text-lg font-semibold mb-4">Calendar View</h3>
+                  <p className="text-gray-600">Visit the Calendar page to see your activities in calendar format.</p>
+                  <Button className="mt-4" onClick={() => window.location.href = '/calendar'}>
+                    Go to Calendar
+                  </Button>
+                </div>
+              </div>
+
+              {/* Add Entry Modal */}
+              <AddEntryModal 
+                open={addEntryOpen} 
+                onOpenChange={setAddEntryOpen} 
+              />
+            </div>
+          </SidebarInset>
+        </div>
+
+        {/* Timer Display - Fixed positioned overlay */}
+        <TimerDisplay />
+      </SidebarProvider>
+    </TimerProvider>
   );
 };
 
