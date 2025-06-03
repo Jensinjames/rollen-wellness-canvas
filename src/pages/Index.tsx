@@ -21,6 +21,7 @@ import { AddEntryModal } from "@/components/AddEntryModal";
 import { useDailyScores, useLatestDailyScore } from "@/hooks/useDailyScores";
 import { useSleepEntries } from "@/hooks/useSleepEntries";
 import { useActivities } from "@/hooks/useActivities";
+import { useRealtimeActivities } from "@/hooks/useRealtimeActivities";
 import { useCategories } from "@/hooks/useCategories";
 import { useCategoryActivityData } from "@/hooks/useCategoryActivityData";
 import { useActivityTimezoneData } from "@/hooks/useActivityTimezoneData";
@@ -37,6 +38,9 @@ const Index = () => {
   const { data: categories } = useCategories();
   const categoryActivityData = useCategoryActivityData();
   const { timezoneActivityData, timeRemainingToday } = useActivityTimezoneData();
+
+  // Set up real-time activities subscription (only once at top level)
+  useRealtimeActivities();
 
   // Calculate real metrics
   const averageSleepDuration = useMemo(() => {
