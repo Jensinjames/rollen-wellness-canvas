@@ -360,18 +360,6 @@ export type Database = {
         Args: { category_id_param: string; user_id_param: string }
         Returns: undefined
       }
-      check_rate_limit: {
-        Args: {
-          identifier: string
-          max_requests?: number
-          window_seconds?: number
-        }
-        Returns: Json
-      }
-      detect_suspicious_patterns: {
-        Args: { user_id_param: string }
-        Returns: boolean
-      }
       is_owner: {
         Args: { resource_user_id: string }
         Returns: boolean

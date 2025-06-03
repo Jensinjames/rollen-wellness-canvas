@@ -24,14 +24,7 @@ export const SECURITY_CONFIG = {
     'style-src': ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
     'font-src': ["'self'", "https://fonts.gstatic.com"],
     'img-src': ["'self'", "data:", "https://*.supabase.co"],
-    'connect-src': [
-      "'self'", 
-      "https://*.supabase.co", 
-      "wss://*.supabase.co",
-      "https://*.lovableproject.com",
-      "https://*.lovable.app",
-      "wss://*.lovableproject.com"
-    ],
+    'connect-src': ["'self'", "https://*.supabase.co", "wss://*.supabase.co"],
   }
 } as const;
 

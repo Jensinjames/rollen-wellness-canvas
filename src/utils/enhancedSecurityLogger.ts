@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export type SecurityEventType = 
@@ -8,14 +9,9 @@ export type SecurityEventType =
   | 'auth.signup'
   | 'auth.password_reset'
   | 'auth.session_expired'
-  | 'auth.session_refresh_failed'
-  | 'auth.session_refreshed'
   | 'security.suspicious_activity'
   | 'security.password_policy_violation'
   | 'security.account_locked'
-  | 'security.page_hidden'
-  | 'security.page_visible'
-  | 'security.rate_limit_exceeded'
   | 'data.unauthorized_access_attempt'
   | 'data.bulk_operation'
   | 'validation.input_rejected';
@@ -26,13 +22,6 @@ interface SecurityLogDetails {
   event_details?: Record<string, any>;
   risk_level?: 'low' | 'medium' | 'high' | 'critical';
   session_id?: string;
-  // Additional properties for specific security events
-  error?: string;
-  expires_at?: number;
-  identifier?: string;
-  current_count?: number;
-  max_requests?: number;
-  window_seconds?: number;
 }
 
 class EnhancedSecurityLogger {
