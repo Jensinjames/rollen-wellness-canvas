@@ -112,44 +112,25 @@ export const useDeleteCategory = () => {
 
 export const useSeedDefaultCategories = () => {
   const queryClient = useQueryClient();
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async () => {
-      if (loading) {
-        throw new Error('Authentication is still loading. Please wait a moment and try again.');
-      }
+      if (!user) throw new Error('User not authenticated');
 
-      if (!user) {
-        throw new Error('No user authenticated. Please log in to add default categories.');
-      }
-
-      if (!user.id) {
-        throw new Error('User ID is missing from authentication context.');
-      }
-
-      console.log('Seeding default categories for user:', user.id);
-
-      // Call the database function
-      const { data, error } = await supabase.rpc('seed_default_categories', {
+      const { error } = await supabase.rpc('seed_default_categories', {
         user_id_param: user.id
       });
 
-      if (error) {
-        console.error('Supabase RPC error:', error);
-        throw new Error(`Database error: ${error.message}${error.details ? ` (${error.details})` : ''}${error.hint ? ` Hint: ${error.hint}` : ''}`);
-      }
-
-      console.log('Default categories seeded successfully');
-      return data;
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       toast.success('Default categories added successfully');
     },
     onError: (error) => {
-      console.error('Seed mutation error:', error);
-      toast.error(`Failed to add default categories: ${error.message}`);
+      console.error('Error seeding default categories:', error);
+      toast.error('Failed to add default categories');
     },
   });
 };

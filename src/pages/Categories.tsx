@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/Sidebar';
@@ -6,7 +5,6 @@ import { CategoryForm } from '@/components/categories/CategoryForm';
 import { HierarchicalCategoryCard } from '@/components/categories/HierarchicalCategoryCard';
 import { Button } from '@/components/ui/button';
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory, useSeedDefaultCategories, Category } from '@/hooks/categories';
-import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, FolderOpen, Plus, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -15,17 +13,11 @@ const Categories = () => {
   const [editingCategory, setEditingCategory] = useState<Category | undefined>(undefined);
   const [parentForNewSubcategory, setParentForNewSubcategory] = useState<Category | undefined>(undefined);
 
-  const { user, loading: authLoading } = useAuth();
   const { data: categories, isLoading } = useCategories();
   const createCategoryMutation = useCreateCategory();
   const updateCategoryMutation = useUpdateCategory();
   const deleteCategoryMutation = useDeleteCategory();
   const seedDefaultCategories = useSeedDefaultCategories();
-
-  // Authentication guard helper
-  const isAuthReady = () => {
-    return !authLoading && user && user.id;
-  };
 
   const handleCreateCategory = (categoryData: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'path' | 'children'>) => {
     console.log('Creating category:', categoryData);
@@ -93,29 +85,6 @@ const Categories = () => {
   };
 
   const handleAddDefaultCategories = () => {
-    // AUTHENTICATION GUARD - PREVENT EXECUTION IF NOT READY
-    if (!isAuthReady()) {
-      console.warn('=== ADD DEFAULT CATEGORIES BLOCKED ===');
-      console.warn('Auth loading:', authLoading);
-      console.warn('User:', user);
-      console.warn('User ID:', user?.id);
-      console.warn('=====================================');
-      
-      if (authLoading) {
-        toast.error('Please wait for authentication to complete');
-      } else if (!user) {
-        toast.error('Please log in to add categories');
-      } else if (!user.id) {
-        toast.error('Authentication error: User ID missing');
-      }
-      return;
-    }
-
-    console.log('=== ADD DEFAULT CATEGORIES PROCEEDING ===');
-    console.log('Auth ready - proceeding with seed mutation');
-    console.log('User ID:', user.id);
-    console.log('========================================');
-    
     seedDefaultCategories.mutate();
   };
 
@@ -128,23 +97,6 @@ const Categories = () => {
     }
     return 'Create New Category';
   };
-
-  // Show loading if auth is still loading
-  if (authLoading) {
-    return (
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full bg-gray-50 dark:bg-gray-900">
-          <AppSidebar />
-          <main className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
-              <p className="text-gray-500">Loading authentication...</p>
-            </div>
-          </main>
-        </div>
-      </SidebarProvider>
-    );
-  }
 
   if (isLoading) {
     return (
@@ -177,7 +129,6 @@ const Categories = () => {
               <Button
                 onClick={() => setIsFormOpen(true)}
                 className="bg-white text-blue-600 hover:bg-blue-50"
-                disabled={!isAuthReady()}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Category
@@ -210,7 +161,6 @@ const Categories = () => {
                   <Button
                     onClick={() => setIsFormOpen(true)}
                     className="mr-3"
-                    disabled={!isAuthReady()}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Create Category
@@ -218,24 +168,15 @@ const Categories = () => {
                   <Button
                     onClick={handleAddDefaultCategories}
                     variant="outline"
-                    disabled={!isAuthReady() || seedDefaultCategories.isPending}
+                    disabled={seedDefaultCategories.isPending}
                   >
                     <Sparkles className="h-4 w-4 mr-2" />
-                    {seedDefaultCategories.isPending ? 'Adding...' : 'Add Suggested Categories'}
+                    Add Suggested Categories
                   </Button>
                 </div>
-                {!isAuthReady() && (
-                  <p className="text-sm text-gray-400 mt-4">
-                    {authLoading ? 'Please wait for authentication to complete...' :
-                     !user ? 'Please log in to add categories' :
-                     'Authentication error: User ID missing'}
-                  </p>
-                )}
-                {isAuthReady() && (
-                  <p className="text-sm text-gray-400 mt-4">
-                    Or start with suggested categories: Faith, Life, Work, and Health
-                  </p>
-                )}
+                <p className="text-sm text-gray-400 mt-4">
+                  Or start with suggested categories: Faith, Life, Work, and Health
+                </p>
               </div>
             )}
           </div>
