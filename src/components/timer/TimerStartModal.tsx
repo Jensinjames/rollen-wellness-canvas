@@ -17,10 +17,10 @@ import { Timer } from 'lucide-react';
 
 interface TimerStartModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onOpenChange: (open: boolean) => void;
 }
 
-export const TimerStartModal: React.FC<TimerStartModalProps> = ({ isOpen, onClose }) => {
+export const TimerStartModal: React.FC<TimerStartModalProps> = ({ isOpen, onOpenChange }) => {
   const { data: categories } = useCategories();
   const { startTimer, currentSession } = useTimer();
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
@@ -60,7 +60,7 @@ export const TimerStartModal: React.FC<TimerStartModalProps> = ({ isOpen, onClos
     setSelectedCategoryId('');
     setSelectedSubcategoryId('');
     setNotes('');
-    onClose();
+    onOpenChange(false);
   };
 
   const handleCategoryChange = (categoryId: string) => {
@@ -72,7 +72,7 @@ export const TimerStartModal: React.FC<TimerStartModalProps> = ({ isOpen, onClos
     setSelectedCategoryId('');
     setSelectedSubcategoryId('');
     setNotes('');
-    onClose();
+    onOpenChange(false);
   };
 
   return (
