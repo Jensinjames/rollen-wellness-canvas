@@ -282,6 +282,36 @@ export type Database = {
         }
         Relationships: []
       }
+      security_audit_log: {
+        Row: {
+          created_at: string
+          details: Json | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       sleep_entries: {
         Row: {
           bedtime: string | null
@@ -329,6 +359,10 @@ export type Database = {
       is_owner: {
         Args: { resource_user_id: string }
         Returns: boolean
+      }
+      log_security_event: {
+        Args: { event_type: string; user_id?: string; details?: Json }
+        Returns: undefined
       }
     }
     Enums: {
