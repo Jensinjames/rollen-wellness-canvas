@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/Sidebar';
 import { CategoryForm } from '@/components/categories/CategoryForm';
 import { HierarchicalCategoryCard } from '@/components/categories/HierarchicalCategoryCard';
 import { Button } from '@/components/ui/button';
-import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory, useSeedDefaultCategories, Category } from '@/hooks/useCategories';
+import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory, useSeedDefaultCategories, Category } from '@/hooks/categories';
 import { Loader2, FolderOpen, Plus, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 

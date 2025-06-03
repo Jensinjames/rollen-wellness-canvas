@@ -1,12 +1,10 @@
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useCategories, useDeleteCategory } from "@/hooks/useCategories";
+import { useCategories, useDeleteCategory, Category } from "@/hooks/categories";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { CategoryForm } from "@/components/categories/CategoryForm";
-import { Category } from "@/hooks/useCategories";
 
 export const CategorySettings = () => {
   const { data: categories, isLoading } = useCategories();
