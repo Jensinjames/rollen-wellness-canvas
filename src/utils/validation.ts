@@ -1,44 +1,78 @@
 
 /**
- * Input validation and sanitization utilities
+ * Enhanced input validation and sanitization utilities with security improvements
  */
 
-// Basic HTML sanitization - removes potentially dangerous characters
+import { advancedSanitizeInput, secureValidateTextInput, secureValidateNumber } from './securityValidation';
+
+// Re-export legacy functions for backward compatibility
 export const sanitizeInput = (input: string): string => {
-  if (!input || typeof input !== 'string') return '';
-  
-  return input
-    .replace(/[<>]/g, '') // Remove angle brackets
-    .replace(/javascript:/gi, '') // Remove javascript: protocols
-    .replace(/on\w+=/gi, '') // Remove event handlers
-    .trim()
-    .slice(0, 1000); // Limit length to prevent DoS
+  const result = advancedSanitizeInput(input);
+  return result.sanitized || '';
 };
 
-// Email validation with basic security checks
+// Enhanced validation functions
+export const validateTextInput = (
+  input: string, 
+  options: {
+    required?: boolean;
+    minLength?: number;
+    maxLength?: number;
+    allowEmpty?: boolean;
+  } = {}
+) => {
+  const result = secureValidateTextInput(input, options);
+  return {
+    isValid: result.isValid,
+    sanitized: result.sanitized || '',
+    error: result.error
+  };
+};
+
+export const validateNumber = (
+  input: string | number,
+  options: {
+    min?: number;
+    max?: number;
+    integer?: boolean;
+    required?: boolean;
+  } = {}
+) => {
+  const result = secureValidateNumber(input, options);
+  return {
+    isValid: result.isValid,
+    value: result.value,
+    error: result.error
+  };
+};
+
+// Email validation with enhanced security
 export const validateEmail = (email: string): { isValid: boolean; error?: string } => {
   if (!email || typeof email !== 'string') {
     return { isValid: false, error: 'Email is required' };
   }
 
-  const sanitized = sanitizeInput(email);
-  if (sanitized !== email) {
+  // Security validation first
+  const securityResult = advancedSanitizeInput(email);
+  if (!securityResult.isValid) {
     return { isValid: false, error: 'Email contains invalid characters' };
   }
 
+  const sanitized = securityResult.sanitized!;
+  
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
+  if (!emailRegex.test(sanitized)) {
     return { isValid: false, error: 'Invalid email format' };
   }
 
-  if (email.length > 254) {
+  if (sanitized.length > 254) {
     return { isValid: false, error: 'Email too long' };
   }
 
   return { isValid: true };
 };
 
-// Password strength validation
+// Password strength validation with enhanced security
 export const validatePassword = (password: string): { isValid: boolean; error?: string } => {
   if (!password || typeof password !== 'string') {
     return { isValid: false, error: 'Password is required' };
@@ -68,80 +102,4 @@ export const validatePassword = (password: string): { isValid: boolean; error?: 
   }
 
   return { isValid: true };
-};
-
-// General text input validation
-export const validateTextInput = (
-  input: string, 
-  options: {
-    required?: boolean;
-    minLength?: number;
-    maxLength?: number;
-    allowEmpty?: boolean;
-  } = {}
-): { isValid: boolean; sanitized: string; error?: string } => {
-  const { required = false, minLength = 0, maxLength = 500, allowEmpty = true } = options;
-
-  if (!input || typeof input !== 'string') {
-    if (required) {
-      return { isValid: false, sanitized: '', error: 'This field is required' };
-    }
-    return { isValid: true, sanitized: '' };
-  }
-
-  const sanitized = sanitizeInput(input);
-  
-  if (!allowEmpty && sanitized.length === 0) {
-    return { isValid: false, sanitized, error: 'This field cannot be empty' };
-  }
-
-  if (sanitized.length < minLength) {
-    return { isValid: false, sanitized, error: `Must be at least ${minLength} characters` };
-  }
-
-  if (sanitized.length > maxLength) {
-    return { isValid: false, sanitized, error: `Must be no more than ${maxLength} characters` };
-  }
-
-  return { isValid: true, sanitized };
-};
-
-// Number validation with range checks
-export const validateNumber = (
-  input: string | number,
-  options: {
-    min?: number;
-    max?: number;
-    integer?: boolean;
-    required?: boolean;
-  } = {}
-): { isValid: boolean; value: number | null; error?: string } => {
-  const { min = -Infinity, max = Infinity, integer = false, required = false } = options;
-
-  if (input === '' || input === null || input === undefined) {
-    if (required) {
-      return { isValid: false, value: null, error: 'This field is required' };
-    }
-    return { isValid: true, value: null };
-  }
-
-  const num = typeof input === 'string' ? parseFloat(input) : input;
-
-  if (isNaN(num)) {
-    return { isValid: false, value: null, error: 'Must be a valid number' };
-  }
-
-  if (integer && !Number.isInteger(num)) {
-    return { isValid: false, value: null, error: 'Must be a whole number' };
-  }
-
-  if (num < min) {
-    return { isValid: false, value: null, error: `Must be at least ${min}` };
-  }
-
-  if (num > max) {
-    return { isValid: false, value: null, error: `Must be no more than ${max}` };
-  }
-
-  return { isValid: true, value: num };
 };

@@ -10,8 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCategories } from "@/hooks/useCategories";
 import { useCreateActivity } from "@/hooks/useActivities";
-import { validateTextInput, validateNumber } from "@/utils/validation";
-import { logResourceEvent } from "@/utils/auditLog";
+import { secureValidateTextInput, secureValidateNumber, checkRateLimit } from "@/utils/securityValidation";
+import { logResourceEvent, logSecurityEvent } from "@/utils/auditLog";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 
@@ -59,35 +59,76 @@ export function ActivityEntryForm({ onSuccess }: ActivityEntryFormProps) {
   const onSubmit = async (data: ActivityFormData) => {
     setLoading(true);
     try {
-      // Validate inputs using our security utilities
-      const nameValidation = validateTextInput(data.name, { required: true, maxLength: 200 });
+      // Rate limiting check
+      const userIdentifier = user?.id || 'anonymous';
+      if (!checkRateLimit(`activity_create_${userIdentifier}`, 20, 60000)) {
+        logSecurityEvent('security.suspicious_activity', {
+          reason: 'rate_limit_exceeded',
+          action: 'activity_creation',
+          user_id: user?.id
+        });
+        form.setError("name", { message: "Too many requests. Please try again later." });
+        setLoading(false);
+        return;
+      }
+
+      // Enhanced validation using security utilities
+      const nameValidation = secureValidateTextInput(data.name, { 
+        required: true, 
+        maxLength: 200,
+        allowSpecialChars: false 
+      });
       if (!nameValidation.isValid) {
+        if (nameValidation.securityRisk === 'high') {
+          logSecurityEvent('security.validation_error', {
+            field: 'activity_name',
+            error: nameValidation.error,
+            user_id: user?.id
+          });
+        }
         form.setError("name", { message: nameValidation.error });
         setLoading(false);
         return;
       }
 
-      const durationValidation = validateNumber(data.duration_minutes, { 
+      const durationValidation = secureValidateNumber(data.duration_minutes, { 
         min: 1, 
         max: 1440, 
         integer: true, 
         required: true 
       });
       if (!durationValidation.isValid) {
+        if (durationValidation.securityRisk === 'high') {
+          logSecurityEvent('security.validation_error', {
+            field: 'duration_minutes',
+            error: durationValidation.error,
+            user_id: user?.id
+          });
+        }
         form.setError("duration_minutes", { message: durationValidation.error });
         setLoading(false);
         return;
       }
 
-      const notesValidation = validateTextInput(data.notes || "", { maxLength: 1000 });
+      const notesValidation = secureValidateTextInput(data.notes || "", { 
+        maxLength: 1000,
+        allowSpecialChars: true 
+      });
       if (!notesValidation.isValid) {
+        if (notesValidation.securityRisk === 'high') {
+          logSecurityEvent('security.validation_error', {
+            field: 'notes',
+            error: notesValidation.error,
+            user_id: user?.id
+          });
+        }
         form.setError("notes", { message: notesValidation.error });
         setLoading(false);
         return;
       }
 
       await createActivity.mutateAsync({
-        name: nameValidation.sanitized,
+        name: nameValidation.sanitized!,
         category_id: data.category_id,
         subcategory_id: data.subcategory_id,
         date_time: new Date(data.date_time).toISOString(),
@@ -100,11 +141,17 @@ export function ActivityEntryForm({ onSuccess }: ActivityEntryFormProps) {
         activity_name: nameValidation.sanitized,
         subcategory_id: data.subcategory_id,
         duration_minutes: durationValidation.value,
+        security_level: 'validated'
       });
 
       onSuccess();
     } catch (error) {
       console.error("Error creating activity:", error);
+      logSecurityEvent('security.validation_error', {
+        action: 'activity_creation_failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        user_id: user?.id
+      });
     } finally {
       setLoading(false);
     }
