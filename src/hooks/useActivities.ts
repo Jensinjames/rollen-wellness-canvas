@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,8 +45,11 @@ export const useActivities = () => {
   useEffect(() => {
     if (!user) return;
 
+    // Create a unique channel name to avoid conflicts
+    const channelName = `activities-changes-${user.id}`;
+    
     const channel = supabase
-      .channel('activities-changes')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -65,7 +69,7 @@ export const useActivities = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, queryClient]);
+  }, [user?.id, queryClient]); // Only depend on user.id, not the entire user object
 
   return useQuery({
     queryKey: ['activities'],
