@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Category, useParentCategories, useAllCategories } from '@/hooks/useCategories';
@@ -32,20 +33,48 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
   
   // When forceParent is provided, we're adding a subcategory
   const isAddingSubcategory = !!forceParent;
+  const isEditing = !!category;
   
+  // Determine default color: inherit from parent for new subcategories, or use existing color for edits
+  const getDefaultColor = () => {
+    if (isEditing && category?.color) return category.color;
+    if (isAddingSubcategory && forceParent?.color) return forceParent.color;
+    return '#10B981';
+  };
+
   const [formData, setFormData] = useState({
-    name: category?.name || '',
-    color: category?.color || '#10B981',
-    description: category?.description || '',
-    is_active: category?.is_active ?? true,
-    sort_order: category?.sort_order || 0,
-    parent_id: forceParent?.id || category?.parent_id || (isAddingSubcategory ? '' : 'none'),
-    level: forceParent ? 1 : (category?.level || 0),
-    daily_time_goal_minutes: category?.daily_time_goal_minutes,
-    weekly_time_goal_minutes: category?.weekly_time_goal_minutes,
+    name: '',
+    color: '#10B981',
+    description: '',
+    is_active: true,
+    sort_order: 0,
+    parent_id: 'none',
+    level: 0,
+    daily_time_goal_minutes: undefined as number | undefined,
+    weekly_time_goal_minutes: undefined as number | undefined,
   });
 
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  // Reset form data when dialog opens/closes or when props change
+  useEffect(() => {
+    if (isOpen) {
+      const defaultParentId = forceParent?.id || (isAddingSubcategory ? '' : 'none');
+      
+      setFormData({
+        name: category?.name || '',
+        color: getDefaultColor(),
+        description: category?.description || '',
+        is_active: category?.is_active ?? true,
+        sort_order: category?.sort_order || 0,
+        parent_id: category?.parent_id || defaultParentId,
+        level: forceParent ? 1 : (category?.level || 0),
+        daily_time_goal_minutes: category?.daily_time_goal_minutes,
+        weekly_time_goal_minutes: category?.weekly_time_goal_minutes,
+      });
+      setValidationErrors([]);
+    }
+  }, [isOpen, category, forceParent, isAddingSubcategory]);
 
   const handleColorChange = (color: string) => {
     setFormData({ ...formData, color });
@@ -90,25 +119,9 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
     );
 
     onSubmit(submissionData);
-    
-    // Reset form
-    setFormData({
-      name: '',
-      color: '#10B981',
-      description: '',
-      is_active: true,
-      sort_order: 0,
-      parent_id: forceParent?.id || 'none',
-      level: forceParent ? 1 : 0,
-      daily_time_goal_minutes: undefined,
-      weekly_time_goal_minutes: undefined,
-    });
-    setValidationErrors([]);
-    onClose();
   };
 
   const handleClose = () => {
-    // ... keep existing code (reset form data)
     setValidationErrors([]);
     onClose();
   };
@@ -189,6 +202,8 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
           <ColorPicker
             value={formData.color}
             onChange={handleColorChange}
+            parentColor={forceParent?.color}
+            isSubcategory={isSubcategory}
             error={validationErrors.find(error => error.includes('color')) || ''}
           />
 

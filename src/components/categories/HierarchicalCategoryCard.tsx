@@ -90,10 +90,10 @@ export const HierarchicalCategoryCard: React.FC<HierarchicalCategoryCardProps> =
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="bg-white dark:bg-gray-800 border shadow-lg z-50">
               <DropdownMenuItem onClick={() => onEdit(category)}>
                 <Edit className="mr-2 h-4 w-4" />
-                Edit
+                Edit Category
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onAddSubcategory(category)}>
                 <Plus className="mr-2 h-4 w-4" />

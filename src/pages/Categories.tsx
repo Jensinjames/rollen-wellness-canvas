@@ -2,12 +2,10 @@
 import React, { useState } from 'react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/Sidebar';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
 import { CategoryForm } from '@/components/categories/CategoryForm';
 import { HierarchicalCategoryCard } from '@/components/categories/HierarchicalCategoryCard';
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory, Category } from '@/hooks/useCategories';
-import { Loader2 } from 'lucide-react';
+import { Loader2, FolderOpen } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Categories = () => {
@@ -119,11 +117,8 @@ const Categories = () => {
     if (parentForNewSubcategory) {
       return `Add Subcategory to ${parentForNewSubcategory.name}`;
     }
-    return 'Create New Subcategory';
+    return 'Create New Category';
   };
-
-  // Only allow subcategory creation if there are parent categories
-  const canCreateSubcategory = categories && categories.length > 0;
 
   if (isLoading) {
     return (
@@ -143,25 +138,14 @@ const Categories = () => {
       <div className="min-h-screen flex w-full bg-gray-50 dark:bg-gray-900">
         <AppSidebar />
         <main className="flex-1">
-          {/* Header */}
+          {/* Header - Simplified without conflicting buttons */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 text-white p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger className="text-white hover:bg-white/10" />
-                <div>
-                  <h1 className="text-2xl font-bold">Category Management</h1>
-                  <p className="text-blue-100">Organize your wellness activities with subcategories</p>
-                </div>
+            <div className="flex items-center gap-4">
+              <SidebarTrigger className="text-white hover:bg-white/10" />
+              <div>
+                <h1 className="text-2xl font-bold">Category Management</h1>
+                <p className="text-blue-100">Organize your wellness activities with subcategories</p>
               </div>
-              {canCreateSubcategory && (
-                <Button 
-                  onClick={() => setIsFormOpen(true)}
-                  className="bg-white text-blue-600 hover:bg-gray-100"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Subcategory
-                </Button>
-              )}
             </div>
           </div>
 
@@ -182,6 +166,7 @@ const Categories = () => {
               </div>
             ) : (
               <div className="text-center py-12">
+                <FolderOpen className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <div className="text-gray-500 mb-4">
                   You have the default parent categories: Faith, Life, Work, and Health. 
                   You can now create subcategories under these.
