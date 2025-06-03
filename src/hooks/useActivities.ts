@@ -48,20 +48,20 @@ export const useActivities = () => {
         .from('activities')
         .select(`
           *,
-          categories!activities_category_id_fkey (
+          category:categories!activities_category_id_fkey (
             id,
             name,
             color,
             level,
             path,
             parent_id,
-            parent:parent_id (
+            parent:categories!categories_parent_id_fkey (
               id,
               name,
               color
             )
           ),
-          subcategories:categories!activities_subcategory_id_fkey (
+          subcategory:categories!activities_subcategory_id_fkey (
             id,
             name,
             color,
@@ -72,7 +72,13 @@ export const useActivities = () => {
         .order('date_time', { ascending: false });
 
       if (error) throw error;
-      return data;
+      
+      // Transform the data to match our Activity interface
+      return data?.map(activity => ({
+        ...activity,
+        categories: activity.category,
+        subcategories: activity.subcategory
+      })) || [];
     },
     enabled: !!user,
   });
@@ -94,7 +100,7 @@ export const useCreateActivity = () => {
         }])
         .select(`
           *,
-          categories!activities_category_id_fkey (
+          category:categories!activities_category_id_fkey (
             id,
             name,
             color,
@@ -102,7 +108,7 @@ export const useCreateActivity = () => {
             path,
             parent_id
           ),
-          subcategories:categories!activities_subcategory_id_fkey (
+          subcategory:categories!activities_subcategory_id_fkey (
             id,
             name,
             color,
@@ -113,7 +119,13 @@ export const useCreateActivity = () => {
         .single();
 
       if (error) throw error;
-      return data;
+      
+      // Transform the data to match our Activity interface
+      return {
+        ...data,
+        categories: data.category,
+        subcategories: data.subcategory
+      };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['activities'] });
