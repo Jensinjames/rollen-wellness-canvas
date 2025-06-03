@@ -4,6 +4,7 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { AppSidebar } from "@/components/Sidebar";
 import { OverviewCard } from "@/components/OverviewCard";
 import { ActivityTracking } from "@/components/ActivityTracking";
+import { CategoryProgressCard } from "@/components/dashboard/CategoryProgressCard";
 import { Button } from "@/components/ui/button";
 import {
   TrendingUp,
@@ -18,6 +19,8 @@ import { AddEntryModal } from "@/components/AddEntryModal";
 import { useDailyScores, useLatestDailyScore } from "@/hooks/useDailyScores";
 import { useSleepEntries } from "@/hooks/useSleepEntries";
 import { useActivities } from "@/hooks/useActivities";
+import { useCategories } from "@/hooks/useCategories";
+import { useCategoryActivityData } from "@/hooks/useCategoryActivityData";
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -28,6 +31,8 @@ const Index = () => {
   const { data: recentScores } = useDailyScores(7);
   const { data: sleepEntries } = useSleepEntries();
   const { data: activities } = useActivities();
+  const { data: categories } = useCategories();
+  const categoryActivityData = useCategoryActivityData();
 
   // Calculate real metrics
   const averageSleepDuration = useMemo(() => {
@@ -130,6 +135,30 @@ const Index = () => {
                 />
               ))}
             </div>
+
+            {/* Category Progress Cards */}
+            {categories && categories.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Category Progress</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {categories.map((category) => {
+                    const activityData = categoryActivityData[category.id];
+                    const actualTime = activityData ? activityData.dailyTime : 0;
+                    const subcategoryTimes = activityData ? activityData.subcategoryTimes : {};
+
+                    return (
+                      <CategoryProgressCard
+                        key={category.id}
+                        category={category}
+                        actualTime={actualTime}
+                        subcategoryTimes={subcategoryTimes}
+                        className="h-full"
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <ActivityTracking />
