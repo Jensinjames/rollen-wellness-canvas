@@ -3,12 +3,18 @@ import { useState } from "react";
 
 export interface ActivityFilters {
   categoryIds: string[];
+  subcategoryIds: string[];
   searchTerm: string;
+  dateRange?: {
+    from: Date;
+    to: Date;
+  };
 }
 
 export const useActivityFilters = () => {
   const [filters, setFilters] = useState<ActivityFilters>({
     categoryIds: [],
+    subcategoryIds: [],
     searchTerm: "",
   });
 
@@ -19,6 +25,7 @@ export const useActivityFilters = () => {
   const clearFilters = () => {
     setFilters({
       categoryIds: [],
+      subcategoryIds: [],
       searchTerm: "",
     });
   };

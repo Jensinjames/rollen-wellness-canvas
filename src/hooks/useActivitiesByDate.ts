@@ -10,7 +10,7 @@ export const useActivitiesByDate = (filters: ActivityFilters) => {
   const activitiesByDate = useMemo(() => {
     if (!activities) return {};
 
-    const filtered = activities.filter((activity: Activity) => {
+    const filtered = activities.filter((activity) => {
       // Date range filter
       if (filters.dateRange?.from && filters.dateRange?.to) {
         const activityDate = parseISO(activity.date_time);

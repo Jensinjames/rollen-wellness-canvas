@@ -48,7 +48,7 @@ export const useActivities = () => {
         .from('activities')
         .select(`
           *,
-          categories:category_id (
+          categories!activities_category_id_fkey (
             id,
             name,
             color,
@@ -61,7 +61,7 @@ export const useActivities = () => {
               color
             )
           ),
-          subcategories:subcategory_id (
+          subcategories:categories!activities_subcategory_id_fkey (
             id,
             name,
             color,
@@ -94,7 +94,7 @@ export const useCreateActivity = () => {
         }])
         .select(`
           *,
-          categories:category_id (
+          categories!activities_category_id_fkey (
             id,
             name,
             color,
@@ -102,7 +102,7 @@ export const useCreateActivity = () => {
             path,
             parent_id
           ),
-          subcategories:subcategory_id (
+          subcategories:categories!activities_subcategory_id_fkey (
             id,
             name,
             color,
