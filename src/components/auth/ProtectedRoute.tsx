@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { useAuth } from '@/contexts/EnhancedAuthContext';
-import { SecureAuthForm } from './SecureAuthForm';
+import { useAuth } from '@/contexts/AuthContext';
+import { AuthForm } from './AuthForm';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
@@ -20,7 +20,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (!user) {
-    return <SecureAuthForm />;
+    return <AuthForm />;
   }
 
   return <>{children}</>;
