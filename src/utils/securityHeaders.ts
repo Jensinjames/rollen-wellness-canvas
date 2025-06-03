@@ -4,14 +4,21 @@
  */
 
 export const ENHANCED_SECURITY_CONFIG = {
-  // Tightened Content Security Policy
+  // Tightened Content Security Policy with Lovable domain support
   CONTENT_SECURITY_POLICY: {
     'default-src': ["'self'"],
     'script-src': ["'self'", "https://*.supabase.co"],
     'style-src': ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
     'font-src': ["'self'", "https://fonts.gstatic.com"],
     'img-src': ["'self'", "data:", "https://*.supabase.co"],
-    'connect-src': ["'self'", "https://*.supabase.co", "wss://*.supabase.co"],
+    'connect-src': [
+      "'self'", 
+      "https://*.supabase.co", 
+      "wss://*.supabase.co",
+      "https://*.lovableproject.com",
+      "https://*.lovable.app",
+      "wss://*.lovableproject.com"
+    ],
     'frame-ancestors': ["'none'"],
     'form-action': ["'self'"],
     'base-uri': ["'self'"],
