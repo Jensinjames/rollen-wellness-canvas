@@ -1,12 +1,34 @@
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useCategories } from "@/hooks/useCategories";
+import { useCategories, useDeleteCategory } from "@/hooks/useCategories";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Archive } from "lucide-react";
+import { Plus, Edit, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { CategoryForm } from "@/components/categories/CategoryForm";
+import { Category } from "@/hooks/useCategories";
 
 export const CategorySettings = () => {
   const { data: categories, isLoading } = useCategories();
+  const deleteCategoryMutation = useDeleteCategory();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | undefined>(undefined);
+
+  const handleEditCategory = (category: Category) => {
+    setEditingCategory(category);
+    setIsFormOpen(true);
+  };
+
+  const handleDeleteCategory = (id: string, name: string) => {
+    if (window.confirm(`Are you sure you want to delete "${name}"? This will also delete all subcategories and associated activities.`)) {
+      deleteCategoryMutation.mutate(id);
+    }
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setEditingCategory(undefined);
+  };
 
   if (isLoading) {
     return <div>Loading categories...</div>;
@@ -20,10 +42,10 @@ export const CategorySettings = () => {
         <div>
           <h3 className="text-lg font-medium">Category Management</h3>
           <p className="text-sm text-muted-foreground">
-            Manage your activity categories and subcategories.
+            Manage your personal activity categories and subcategories.
           </p>
         </div>
-        <Button>
+        <Button onClick={() => setIsFormOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Category
         </Button>
@@ -58,11 +80,15 @@ export const CategorySettings = () => {
                     Weekly: {category.weekly_time_goal_minutes}m
                   </Badge>
                 )}
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" onClick={() => handleEditCategory(category)}>
                   <Edit className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="sm">
-                  <Archive className="h-4 w-4" />
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => handleDeleteCategory(category.id, category.name)}
+                >
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -87,8 +113,15 @@ export const CategorySettings = () => {
                             {subcategory.daily_time_goal_minutes}m
                           </Badge>
                         )}
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={() => handleEditCategory(subcategory)}>
                           <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleDeleteCategory(subcategory.id, subcategory.name)}
+                        >
+                          <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
                     </div>
@@ -98,6 +131,14 @@ export const CategorySettings = () => {
           </Card>
         ))}
       </div>
+
+      <CategoryForm
+        isOpen={isFormOpen}
+        onClose={handleCloseForm}
+        onSubmit={() => {}} // This will be handled by the form's own logic
+        category={editingCategory}
+        title={editingCategory ? 'Edit Category' : 'Create Category'}
+      />
     </div>
   );
 };

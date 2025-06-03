@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -70,6 +71,7 @@ export const useCategories = () => {
       const { data, error } = await supabase
         .from('categories')
         .select('*')
+        .eq('user_id', user.id)
         .eq('is_active', true)
         .order('level', { ascending: true })
         .order('sort_order', { ascending: true });
@@ -92,6 +94,7 @@ export const useAllCategories = () => {
       const { data, error } = await supabase
         .from('categories')
         .select('*')
+        .eq('user_id', user.id)
         .eq('is_active', true)
         .order('level', { ascending: true })
         .order('sort_order', { ascending: true });
@@ -114,6 +117,7 @@ export const useParentCategories = () => {
       const { data, error } = await supabase
         .from('categories')
         .select('*')
+        .eq('user_id', user.id)
         .eq('is_active', true)
         .eq('level', 0)
         .order('sort_order', { ascending: true });
@@ -162,10 +166,7 @@ export const useCreateCategory = () => {
       toast.success(`${categoryType} created successfully`);
     },
     onError: (error) => {
-      // Log error without exposing sensitive details
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error creating category:', error);
-      }
+      console.error('Error creating category:', error);
       toast.error(`Failed to create category: ${error.message}`);
     },
   });
@@ -173,9 +174,12 @@ export const useCreateCategory = () => {
 
 export const useUpdateCategory = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Category> & { id: string }) => {
+      if (!user) throw new Error('User not authenticated');
+
       // Log the operation
       logCategoryOperation('update', { id, ...updates });
 
@@ -183,6 +187,7 @@ export const useUpdateCategory = () => {
         .from('categories')
         .update(updates)
         .eq('id', id)
+        .eq('user_id', user.id)
         .select()
         .single();
 
@@ -194,10 +199,7 @@ export const useUpdateCategory = () => {
       toast.success('Category updated successfully');
     },
     onError: (error) => {
-      // Log error without exposing sensitive details
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error updating category:', error);
-      }
+      console.error('Error updating category:', error);
       toast.error('Failed to update category');
     },
   });
@@ -205,26 +207,54 @@ export const useUpdateCategory = () => {
 
 export const useDeleteCategory = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('categories')
-        .update({ is_active: false })
-        .eq('id', id);
+      if (!user) throw new Error('User not authenticated');
+
+      // Use the cascade delete function to properly remove category and related data
+      const { error } = await supabase.rpc('cascade_delete_category', {
+        category_id_param: id,
+        user_id_param: user.id
+      });
 
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast.success('Category archived successfully');
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
+      toast.success('Category deleted successfully');
     },
     onError: (error) => {
-      // Log error without exposing sensitive details
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error archiving category:', error);
-      }
-      toast.error('Failed to archive category');
+      console.error('Error deleting category:', error);
+      toast.error('Failed to delete category');
+    },
+  });
+};
+
+// Hook to seed default categories for new users (optional)
+export const useSeedDefaultCategories = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error('User not authenticated');
+
+      const { error } = await supabase.rpc('seed_default_categories', {
+        user_id_param: user.id
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast.success('Default categories added successfully');
+    },
+    onError: (error) => {
+      console.error('Error seeding default categories:', error);
+      toast.error('Failed to add default categories');
     },
   });
 };

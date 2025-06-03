@@ -17,7 +17,7 @@ interface CategoryFormProps {
   onSubmit: (data: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'path' | 'children'>) => void;
   category?: Category;
   title: string;
-  forceParent?: Category; // When adding subcategory, this locks the parent
+  forceParent?: Category;
 }
 
 export const CategoryForm: React.FC<CategoryFormProps> = ({
@@ -31,11 +31,9 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
   const { data: parentCategories } = useParentCategories();
   const { data: allCategories } = useAllCategories();
   
-  // When forceParent is provided, we're adding a subcategory
   const isAddingSubcategory = !!forceParent;
   const isEditing = !!category;
   
-  // Determine default color: inherit from parent for new subcategories, or use existing color for edits
   const getDefaultColor = () => {
     if (isEditing && category?.color) return category.color;
     if (isAddingSubcategory && forceParent?.color) return forceParent.color;
@@ -56,7 +54,6 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
 
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
-  // Reset form data when dialog opens/closes or when props change
   useEffect(() => {
     if (isOpen) {
       const defaultParentId = forceParent?.id || (isAddingSubcategory ? '' : 'none');
@@ -78,7 +75,6 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
 
   const handleColorChange = (color: string) => {
     setFormData({ ...formData, color });
-    // Clear validation errors when user makes changes
     if (validationErrors.length > 0) {
       setValidationErrors([]);
     }
@@ -89,17 +85,14 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
     
     if (!formData.name.trim()) return;
     
-    // Determine if this is a subcategory
     const isSubcategory = isAddingSubcategory || formData.parent_id !== 'none';
     
-    // Set correct level and parent_id
     const submissionData = {
       ...formData,
       level: isSubcategory ? 1 : 0,
       parent_id: isSubcategory ? (formData.parent_id === 'none' ? forceParent?.id : formData.parent_id) : undefined,
     };
 
-    // Validate the form data including duplicate checking
     const validation = validateCategoryData(
       submissionData, 
       isSubcategory, 
@@ -111,7 +104,6 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       return;
     }
 
-    // Log the operation
     logCategoryOperation(
       category ? 'update' : 'create', 
       submissionData, 
@@ -138,12 +130,11 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
               ? `Create a new subcategory under "${forceParent.name}".`
               : category 
                 ? 'Update your category details.' 
-                : 'Categories can only be subcategories under existing parent categories.'
+                : 'Create a new category or subcategory for organizing your activities.'
             }
           </DialogDescription>
         </DialogHeader>
 
-        {/* Validation Errors */}
         {validationErrors.length > 0 && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -158,7 +149,6 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Only show category type selector if not adding subcategory and not editing existing */}
           {!isAddingSubcategory && !category && (
             <CategoryTypeSwitch
               value={formData.parent_id}

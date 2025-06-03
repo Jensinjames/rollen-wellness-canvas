@@ -4,8 +4,9 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/Sidebar';
 import { CategoryForm } from '@/components/categories/CategoryForm';
 import { HierarchicalCategoryCard } from '@/components/categories/HierarchicalCategoryCard';
-import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory, Category } from '@/hooks/useCategories';
-import { Loader2, FolderOpen } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory, useSeedDefaultCategories, Category } from '@/hooks/useCategories';
+import { Loader2, FolderOpen, Plus, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Categories = () => {
@@ -17,17 +18,9 @@ const Categories = () => {
   const createCategoryMutation = useCreateCategory();
   const updateCategoryMutation = useUpdateCategory();
   const deleteCategoryMutation = useDeleteCategory();
+  const seedDefaultCategories = useSeedDefaultCategories();
 
   const handleCreateCategory = (categoryData: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'path' | 'children'>) => {
-    // Enhanced validation before submission
-    if (parentForNewSubcategory) {
-      if (!categoryData.parent_id || categoryData.level !== 1) {
-        console.error('Invalid subcategory data:', categoryData);
-        toast.error('Invalid subcategory configuration');
-        return;
-      }
-    }
-    
     console.log('Creating category:', categoryData);
     createCategoryMutation.mutate(categoryData, {
       onSuccess: () => {
@@ -35,7 +28,6 @@ const Categories = () => {
         toast.success(`${categoryData.level === 1 ? 'Subcategory' : 'Category'} created successfully!`);
       },
       onError: (error: any) => {
-        // Handle database constraint violations
         if (error.message.includes('already exists')) {
           toast.error(error.message);
         } else {
@@ -81,33 +73,20 @@ const Categories = () => {
     setIsFormOpen(true);
   };
 
-  const handleArchiveCategory = (id: string) => {
-    deleteCategoryMutation.mutate(id, {
-      onSuccess: () => {
-        toast.success('Category archived successfully');
-      },
-      onError: () => {
-        toast.error('Failed to archive category');
-      }
-    });
-  };
-
   const handleDeleteCategory = (id: string) => {
-    // For now, we'll just archive - permanent deletion can be added later
-    deleteCategoryMutation.mutate(id, {
-      onSuccess: () => {
-        toast.success('Category archived successfully');
-      },
-      onError: () => {
-        toast.error('Failed to archive category');
-      }
-    });
+    if (window.confirm('Are you sure you want to delete this category? This will also delete all subcategories and associated activities.')) {
+      deleteCategoryMutation.mutate(id);
+    }
   };
 
   const handleCloseForm = () => {
     setIsFormOpen(false);
     setEditingCategory(undefined);
     setParentForNewSubcategory(undefined);
+  };
+
+  const handleAddDefaultCategories = () => {
+    seedDefaultCategories.mutate();
   };
 
   const getFormTitle = () => {
@@ -138,14 +117,23 @@ const Categories = () => {
       <div className="min-h-screen flex w-full bg-gray-50 dark:bg-gray-900">
         <AppSidebar />
         <main className="flex-1">
-          {/* Header - Simplified without conflicting buttons */}
+          {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 text-white p-6">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger className="text-white hover:bg-white/10" />
-              <div>
-                <h1 className="text-2xl font-bold">Category Management</h1>
-                <p className="text-blue-100">Organize your wellness activities with subcategories</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger className="text-white hover:bg-white/10" />
+                <div>
+                  <h1 className="text-2xl font-bold">Category Management</h1>
+                  <p className="text-blue-100">Create and manage your personal category structure</p>
+                </div>
               </div>
+              <Button
+                onClick={() => setIsFormOpen(true)}
+                className="bg-white text-blue-600 hover:bg-blue-50"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Category
+              </Button>
             </div>
           </div>
 
@@ -157,10 +145,10 @@ const Categories = () => {
                     key={category.id}
                     category={category}
                     onEdit={handleEditCategory}
-                    onArchive={handleArchiveCategory}
+                    onArchive={handleDeleteCategory}
                     onDelete={handleDeleteCategory}
                     onAddSubcategory={handleAddSubcategory}
-                    activityCount={0} // TODO: Add activity count from database
+                    activityCount={0}
                   />
                 ))}
               </div>
@@ -168,11 +156,27 @@ const Categories = () => {
               <div className="text-center py-12">
                 <FolderOpen className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <div className="text-gray-500 mb-4">
-                  You have the default parent categories: Faith, Life, Work, and Health. 
-                  You can now create subcategories under these.
+                  No categories yet. Create your first category to get started!
                 </div>
-                <p className="text-sm text-gray-400 mb-4">
-                  Parent categories are locked to maintain the wellness tracking structure.
+                <div className="space-y-3">
+                  <Button
+                    onClick={() => setIsFormOpen(true)}
+                    className="mr-3"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Category
+                  </Button>
+                  <Button
+                    onClick={handleAddDefaultCategories}
+                    variant="outline"
+                    disabled={seedDefaultCategories.isPending}
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Add Suggested Categories
+                  </Button>
+                </div>
+                <p className="text-sm text-gray-400 mt-4">
+                  Or start with suggested categories: Faith, Life, Work, and Health
                 </p>
               </div>
             )}

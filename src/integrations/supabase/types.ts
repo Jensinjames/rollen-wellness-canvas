@@ -356,12 +356,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cascade_delete_category: {
+        Args: { category_id_param: string; user_id_param: string }
+        Returns: undefined
+      }
       is_owner: {
         Args: { resource_user_id: string }
         Returns: boolean
       }
       log_security_event: {
         Args: { event_type: string; user_id?: string; details?: Json }
+        Returns: undefined
+      }
+      seed_default_categories: {
+        Args: { user_id_param: string }
         Returns: undefined
       }
     }
