@@ -44,6 +44,28 @@ export const validateCategoryData = (
     errors.push('Color must be a valid 6-digit hex code');
   }
 
+  // Goal type validation
+  if (!['time', 'boolean', 'both'].includes(categoryData.goal_type)) {
+    errors.push('Goal type must be time, boolean, or both');
+  }
+
+  // Time goals validation (only if goal_type includes 'time')
+  if (categoryData.goal_type === 'time' || categoryData.goal_type === 'both') {
+    if (categoryData.daily_time_goal_minutes !== undefined && categoryData.daily_time_goal_minutes <= 0) {
+      errors.push('Daily time goal must be greater than 0 minutes');
+    }
+    if (categoryData.weekly_time_goal_minutes !== undefined && categoryData.weekly_time_goal_minutes <= 0) {
+      errors.push('Weekly time goal must be greater than 0 minutes');
+    }
+  }
+
+  // Boolean goals validation (only if goal_type includes 'boolean')
+  if (categoryData.goal_type === 'boolean' || categoryData.goal_type === 'both') {
+    if (categoryData.is_boolean_goal && !categoryData.boolean_goal_label?.trim()) {
+      errors.push('Boolean goal label is required when completion tracking is enabled');
+    }
+  }
+
   // Subcategory specific validation
   if (isSubcategory) {
     if (!categoryData.parent_id) {
@@ -62,14 +84,6 @@ export const validateCategoryData = (
     }
   }
 
-  // Time goals validation
-  if (categoryData.daily_time_goal_minutes !== undefined && categoryData.daily_time_goal_minutes <= 0) {
-    errors.push('Daily time goal must be greater than 0 minutes');
-  }
-  if (categoryData.weekly_time_goal_minutes !== undefined && categoryData.weekly_time_goal_minutes <= 0) {
-    errors.push('Weekly time goal must be greater than 0 minutes');
-  }
-
   return {
     isValid: errors.length === 0,
     errors
@@ -81,6 +95,8 @@ export const logCategoryOperation = (operation: 'create' | 'update', categoryDat
     name: categoryData.name,
     parent_id: categoryData.parent_id,
     level: categoryData.level,
+    goal_type: categoryData.goal_type,
+    is_boolean_goal: categoryData.is_boolean_goal,
     isSubcategory: categoryData.level === 1,
     hasParent: !!categoryData.parent_id,
     timestamp: new Date().toISOString()

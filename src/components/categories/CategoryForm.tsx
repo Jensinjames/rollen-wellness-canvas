@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -6,6 +7,8 @@ import { ColorPicker } from './ColorPicker';
 import { CategoryTypeSwitch } from './CategoryTypeSwitch';
 import { CategoryNameField, CategoryDescriptionField } from './CategoryFormFields';
 import { TimeGoalFields } from './TimeGoalFields';
+import { GoalTypeSelector } from './GoalTypeSelector';
+import { BooleanGoalFields } from './BooleanGoalFields';
 import { validateCategoryData, logCategoryOperation } from './CategoryValidation';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
@@ -47,6 +50,9 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
     sort_order: 0,
     parent_id: 'none',
     level: 0,
+    goal_type: 'time' as 'time' | 'boolean' | 'both',
+    is_boolean_goal: false,
+    boolean_goal_label: '',
     daily_time_goal_minutes: undefined as number | undefined,
     weekly_time_goal_minutes: undefined as number | undefined,
   });
@@ -65,6 +71,9 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
         sort_order: category?.sort_order || 0,
         parent_id: category?.parent_id || defaultParentId,
         level: forceParent ? 1 : (category?.level || 0),
+        goal_type: category?.goal_type || 'time',
+        is_boolean_goal: category?.is_boolean_goal || false,
+        boolean_goal_label: category?.boolean_goal_label || '',
         daily_time_goal_minutes: category?.daily_time_goal_minutes,
         weekly_time_goal_minutes: category?.weekly_time_goal_minutes,
       });
@@ -74,6 +83,30 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
 
   const handleColorChange = (color: string) => {
     setFormData({ ...formData, color });
+    if (validationErrors.length > 0) {
+      setValidationErrors([]);
+    }
+  };
+
+  const handleGoalTypeChange = (goalType: 'time' | 'boolean' | 'both') => {
+    setFormData({ 
+      ...formData, 
+      goal_type: goalType,
+      // Reset boolean fields if switching away from boolean types
+      is_boolean_goal: goalType === 'boolean' || goalType === 'both' ? formData.is_boolean_goal : false,
+      boolean_goal_label: goalType === 'boolean' || goalType === 'both' ? formData.boolean_goal_label : '',
+    });
+    if (validationErrors.length > 0) {
+      setValidationErrors([]);
+    }
+  };
+
+  const handleBooleanGoalChange = (enabled: boolean) => {
+    setFormData({ 
+      ...formData, 
+      is_boolean_goal: enabled,
+      boolean_goal_label: enabled ? formData.boolean_goal_label : ''
+    });
     if (validationErrors.length > 0) {
       setValidationErrors([]);
     }
@@ -118,6 +151,8 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
   };
 
   const isSubcategory = isAddingSubcategory || formData.parent_id !== 'none';
+  const showTimeGoals = formData.goal_type === 'time' || formData.goal_type === 'both';
+  const showBooleanGoals = formData.goal_type === 'boolean' || formData.goal_type === 'both';
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -202,12 +237,29 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
             isSubcategory={isSubcategory}
           />
 
-          <TimeGoalFields
-            dailyGoal={formData.daily_time_goal_minutes}
-            weeklyGoal={formData.weekly_time_goal_minutes}
-            onDailyGoalChange={(value) => setFormData({ ...formData, daily_time_goal_minutes: value })}
-            onWeeklyGoalChange={(value) => setFormData({ ...formData, weekly_time_goal_minutes: value })}
+          <GoalTypeSelector
+            value={formData.goal_type}
+            onChange={handleGoalTypeChange}
           />
+
+          {showTimeGoals && (
+            <TimeGoalFields
+              dailyGoal={formData.daily_time_goal_minutes}
+              weeklyGoal={formData.weekly_time_goal_minutes}
+              onDailyGoalChange={(value) => setFormData({ ...formData, daily_time_goal_minutes: value })}
+              onWeeklyGoalChange={(value) => setFormData({ ...formData, weekly_time_goal_minutes: value })}
+            />
+          )}
+
+          {showBooleanGoals && (
+            <BooleanGoalFields
+              isBooleanGoal={formData.is_boolean_goal}
+              booleanGoalLabel={formData.boolean_goal_label}
+              onBooleanGoalChange={handleBooleanGoalChange}
+              onLabelChange={(value) => setFormData({ ...formData, boolean_goal_label: value })}
+              error={validationErrors.find(error => error.includes('Boolean goal label')) || ''}
+            />
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={handleClose}>

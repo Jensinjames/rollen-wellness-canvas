@@ -9,6 +9,9 @@ export interface Category {
   parent_id?: string;
   level: number;
   path: string[];
+  goal_type: 'time' | 'boolean' | 'both';
+  is_boolean_goal: boolean;
+  boolean_goal_label?: string;
   daily_time_goal_minutes?: number;
   weekly_time_goal_minutes?: number;
   created_at: string;

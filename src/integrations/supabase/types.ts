@@ -65,12 +65,15 @@ export type Database = {
       }
       categories: {
         Row: {
+          boolean_goal_label: string | null
           color: string
           created_at: string | null
           daily_time_goal_minutes: number | null
           description: string | null
+          goal_type: string
           id: string
           is_active: boolean | null
+          is_boolean_goal: boolean
           level: number
           name: string
           parent_id: string | null
@@ -81,12 +84,15 @@ export type Database = {
           weekly_time_goal_minutes: number | null
         }
         Insert: {
+          boolean_goal_label?: string | null
           color?: string
           created_at?: string | null
           daily_time_goal_minutes?: number | null
           description?: string | null
+          goal_type?: string
           id?: string
           is_active?: boolean | null
+          is_boolean_goal?: boolean
           level?: number
           name: string
           parent_id?: string | null
@@ -97,12 +103,15 @@ export type Database = {
           weekly_time_goal_minutes?: number | null
         }
         Update: {
+          boolean_goal_label?: string | null
           color?: string
           created_at?: string | null
           daily_time_goal_minutes?: number | null
           description?: string | null
+          goal_type?: string
           id?: string
           is_active?: boolean | null
+          is_boolean_goal?: boolean
           level?: number
           name?: string
           parent_id?: string | null
@@ -256,7 +265,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string | null
-          display_name: string | null
+          display_name: string
           id: string
           preferences: Json | null
           sleep_preferences: Json | null
@@ -265,7 +274,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string | null
-          display_name?: string | null
+          display_name?: string
           id: string
           preferences?: Json | null
           sleep_preferences?: Json | null
@@ -274,7 +283,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string | null
-          display_name?: string | null
+          display_name?: string
           id?: string
           preferences?: Json | null
           sleep_preferences?: Json | null
@@ -359,6 +368,18 @@ export type Database = {
       cascade_delete_category: {
         Args: { category_id_param: string; user_id_param: string }
         Returns: undefined
+      }
+      check_rate_limit: {
+        Args: {
+          identifier: string
+          max_requests?: number
+          window_seconds?: number
+        }
+        Returns: Json
+      }
+      detect_suspicious_patterns: {
+        Args: { user_id_param: string }
+        Returns: boolean
       }
       is_owner: {
         Args: { resource_user_id: string }
