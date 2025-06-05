@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CompositeDonutChart } from '@/components/charts/CompositeDonutChart';
 import { Category } from '@/hooks/useCategories';
-import { getCategoryBrandColor, generateSubcategoryGradient } from '@/utils/categoryColors';
+import { generateSubcategoryGradient } from '@/utils/categoryColors';
 import { Clock, Target } from 'lucide-react';
 
 interface CategoryProgressCardProps {
@@ -19,12 +19,6 @@ export const CategoryProgressCard: React.FC<CategoryProgressCardProps> = ({
   subcategoryTimes = {},
   className = ''
 }) => {
-  // Debug logging to verify color values
-  console.log('Category color from DB:', category.color);
-  
-  const brandColor = getCategoryBrandColor(category.name);
-  console.log('Brand color used:', brandColor);
-  
   // Use the actual category color from the database instead of hard-coded brand color
   const categoryColor = category.color || '#6B7280'; // fallback to gray if no color
   

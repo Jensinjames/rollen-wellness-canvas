@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Category } from '@/hooks/useCategories';
-import { generateSubcategoryGradient, getCategoryBrandColor } from '@/utils/categoryColors';
+import { generateSubcategoryGradient } from '@/utils/categoryColors';
 
 interface CompositeDonutChartProps {
   category: Category;
@@ -29,7 +29,8 @@ export const CompositeDonutChart: React.FC<CompositeDonutChartProps> = ({
   subcategoryTimes = {},
   className = ''
 }) => {
-  const brandColor = getCategoryBrandColor(category.name);
+  // Use the actual category color from the database instead of hard-coded brand color
+  const categoryColor = category.color || '#6B7280'; // fallback to gray if no color
   
   const chartData = useMemo(() => {
     const goal = dailyGoal || weeklyGoal || 60; // Default 1 hour if no goal set
@@ -40,7 +41,7 @@ export const CompositeDonutChart: React.FC<CompositeDonutChartProps> = ({
       {
         name: `${category.name} (Actual)`,
         value: Math.min(actualTime, goal),
-        color: brandColor,
+        color: categoryColor,
         isGoal: false
       }
     ];
@@ -49,7 +50,7 @@ export const CompositeDonutChart: React.FC<CompositeDonutChartProps> = ({
       outerData.push({
         name: 'Remaining Goal',
         value: remaining,
-        color: `${brandColor}20`, // 20% opacity
+        color: `${categoryColor}20`, // 20% opacity
         isGoal: true
       });
     }
@@ -63,7 +64,7 @@ export const CompositeDonutChart: React.FC<CompositeDonutChartProps> = ({
           innerData.push({
             name: subcategory.name,
             value: subcategoryTime,
-            color: generateSubcategoryGradient(brandColor, index, category.children!.length),
+            color: generateSubcategoryGradient(categoryColor, index, category.children!.length),
             isSubcategory: true
           });
         }
@@ -76,7 +77,7 @@ export const CompositeDonutChart: React.FC<CompositeDonutChartProps> = ({
         innerData.push({
           name: 'Other',
           value: unaccountedTime,
-          color: `${brandColor}80`, // 50% opacity
+          color: `${categoryColor}80`, // 50% opacity
           isSubcategory: true
         });
       }
@@ -85,13 +86,13 @@ export const CompositeDonutChart: React.FC<CompositeDonutChartProps> = ({
       innerData.push({
         name: category.name,
         value: actualTime,
-        color: brandColor,
+        color: categoryColor,
         isSubcategory: true
       });
     }
     
     return { outerData, innerData };
-  }, [category, actualTime, dailyGoal, weeklyGoal, subcategoryTimes, brandColor]);
+  }, [category, actualTime, dailyGoal, weeklyGoal, subcategoryTimes, categoryColor]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length > 0) {
@@ -163,7 +164,7 @@ export const CompositeDonutChart: React.FC<CompositeDonutChartProps> = ({
              'No Goal Set'}
           </div>
           {(dailyGoal || weeklyGoal) && (
-            <div className="text-xs font-medium" style={{ color: brandColor }}>
+            <div className="text-xs font-medium" style={{ color: categoryColor }}>
               {Math.round((actualTime / (dailyGoal || weeklyGoal || 1)) * 100)}%
             </div>
           )}
