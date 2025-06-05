@@ -103,7 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { error };
     }
 
-    // Check for suspicious activity
+    // Check for suspicious activity by email identifier
     if (auditLogger.checkSuspiciousActivity(email)) {
       const error = new Error('Too many failed attempts. Please try again later.');
       return { error };

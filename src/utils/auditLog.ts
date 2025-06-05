@@ -101,10 +101,10 @@ class AuditLogger {
     return this.logs.slice(-limit);
   }
 
-  // Check for suspicious patterns
-  checkSuspiciousActivity(userId: string): boolean {
+  // Check for suspicious login patterns based on identifier (email or user ID)
+  checkSuspiciousActivity(identifier: string): boolean {
     const recentLogs = this.logs
-      .filter(log => log.user_id === userId)
+      .filter(log => log.user_id === identifier || log.details?.identifier === identifier)
       .filter(log => {
         const logTime = new Date(log.timestamp);
         const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
@@ -119,7 +119,7 @@ class AuditLogger {
 
     if (recentFailures.length > 10) {
       this.log('security.suspicious_activity', {
-        userId,
+        userId: identifier,
         details: { reason: 'rapid_failures', count: recentFailures.length }
       });
       return true;
