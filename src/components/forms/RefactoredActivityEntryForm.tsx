@@ -16,12 +16,15 @@ import { validateTextInput, validateNumber } from "@/utils/validation";
 import { logResourceEvent } from "@/utils/auditLog";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
+import { QuickDurationSelector } from "./QuickDurationSelector";
+import { BooleanGoalCheckbox } from "./BooleanGoalCheckbox";
 
 const activitySchema = z.object({
   category_id: z.string().min(1, "Parent category is required"),
   subcategory_id: z.string().min(1, "Subcategory is required"),
   date_time: z.string().min(1, "Date and time is required"),
-  duration_minutes: z.coerce.number().min(1, "Duration must be at least 1 minute").max(1440, "Duration cannot exceed 24 hours"),
+  duration_minutes: z.coerce.number().min(0, "Duration cannot be negative").max(1440, "Duration cannot exceed 24 hours"),
+  is_completed: z.boolean().optional(),
   notes: z.string().optional(),
 });
 
@@ -47,6 +50,7 @@ export function RefactoredActivityEntryForm({ onSuccess, preselectedCategoryId }
       subcategory_id: "",
       date_time: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
       duration_minutes: 30,
+      is_completed: false,
       notes: "",
     },
   });
@@ -57,6 +61,15 @@ export function RefactoredActivityEntryForm({ onSuccess, preselectedCategoryId }
   // Get subcategories for selected parent
   const selectedParentCategory = parentCategories.find(cat => cat.id === selectedCategoryId);
   const availableSubcategories = selectedParentCategory?.children?.filter(sub => sub.is_active) || [];
+
+  // Get selected subcategory to determine goal type
+  const selectedSubcategoryId = form.watch("subcategory_id");
+  const selectedSubcategory = availableSubcategories.find(sub => sub.id === selectedSubcategoryId);
+  const goalType = selectedSubcategory?.goal_type || 'time';
+
+  // Watch form values for validation
+  const durationMinutes = form.watch("duration_minutes");
+  const isCompleted = form.watch("is_completed");
 
   // Validate hex colors
   const validateCategoryColors = (categoryId: string, subcategoryId: string): boolean => {
@@ -79,11 +92,37 @@ export function RefactoredActivityEntryForm({ onSuccess, preselectedCategoryId }
     return true;
   };
 
+  // Custom validation based on goal type
+  const validateGoalRequirements = (): string | null => {
+    if (goalType === 'time') {
+      if (durationMinutes <= 0) {
+        return "Duration must be greater than 0 minutes for time-based goals";
+      }
+    } else if (goalType === 'boolean') {
+      if (!isCompleted) {
+        return "You must mark this activity as complete for boolean-based goals";
+      }
+    } else if (goalType === 'both') {
+      if (durationMinutes <= 0 && !isCompleted) {
+        return "Either enter a duration or mark as complete";
+      }
+    }
+    return null;
+  };
+
   const onSubmit = async (data: ActivityFormData) => {
     setLoading(true);
     try {
       // Validate colors before submission
       if (!validateCategoryColors(data.category_id, data.subcategory_id)) {
+        setLoading(false);
+        return;
+      }
+
+      // Validate goal requirements
+      const goalValidationError = validateGoalRequirements();
+      if (goalValidationError) {
+        form.setError("duration_minutes", { message: goalValidationError });
         setLoading(false);
         return;
       }
@@ -100,10 +139,10 @@ export function RefactoredActivityEntryForm({ onSuccess, preselectedCategoryId }
 
       // Validate duration
       const durationValidation = validateNumber(data.duration_minutes, { 
-        min: 1, 
+        min: 0, 
         max: 1440, 
         integer: true, 
-        required: true 
+        required: goalType === 'time' 
       });
       if (!durationValidation.isValid) {
         form.setError("duration_minutes", { message: durationValidation.error });
@@ -116,14 +155,17 @@ export function RefactoredActivityEntryForm({ onSuccess, preselectedCategoryId }
         subcategory_id: data.subcategory_id,
         name: `${selectedParentCategory?.name} - ${availableSubcategories.find(sub => sub.id === data.subcategory_id)?.name}`,
         date_time: new Date(data.date_time).toISOString(),
-        duration_minutes: durationValidation.value!,
+        duration_minutes: goalType === 'boolean' && !data.duration_minutes ? 0 : (durationValidation.value || 0),
+        is_completed: data.is_completed || false,
         notes: data.notes || undefined,
       });
 
       // Log the activity creation
       logResourceEvent('activity.create', user?.id || '', data.category_id, {
         subcategory_id: data.subcategory_id,
-        duration_minutes: durationValidation.value,
+        duration_minutes: durationValidation.value || 0,
+        is_completed: data.is_completed,
+        goal_type: goalType,
       });
 
       onSuccess();
@@ -143,7 +185,29 @@ export function RefactoredActivityEntryForm({ onSuccess, preselectedCategoryId }
 
   const handleSubcategoryChange = (subcategoryId: string) => {
     form.setValue("subcategory_id", subcategoryId);
+    // Reset form values when goal type changes
+    if (goalType === 'boolean') {
+      form.setValue("duration_minutes", 0);
+    } else if (goalType === 'time') {
+      form.setValue("is_completed", false);
+      if (form.getValues("duration_minutes") === 0) {
+        form.setValue("duration_minutes", 30);
+      }
+    }
     setColorValidationError("");
+  };
+
+  const handleQuickDurationSelect = (minutes: number) => {
+    form.setValue("duration_minutes", minutes);
+  };
+
+  const isFormValid = () => {
+    const goalValidationError = validateGoalRequirements();
+    return !loading && selectedCategoryId && availableSubcategories.length > 0 && !colorValidationError && !goalValidationError;
+  };
+
+  const getBooleanGoalLabel = () => {
+    return selectedSubcategory?.boolean_goal_label || "Mark as Complete";
   };
 
   return (
@@ -155,84 +219,145 @@ export function RefactoredActivityEntryForm({ onSuccess, preselectedCategoryId }
           <span>Logging time for: {format(new Date(), "PPP 'at' p")}</span>
         </div>
 
-        {/* Parent Category Selection */}
-        <FormField
-          control={form.control}
-          name="category_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Parent Category *</FormLabel>
-              <Select onValueChange={handleCategoryChange} value={selectedCategoryId}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a parent category" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {parentCategories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
-                          style={{ backgroundColor: category.color }}
-                        />
-                        {category.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Desktop: Two-column grid, Mobile: Single column */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Parent Category Selection */}
+          <FormField
+            control={form.control}
+            name="category_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Parent Category *</FormLabel>
+                <Select onValueChange={handleCategoryChange} value={selectedCategoryId}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a parent category" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {parentCategories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: category.color }}
+                          />
+                          {category.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        {/* Subcategory Selection */}
-        <FormField
-          control={form.control}
-          name="subcategory_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Subcategory *</FormLabel>
-              <Select 
-                onValueChange={handleSubcategoryChange} 
-                value={field.value}
-                disabled={!selectedCategoryId}
-              >
+          {/* Subcategory Selection */}
+          <FormField
+            control={form.control}
+            name="subcategory_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Subcategory *</FormLabel>
+                <Select 
+                  onValueChange={handleSubcategoryChange} 
+                  value={field.value}
+                  disabled={!selectedCategoryId}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={
+                        !selectedCategoryId 
+                          ? "Select a parent category first" 
+                          : availableSubcategories.length === 0
+                            ? "No subcategories available - create one first"
+                            : "Select a subcategory"
+                      } />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {availableSubcategories.map((subcategory) => (
+                      <SelectItem key={subcategory.id} value={subcategory.id}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: subcategory.color }}
+                          />
+                          {subcategory.name}
+                          <span className="text-xs text-gray-500 ml-1">
+                            ({subcategory.goal_type})
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+                {selectedCategoryId && availableSubcategories.length === 0 && (
+                  <p className="text-sm text-amber-600">
+                    No subcategories found. Please create a subcategory for this parent category first.
+                  </p>
+                )}
+              </FormItem>
+            )}
+          />
+
+          {/* Date & Time */}
+          <FormField
+            control={form.control}
+            name="date_time"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Date & Time *</FormLabel>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder={
-                      !selectedCategoryId 
-                        ? "Select a parent category first" 
-                        : availableSubcategories.length === 0
-                          ? "No subcategories available - create one first"
-                          : "Select a subcategory"
-                    } />
-                  </SelectTrigger>
+                  <Input type="datetime-local" {...field} />
                 </FormControl>
-                <SelectContent>
-                  {availableSubcategories.map((subcategory) => (
-                    <SelectItem key={subcategory.id} value={subcategory.id}>
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
-                          style={{ backgroundColor: subcategory.color }}
-                        />
-                        {subcategory.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-              {selectedCategoryId && availableSubcategories.length === 0 && (
-                <p className="text-sm text-amber-600">
-                  No subcategories found. Please create a subcategory for this parent category first.
-                </p>
-              )}
-            </FormItem>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Duration and Quick Duration (conditional) */}
+          {(goalType === 'time' || goalType === 'both') && (
+            <div className="space-y-3">
+              <FormField
+                control={form.control}
+                name="duration_minutes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Duration (minutes) {goalType === 'time' ? '*' : ''}
+                    </FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        min="0" 
+                        max="1440" 
+                        {...field} 
+                        placeholder={goalType === 'both' ? "Optional" : "Required"}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <QuickDurationSelector
+                onSelect={handleQuickDurationSelect}
+                selectedValue={durationMinutes}
+              />
+            </div>
           )}
-        />
+        </div>
+
+        {/* Boolean Goal Checkbox (conditional) */}
+        {(goalType === 'boolean' || goalType === 'both') && selectedSubcategory && (
+          <BooleanGoalCheckbox
+            control={form.control}
+            label={getBooleanGoalLabel()}
+            required={goalType === 'boolean'}
+          />
+        )}
 
         {/* Color Validation Error */}
         {colorValidationError && (
@@ -242,36 +367,15 @@ export function RefactoredActivityEntryForm({ onSuccess, preselectedCategoryId }
           </Alert>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="date_time"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Date & Time</FormLabel>
-                <FormControl>
-                  <Input type="datetime-local" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        {/* Goal Type Validation Error */}
+        {validateGoalRequirements() && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{validateGoalRequirements()}</AlertDescription>
+          </Alert>
+        )}
 
-          <FormField
-            control={form.control}
-            name="duration_minutes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Duration (minutes)</FormLabel>
-                <FormControl>
-                  <Input type="number" min="1" max="1440" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
+        {/* Notes - Full width */}
         <FormField
           control={form.control}
           name="notes"
@@ -294,7 +398,7 @@ export function RefactoredActivityEntryForm({ onSuccess, preselectedCategoryId }
         <div className="flex justify-end gap-2 pt-4">
           <Button 
             type="submit" 
-            disabled={loading || !selectedCategoryId || availableSubcategories.length === 0 || !!colorValidationError}
+            disabled={!isFormValid()}
             className="bg-blue-500 hover:bg-blue-600"
           >
             {loading ? "Logging Time..." : "Log Time"}

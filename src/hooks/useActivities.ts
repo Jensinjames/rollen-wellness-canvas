@@ -11,6 +11,7 @@ export interface Activity {
   name: string;
   date_time: string;
   duration_minutes: number;
+  is_completed?: boolean;
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -33,6 +34,8 @@ export interface Activity {
     color: string;
     level: number;
     parent_id: string;
+    goal_type?: string;
+    boolean_goal_label?: string;
   };
 }
 
@@ -97,6 +100,8 @@ export const useActivities = () => {
             color: subcategory.color,
             level: subcategory.level,
             parent_id: subcategory.parent_id,
+            goal_type: subcategory.goal_type,
+            boolean_goal_label: subcategory.boolean_goal_label,
           } : undefined,
         };
       });
@@ -159,6 +164,8 @@ export const useCreateActivity = () => {
           color: subcategory.color,
           level: subcategory.level,
           parent_id: subcategory.parent_id,
+          goal_type: subcategory.goal_type,
+          boolean_goal_label: subcategory.boolean_goal_label,
         } : undefined,
       };
     },
@@ -174,6 +181,7 @@ export const useCreateActivity = () => {
             categoryName: data.categories.name,
             subcategoryName: data.subcategories.name,
             duration: data.duration_minutes,
+            isCompleted: data.is_completed,
             timestamp: data.date_time,
             color: data.subcategories.color,
           }

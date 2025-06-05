@@ -16,6 +16,7 @@ export type Database = {
           date_time: string
           duration_minutes: number
           id: string
+          is_completed: boolean | null
           name: string
           notes: string | null
           subcategory_id: string | null
@@ -28,6 +29,7 @@ export type Database = {
           date_time: string
           duration_minutes: number
           id?: string
+          is_completed?: boolean | null
           name: string
           notes?: string | null
           subcategory_id?: string | null
@@ -40,6 +42,7 @@ export type Database = {
           date_time?: string
           duration_minutes?: number
           id?: string
+          is_completed?: boolean | null
           name?: string
           notes?: string | null
           subcategory_id?: string | null
