@@ -90,7 +90,7 @@ export function SleepEntryForm({ onSuccess }: SleepEntryFormProps) {
         notes: notesValidation.sanitized || undefined,
       });
 
-      // Log the sleep entry creation
+      // Log the sleep entry creation as an "activity.create" audit event
       logResourceEvent('activity.create', user?.id || '', 'sleep', {
         sleep_duration_hours: Math.round(durationValidation.value! / 60 * 10) / 10,
         sleep_quality: qualityValidation.value,
