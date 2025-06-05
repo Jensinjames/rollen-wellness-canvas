@@ -19,7 +19,15 @@ export const CategoryProgressCard: React.FC<CategoryProgressCardProps> = ({
   subcategoryTimes = {},
   className = ''
 }) => {
+  // Debug logging to verify color values
+  console.log('Category color from DB:', category.color);
+  
   const brandColor = getCategoryBrandColor(category.name);
+  console.log('Brand color used:', brandColor);
+  
+  // Use the actual category color from the database instead of hard-coded brand color
+  const categoryColor = category.color || '#6B7280'; // fallback to gray if no color
+  
   const dailyGoal = category.daily_time_goal_minutes;
   const weeklyGoal = category.weekly_time_goal_minutes;
   
@@ -37,11 +45,11 @@ export const CategoryProgressCard: React.FC<CategoryProgressCardProps> = ({
 
   return (
     <Card className={`${className} transition-all duration-200 hover:shadow-lg border-l-4`} 
-          style={{ borderLeftColor: brandColor }}>
+          style={{ borderLeftColor: categoryColor }}>
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: brandColor }} />
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: categoryColor }} />
             {category.name}
           </CardTitle>
           <div className="flex items-center gap-1 text-sm text-gray-500">
@@ -55,7 +63,7 @@ export const CategoryProgressCard: React.FC<CategoryProgressCardProps> = ({
             <Target className="w-4 h-4 text-gray-400" />
             <span className="text-gray-600">
               Goal: {formatTime(dailyGoal || weeklyGoal!)} 
-              <span className="ml-1" style={{ color: brandColor }}>
+              <span className="ml-1" style={{ color: categoryColor }}>
                 ({getProgressPercentage()}%)
               </span>
             </span>
@@ -80,7 +88,7 @@ export const CategoryProgressCard: React.FC<CategoryProgressCardProps> = ({
               {category.children.map((subcategory, index) => {
                 const time = subcategoryTimes[subcategory.id] || 0;
                 const percentage = actualTime > 0 ? Math.round((time / actualTime) * 100) : 0;
-                const color = generateSubcategoryGradient(brandColor, index, category.children!.length);
+                const color = generateSubcategoryGradient(categoryColor, index, category.children!.length);
                 
                 return (
                   <div key={subcategory.id} className="flex items-center justify-between text-sm">
