@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Edit, Archive, Trash2, ChevronDown, ChevronRight, Plus } from 'lucide-react';
-import { Category, useCreateCategory } from '@/hooks/useCategories';
+import { Category, useCreateCategory } from '@/hooks/categories';
 import { CategoryCard } from './CategoryCard';
 import { SubcategoryList } from './SubcategoryList';
 
@@ -53,6 +52,9 @@ export const HierarchicalCategoryCard: React.FC<HierarchicalCategoryCardProps> =
       sort_order: category.children?.length || 0,
       parent_id: data.parent_id,
       level: data.level,
+      goal_type: 'time',
+      is_boolean_goal: false,
+      boolean_goal_label: undefined,
       daily_time_goal_minutes: undefined,
       weekly_time_goal_minutes: undefined,
     });

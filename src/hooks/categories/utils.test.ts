@@ -1,3 +1,4 @@
+
 import { describe, it, expect } from 'vitest'
 import { buildCategoryTree } from './utils'
 import type { Category } from './types'
@@ -12,6 +13,11 @@ describe('buildCategoryTree', () => {
       sort_order: 2,
       level: 0,
       path: [],
+      goal_type: 'time',
+      is_boolean_goal: false,
+      boolean_goal_label: undefined,
+      daily_time_goal_minutes: undefined,
+      weekly_time_goal_minutes: undefined,
       created_at: '',
       updated_at: '',
     },
@@ -24,6 +30,11 @@ describe('buildCategoryTree', () => {
       parent_id: '1',
       level: 1,
       path: [],
+      goal_type: 'time',
+      is_boolean_goal: false,
+      boolean_goal_label: undefined,
+      daily_time_goal_minutes: undefined,
+      weekly_time_goal_minutes: undefined,
       created_at: '',
       updated_at: '',
     },
@@ -35,6 +46,11 @@ describe('buildCategoryTree', () => {
       sort_order: 1,
       level: 0,
       path: [],
+      goal_type: 'time',
+      is_boolean_goal: false,
+      boolean_goal_label: undefined,
+      daily_time_goal_minutes: undefined,
+      weekly_time_goal_minutes: undefined,
       created_at: '',
       updated_at: '',
     },
