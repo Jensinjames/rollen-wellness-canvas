@@ -89,10 +89,12 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       parent_id: isSubcategory ? (formData.parent_id === 'none' ? forceParent?.id : formData.parent_id) : undefined,
     };
 
+    // Pass the current category's ID to exclude it from duplicate checks during updates
     const validation = validateCategoryData(
       submissionData, 
       isSubcategory, 
-      allCategories || []
+      allCategories || [],
+      category?.id || null
     );
     
     if (!validation.isValid) {

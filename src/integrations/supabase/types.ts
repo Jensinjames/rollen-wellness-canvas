@@ -78,7 +78,7 @@ export type Database = {
           is_active: boolean | null
           is_boolean_goal: boolean
           level: number
-          name: string
+          name: string | null
           parent_id: string | null
           path: string[] | null
           sort_order: number | null
@@ -97,7 +97,7 @@ export type Database = {
           is_active?: boolean | null
           is_boolean_goal?: boolean
           level?: number
-          name: string
+          name?: string | null
           parent_id?: string | null
           path?: string[] | null
           sort_order?: number | null
@@ -116,7 +116,7 @@ export type Database = {
           is_active?: boolean | null
           is_boolean_goal?: boolean
           level?: number
-          name?: string
+          name?: string | null
           parent_id?: string | null
           path?: string[] | null
           sort_order?: number | null

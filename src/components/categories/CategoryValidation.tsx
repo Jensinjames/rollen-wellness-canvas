@@ -4,7 +4,8 @@ import { Category } from '@/hooks/useCategories';
 export const validateCategoryData = (
   categoryData: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'path' | 'children'>,
   isSubcategory: boolean,
-  existingCategories: Category[] = []
+  existingCategories: Category[] = [],
+  currentId: string | null = null
 ): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
 
@@ -16,6 +17,11 @@ export const validateCategoryData = (
   // Check for duplicate names in the same parent scope
   if (categoryData.name?.trim()) {
     const duplicateExists = existingCategories.some(existing => {
+      // Skip the current category when checking for duplicates during updates
+      if (currentId && existing.id === currentId) {
+        return false;
+      }
+      
       // Same name check
       if (existing.name.toLowerCase() !== categoryData.name.toLowerCase()) {
         return false;
@@ -51,11 +57,16 @@ export const validateCategoryData = (
 
   // Time goals validation (only if goal_type includes 'time')
   if (categoryData.goal_type === 'time' || categoryData.goal_type === 'both') {
-    if (categoryData.daily_time_goal_minutes !== undefined && categoryData.daily_time_goal_minutes <= 0) {
-      errors.push('Daily time goal must be greater than 0 minutes');
+    // Allow undefined, null, and zero values - only reject negative values
+    if (categoryData.daily_time_goal_minutes !== undefined && 
+        categoryData.daily_time_goal_minutes !== null && 
+        categoryData.daily_time_goal_minutes < 0) {
+      errors.push('Daily time goal cannot be negative');
     }
-    if (categoryData.weekly_time_goal_minutes !== undefined && categoryData.weekly_time_goal_minutes <= 0) {
-      errors.push('Weekly time goal must be greater than 0 minutes');
+    if (categoryData.weekly_time_goal_minutes !== undefined && 
+        categoryData.weekly_time_goal_minutes !== null && 
+        categoryData.weekly_time_goal_minutes < 0) {
+      errors.push('Weekly time goal cannot be negative');
     }
   }
 

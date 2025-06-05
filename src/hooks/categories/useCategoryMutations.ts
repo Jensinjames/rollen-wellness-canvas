@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,7 +15,8 @@ export const useCreateCategory = () => {
 
       // Validate category data
       const isSubcategory = categoryData.level === 1 || !!categoryData.parent_id;
-      const validation = validateCategoryData(categoryData, isSubcategory);
+      // Pass null as currentId since this is a new category (no existing ID to exclude)
+      const validation = validateCategoryData(categoryData, isSubcategory, [], null);
       
       if (!validation.isValid) {
         throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
