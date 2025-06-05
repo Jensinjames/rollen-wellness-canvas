@@ -1,17 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Category, useParentCategories, useAllCategories } from '@/hooks/categories';
-import { ColorPicker } from './ColorPicker';
-import { CategoryTypeSwitch } from './CategoryTypeSwitch';
-import { CategoryNameField, CategoryDescriptionField } from './CategoryFormFields';
-import { TimeGoalFields } from './TimeGoalFields';
-import { GoalTypeSelector } from './GoalTypeSelector';
-import { BooleanGoalFields } from './BooleanGoalFields';
 import { validateCategoryData, logCategoryOperation } from './CategoryValidation';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { CategoryFormHeader } from './CategoryFormHeader';
+import { CategoryFormValidation } from './CategoryFormValidation';
+import { CategoryFormContent } from './CategoryFormContent';
+import { CategoryFormActions } from './CategoryFormActions';
 
 interface CategoryFormProps {
   isOpen: boolean;
@@ -81,37 +76,6 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
     }
   }, [isOpen, category, forceParent, isAddingSubcategory]);
 
-  const handleColorChange = (color: string) => {
-    setFormData({ ...formData, color });
-    if (validationErrors.length > 0) {
-      setValidationErrors([]);
-    }
-  };
-
-  const handleGoalTypeChange = (goalType: 'time' | 'boolean' | 'both') => {
-    setFormData({ 
-      ...formData, 
-      goal_type: goalType,
-      // Reset boolean fields if switching away from boolean types
-      is_boolean_goal: goalType === 'boolean' || goalType === 'both' ? formData.is_boolean_goal : false,
-      boolean_goal_label: goalType === 'boolean' || goalType === 'both' ? formData.boolean_goal_label : '',
-    });
-    if (validationErrors.length > 0) {
-      setValidationErrors([]);
-    }
-  };
-
-  const handleBooleanGoalChange = (enabled: boolean) => {
-    setFormData({ 
-      ...formData, 
-      is_boolean_goal: enabled,
-      boolean_goal_label: enabled ? formData.boolean_goal_label : ''
-    });
-    if (validationErrors.length > 0) {
-      setValidationErrors([]);
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -150,125 +114,34 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
     onClose();
   };
 
-  const isSubcategory = isAddingSubcategory || formData.parent_id !== 'none';
-  const showTimeGoals = formData.goal_type === 'time' || formData.goal_type === 'both';
-  const showBooleanGoals = formData.goal_type === 'boolean' || formData.goal_type === 'both';
-
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>
-            {isAddingSubcategory 
-              ? `Create a new subcategory under "${forceParent.name}".`
-              : category 
-                ? 'Update your category details.' 
-                : 'Create a new category or subcategory for organizing your activities.'
-            }
-          </DialogDescription>
-        </DialogHeader>
+        <CategoryFormHeader
+          title={title}
+          category={category}
+          forceParent={forceParent}
+        />
 
-        {validationErrors.length > 0 && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              <ul className="list-disc list-inside space-y-1">
-                {validationErrors.map((error, index) => (
-                  <li key={index}>{error}</li>
-                ))}
-              </ul>
-            </AlertDescription>
-          </Alert>
-        )}
+        <CategoryFormValidation validationErrors={validationErrors} />
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {!isAddingSubcategory && !category && (
-            <CategoryTypeSwitch
-              value={formData.parent_id}
-              onChange={(value) => setFormData({ ...formData, parent_id: value, level: value === 'none' ? 0 : 1 })}
-              parentCategories={parentCategories}
-              isEditing={!!category}
-              currentCategory={category}
-            />
-          )}
-
-          {isAddingSubcategory && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Category Type</label>
-              <div className="p-3 bg-muted rounded-md">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: forceParent.color }}
-                  />
-                  <span className="font-medium">{forceParent.name}</span>
-                  <span className="text-muted-foreground">→ Subcategory</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  This will be created as a subcategory under {forceParent.name}
-                </p>
-              </div>
-            </div>
-          )}
-
-          <CategoryNameField
-            value={formData.name}
-            onChange={(value) => {
-              setFormData({ ...formData, name: value });
-              if (validationErrors.length > 0) {
-                setValidationErrors([]);
-              }
-            }}
-            isSubcategory={isSubcategory}
+          <CategoryFormContent
+            formData={formData}
+            setFormData={setFormData}
+            category={category}
+            forceParent={forceParent}
+            parentCategories={parentCategories}
+            validationErrors={validationErrors}
+            setValidationErrors={setValidationErrors}
           />
 
-          <ColorPicker
-            value={formData.color}
-            onChange={handleColorChange}
-            parentColor={forceParent?.color}
-            isSubcategory={isSubcategory}
-            error={validationErrors.find(error => error.includes('color')) || ''}
+          <CategoryFormActions
+            category={category}
+            forceParent={forceParent}
+            validationErrors={validationErrors}
+            onClose={handleClose}
           />
-
-          <CategoryDescriptionField
-            value={formData.description}
-            onChange={(value) => setFormData({ ...formData, description: value })}
-            isSubcategory={isSubcategory}
-          />
-
-          <GoalTypeSelector
-            value={formData.goal_type}
-            onChange={handleGoalTypeChange}
-          />
-
-          {showTimeGoals && (
-            <TimeGoalFields
-              dailyGoal={formData.daily_time_goal_minutes}
-              weeklyGoal={formData.weekly_time_goal_minutes}
-              onDailyGoalChange={(value) => setFormData({ ...formData, daily_time_goal_minutes: value })}
-              onWeeklyGoalChange={(value) => setFormData({ ...formData, weekly_time_goal_minutes: value })}
-            />
-          )}
-
-          {showBooleanGoals && (
-            <BooleanGoalFields
-              isBooleanGoal={formData.is_boolean_goal}
-              booleanGoalLabel={formData.boolean_goal_label}
-              onBooleanGoalChange={handleBooleanGoalChange}
-              onLabelChange={(value) => setFormData({ ...formData, boolean_goal_label: value })}
-              error={validationErrors.find(error => error.includes('Boolean goal label')) || ''}
-            />
-          )}
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={validationErrors.length > 0}>
-              {category ? 'Update Category' : (isAddingSubcategory ? 'Create Subcategory' : 'Create Category')}
-            </Button>
-          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
