@@ -1,15 +1,14 @@
-
 import { Card } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { useActivities } from "@/hooks/useActivities";
-import { useCategories } from "@/hooks/useCategories";
+import { useCategories } from "@/hooks/categories";
 import { useMemo } from "react";
 
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0];
     return (
-      <div className="bg-white dark:bg-gray-800 p-3 border rounded-lg shadow-lg">
+      <div className="bg-background p-3 border rounded-lg shadow-lg">
         <p className="font-medium">{data.name}</p>
         <p className="text-sm text-muted-foreground">
           {data.value}h ({data.payload.percentage}% of total time)

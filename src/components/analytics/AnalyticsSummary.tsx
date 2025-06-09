@@ -1,8 +1,7 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, Target, TrendingUp, Calendar } from "lucide-react";
 import { useActivities } from "@/hooks/useActivities";
-import { useCategories } from "@/hooks/useCategories";
+import { useCategories } from "@/hooks/categories";
 import { useMemo } from "react";
 
 export function AnalyticsSummary() {
@@ -68,8 +67,8 @@ export function AnalyticsSummary() {
       value: `${analytics.totalTimeThisWeek}h`,
       subtitle: "Across all categories",
       icon: Clock,
-      color: "text-blue-600",
-      bgColor: "bg-blue-100"
+      color: "text-primary",
+      bgColor: "bg-primary/10"
     },
     {
       title: "Goal Completion",

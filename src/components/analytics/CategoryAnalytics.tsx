@@ -1,8 +1,7 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useActivities } from "@/hooks/useActivities";
-import { useCategories } from "@/hooks/useCategories";
+import { useCategories } from "@/hooks/categories";
 import { useMemo } from "react";
 
 export function CategoryAnalytics() {

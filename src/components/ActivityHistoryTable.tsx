@@ -1,11 +1,10 @@
-
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, TrendingUp, TrendingDown, Minus, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActivities } from "@/hooks/useActivities";
-import { useCategories } from "@/hooks/useCategories";
+import { useCategories } from "@/hooks/categories";
 import { useMemo } from "react";
 
 export function ActivityHistoryTable() {
@@ -37,7 +36,7 @@ export function ActivityHistoryTable() {
           ? `${Math.round(activity.duration_minutes / 60 * 10) / 10}h`
           : `${activity.duration_minutes}m`,
         trend,
-        categoryColor: category?.color || '#3B82F6'
+        categoryColor: category?.color || 'hsl(var(--primary))'
       };
     });
   }, [activities, categories]);
@@ -66,7 +65,7 @@ export function ActivityHistoryTable() {
 
   return (
     <Card className="overflow-hidden">
-      <div className="p-6 border-b bg-gray-50 dark:bg-gray-800/50">
+      <div className="p-6 border-b bg-muted/50">
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <h3 className="text-lg font-semibold">Activity History</h3>
           <div className="flex gap-2 w-full sm:w-auto">
@@ -97,7 +96,7 @@ export function ActivityHistoryTable() {
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="bg-gray-50/50 dark:bg-gray-800/30">
+            <TableRow className="bg-muted/30">
               <TableHead className="font-semibold">Activity</TableHead>
               <TableHead className="font-semibold">Category</TableHead>
               <TableHead className="font-semibold">Date</TableHead>
@@ -110,14 +109,14 @@ export function ActivityHistoryTable() {
               <TableRow 
                 key={item.id}
                 className={cn(
-                  "transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50",
-                  index % 2 === 0 ? "bg-white dark:bg-gray-900" : "bg-gray-50/30 dark:bg-gray-800/20"
+                  "transition-colors hover:bg-muted/50",
+                  index % 2 === 0 ? "bg-background" : "bg-muted/20"
                 )}
               >
                 <TableCell className="font-medium">{item.activity}</TableCell>
                 <TableCell>
                   <span 
-                    className="px-2 py-1 rounded-full text-xs font-medium text-white"
+                    className="px-2 py-1 rounded-full text-xs font-medium text-primary-foreground"
                     style={{ backgroundColor: item.categoryColor }}
                   >
                     {item.category}

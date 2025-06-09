@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateSleepEntry } from "@/hooks/useSleepEntries";
-import { validateNumber, validateNotes } from "@/utils/unifiedValidation";
+import { validateNumber, validateNotes } from "@/utils/validation";
 import { securityLogger } from "@/utils/enhancedSecurityLogger";
 import { useAuth } from "@/contexts/UnifiedAuthContext";
 import { format } from "date-fns";
@@ -199,7 +199,7 @@ export function SleepEntryForm({ onSuccess }: SleepEntryFormProps) {
               <FormLabel>Notes (Optional)</FormLabel>
               <FormControl>
                 <Textarea 
-                  placeholder="How did you sleep? Any notes..."
+                  placeholder="How did you sleep? Any factors that affected your sleep..."
                   className="resize-none"
                   rows={3}
                   {...field}
@@ -214,9 +214,9 @@ export function SleepEntryForm({ onSuccess }: SleepEntryFormProps) {
           <Button 
             type="submit" 
             disabled={loading}
-            className="bg-purple-500 hover:bg-purple-600"
+            className="bg-primary hover:bg-primary/90"
           >
-            {loading ? "Creating..." : "Log Sleep"}
+            {loading ? "Saving..." : "Log Sleep"}
           </Button>
         </div>
       </form>

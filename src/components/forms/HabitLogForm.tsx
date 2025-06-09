@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useCreateHabitLog } from "@/hooks/useHabitLogs";
 import { useHabits } from "@/hooks/useHabits";
-import { validateNumber, validateNotes } from "@/utils/unifiedValidation";
+import { validateNumber, validateNotes } from "@/utils/validation";
 import { securityLogger } from "@/utils/enhancedSecurityLogger";
 import { useAuth } from "@/contexts/UnifiedAuthContext";
 import { format } from "date-fns";

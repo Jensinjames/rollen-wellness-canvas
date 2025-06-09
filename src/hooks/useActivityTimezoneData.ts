@@ -1,7 +1,6 @@
-
 import { useMemo } from 'react';
 import { useActivities } from '@/hooks/useActivities';
-import { useCategories } from '@/hooks/useCategories';
+import { useCategories } from '@/hooks/categories';
 import { 
   format, 
   startOfDay, 
