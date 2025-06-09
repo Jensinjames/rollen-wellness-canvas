@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Plus, Check, X } from 'lucide-react';
-import { Category } from '@/hooks/useCategories';
+import { Category } from '@/hooks/categories';
 
 interface QuickAddSubcategoryProps {
   parentCategory: Category;

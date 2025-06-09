@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Edit, Archive, Trash2, GripVertical, Plus } from 'lucide-react';
-import { Category } from '@/hooks/useCategories';
+import { Category } from '@/hooks/categories';
 import { QuickAddSubcategory } from './QuickAddSubcategory';
 
 interface SubcategoryListProps {

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 import { useActivities } from "@/hooks/useActivities";
-import { useCategories } from "@/hooks/useCategories";
+import { useCategories } from "@/hooks/categories";
 import { useMemo } from "react";
 
 export function TimeDistributionChart() {

@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CompositeDonutChart } from '@/components/charts/CompositeDonutChart';
-import { Category } from '@/hooks/useCategories';
+import { Category } from '@/hooks/categories';
 import { generateSubcategoryGradient } from '@/utils/categoryColors';
 import { Clock, Target } from 'lucide-react';
 

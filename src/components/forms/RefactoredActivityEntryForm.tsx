@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import { useCategories } from "@/hooks/useCategories";
+import { useCategories } from "@/hooks/categories";
 import { useCreateActivity } from "@/hooks/useActivities";
 import { validateNumber } from "@/utils/validation";
 import { logResourceEvent } from "@/utils/auditLog";

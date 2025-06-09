@@ -1,7 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { Category } from '@/hooks/useCategories';
+import { Category } from '@/hooks/categories';
 import { generateSubcategoryGradient } from '@/utils/categoryColors';
 
 interface CompositeDonutChartProps {

@@ -1,7 +1,7 @@
 
 import { format } from "date-fns";
 import { Activity } from "@/hooks/useActivities";
-import { useCategories } from "@/hooks/useCategories";
+import { useCategories } from "@/hooks/categories";
 import { useMemo } from "react";
 
 interface DayCellProps {

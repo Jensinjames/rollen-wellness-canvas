@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Check, X, Edit3, Palette } from 'lucide-react';
-import { Category } from '@/hooks/useCategories';
+import { Category } from '@/hooks/categories';
 import { ColorPicker } from './ColorPicker';
 
 interface InlineSubcategoryEditorProps {
