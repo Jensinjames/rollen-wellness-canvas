@@ -1,7 +1,7 @@
 
 import { useCachedQuery } from './useCachedQuery';
-import { useCategories } from './hooks/categories';
-import { buildCategoryTree } from './hooks/categories/utils';
+import { useCategories } from './categories';
+import { buildCategoryTree } from './categories/utils';
 
 export const useCachedCategories = () => {
   const { data: fallbackData } = useCategories();
