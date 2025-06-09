@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import { useCategories } from "@/hooks/categories";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek } from "date-fns";
 import { useCacheInvalidation } from "@/hooks/useCachedQuery";
 import { CacheManager } from "@/components/cache/CacheManager";
+import { AppLayout } from "@/components/layout";
 
 export default function IndexPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -59,68 +61,69 @@ export default function IndexPage() {
     invalidateCache('analytics-summary');
   };
 
+  const headerActions = (
+    <>
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button variant="outline">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Activity
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Log New Activity</DialogTitle>
+          </DialogHeader>
+          <RefactoredActivityEntryForm onSuccess={handleActivitySuccess} />
+        </DialogContent>
+      </Dialog>
+      
+      {process.env.NODE_ENV === 'development' && (
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm">
+              Cache
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Cache Management</DialogTitle>
+            </DialogHeader>
+            <CacheManager />
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
+  );
+
   return (
-    <div className="container space-y-8 py-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <div className="flex gap-2">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Activity
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Log New Activity</DialogTitle>
-              </DialogHeader>
-              <RefactoredActivityEntryForm onSuccess={handleActivitySuccess} />
-            </DialogContent>
-          </Dialog>
-          
-          {process.env.NODE_ENV === 'development' && (
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  Cache
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                  <DialogTitle>Cache Management</DialogTitle>
-                </DialogHeader>
-                <CacheManager />
-              </DialogContent>
-            </Dialog>
-          )}
+    <AppLayout pageTitle="Dashboard" headerActions={headerActions}>
+      <div className="container space-y-8 py-8">
+        <AnalyticsSummary />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {parentCategories.map(category => {
+            const categoryData = timezoneActivityData ? timezoneActivityData[category.id] : null;
+            const actualTime = categoryData?.dailyTime || categoryData?.weeklyTime || 0;
+            return (
+              <CategoryProgressCard
+                key={category.id}
+                category={category}
+                actualTime={actualTime}
+                subcategoryTimes={categoryData?.subcategoryTimes}
+              />
+            );
+          })}
         </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <GoalCompletionChart />
+          <TimeDistributionChart />
+        </div>
+
+        <WeeklyTrendChart />
+        <ActivityHistoryTable />
       </div>
-
-      <AnalyticsSummary />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {parentCategories.map(category => {
-          const categoryData = timezoneActivityData ? timezoneActivityData[category.id] : null;
-          const actualTime = categoryData?.dailyTime || categoryData?.weeklyTime || 0;
-          return (
-            <CategoryProgressCard
-              key={category.id}
-              category={category}
-              actualTime={actualTime}
-              subcategoryTimes={categoryData?.subcategoryTimes}
-            />
-          );
-        })}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <GoalCompletionChart />
-        <TimeDistributionChart />
-      </div>
-
-      <WeeklyTrendChart />
-      <ActivityHistoryTable />
-    </div>
+    </AppLayout>
   );
 }
