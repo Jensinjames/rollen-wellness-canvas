@@ -1,7 +1,6 @@
-
 import { useQuery, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/UnifiedAuthContext';
 
 interface CachedQueryOptions<T> extends Omit<UseQueryOptions<T>, 'queryFn'> {
   queryType: string;
