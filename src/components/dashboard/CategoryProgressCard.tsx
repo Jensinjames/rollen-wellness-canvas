@@ -37,28 +37,45 @@ const CategoryProgressCard: React.FC<CategoryProgressCardProps> = memo(({
     return Math.round((actualTime / goal) * 100);
   };
 
+  const progressPercentage = getProgressPercentage();
+  const goalType = dailyGoal ? 'daily' : weeklyGoal ? 'weekly' : null;
+  const goalTime = dailyGoal || weeklyGoal;
+
   return (
-    <Card className={`${className} transition-all duration-200 hover:shadow-lg border-l-4`} 
-          style={{ borderLeftColor: categoryColor }}>
+    <Card 
+      className={`${className} transition-all duration-200 hover:shadow-lg border-l-4`} 
+      style={{ borderLeftColor: categoryColor }}
+      role="article"
+      aria-labelledby={`category-${category.id}-title`}
+    >
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: categoryColor }} />
+          <CardTitle 
+            id={`category-${category.id}-title`}
+            className="text-lg font-semibold flex items-center gap-2"
+          >
+            <div 
+              className="w-3 h-3 rounded-full" 
+              style={{ backgroundColor: categoryColor }}
+              aria-hidden="true"
+            />
             {category.name}
           </CardTitle>
-          <div className="flex items-center gap-1 text-sm text-gray-500">
-            <Clock className="w-4 h-4" />
-            {formatTime(actualTime)}
+          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+            <Clock className="w-4 h-4" aria-hidden="true" />
+            <span aria-label={`Time spent: ${formatTime(actualTime)}`}>
+              {formatTime(actualTime)}
+            </span>
           </div>
         </div>
         
-        {(dailyGoal || weeklyGoal) && (
+        {goalTime && goalType && (
           <div className="flex items-center gap-2 text-sm">
-            <Target className="w-4 h-4 text-gray-400" />
-            <span className="text-gray-600">
-              Goal: {formatTime(dailyGoal || weeklyGoal!)} 
+            <Target className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <span className="text-muted-foreground">
+              Goal: {formatTime(goalTime)} ({goalType})
               <span className="ml-1" style={{ color: categoryColor }}>
-                ({getProgressPercentage()}%)
+                ({progressPercentage}% complete)
               </span>
             </span>
           </div>
@@ -66,34 +83,54 @@ const CategoryProgressCard: React.FC<CategoryProgressCardProps> = memo(({
       </CardHeader>
       
       <CardContent className="pt-0">
-        <CompositeDonutChart
-          category={category}
-          actualTime={actualTime}
-          dailyGoal={dailyGoal}
-          weeklyGoal={weeklyGoal}
-          subcategoryTimes={subcategoryTimes}
-        />
+        <div aria-label={`Progress chart for ${category.name}`}>
+          <CompositeDonutChart
+            category={category}
+            actualTime={actualTime}
+            dailyGoal={dailyGoal}
+            weeklyGoal={weeklyGoal}
+            subcategoryTimes={subcategoryTimes}
+          />
+        </div>
         
         {/* Subcategory breakdown */}
         {category.children && category.children.length > 0 && (
           <div className="mt-4 space-y-2">
-            <h4 className="text-sm font-medium text-gray-700">Subcategories</h4>
-            <div className="grid grid-cols-1 gap-1">
+            <h4 className="text-sm font-medium text-foreground">Subcategories</h4>
+            <div className="grid grid-cols-1 gap-1" role="list">
               {category.children.map((subcategory, index) => {
                 const time = subcategoryTimes[subcategory.id] || 0;
                 const percentage = actualTime > 0 ? Math.round((time / actualTime) * 100) : 0;
                 const color = generateSubcategoryGradient(categoryColor, index, category.children!.length);
                 
                 return (
-                  <div key={subcategory.id} className="flex items-center justify-between text-sm">
+                  <div 
+                    key={subcategory.id} 
+                    className="flex items-center justify-between text-sm"
+                    role="listitem"
+                  >
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-                      <span className="text-gray-600">{subcategory.name}</span>
+                      <div 
+                        className="w-2 h-2 rounded-full" 
+                        style={{ backgroundColor: color }}
+                        aria-hidden="true"
+                      />
+                      <span className="text-muted-foreground">{subcategory.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-500">{formatTime(time)}</span>
+                      <span 
+                        className="text-muted-foreground"
+                        aria-label={`${subcategory.name}: ${formatTime(time)}`}
+                      >
+                        {formatTime(time)}
+                      </span>
                       {percentage > 0 && (
-                        <span className="text-xs text-gray-400">({percentage}%)</span>
+                        <span 
+                          className="text-xs text-muted-foreground"
+                          aria-label={`${percentage} percent of total time`}
+                        >
+                          ({percentage}%)
+                        </span>
                       )}
                     </div>
                   </div>
