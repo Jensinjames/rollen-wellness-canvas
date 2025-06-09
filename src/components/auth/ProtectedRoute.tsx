@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/UnifiedAuthContext';
 import { AuthForm } from './AuthForm';
 import { Loader2 } from 'lucide-react';
 

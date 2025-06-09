@@ -1,12 +1,5 @@
 
-// Category color utilities with brand-specific gradients
-export const CATEGORY_COLORS = {
-  Faith: '#10B981',
-  Life: '#F59E0B', 
-  Work: '#EF4444',
-  Health: '#EC4899'
-} as const;
-
+// Unified category color utilities
 export const generateSubcategoryGradient = (parentColor: string, index: number, total: number): string => {
   // Create lighter shades for subcategories
   const baseHex = parentColor.replace('#', '');
@@ -24,10 +17,21 @@ export const generateSubcategoryGradient = (parentColor: string, index: number, 
   return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
 };
 
-export const getCategoryBrandColor = (categoryName: string): string => {
-  const key = Object.keys(CATEGORY_COLORS).find(k => 
-    categoryName.toLowerCase().includes(k.toLowerCase())
-  ) as keyof typeof CATEGORY_COLORS;
+// Color manipulation utilities
+export const adjustColorOpacity = (color: string, opacity: number): string => {
+  const hex = Math.round(opacity * 255).toString(16).padStart(2, '0');
+  return `${color}${hex}`;
+};
+
+export const lightenColor = (color: string, factor: number): string => {
+  const baseHex = color.replace('#', '');
+  const r = parseInt(baseHex.substr(0, 2), 16);
+  const g = parseInt(baseHex.substr(2, 2), 16);
+  const b = parseInt(baseHex.substr(4, 2), 16);
   
-  return key ? CATEGORY_COLORS[key] : '#6B7280';
+  const newR = Math.max(0, Math.min(255, Math.round(r + (255 - r) * factor)));
+  const newG = Math.max(0, Math.min(255, Math.round(g + (255 - g) * factor)));
+  const newB = Math.max(0, Math.min(255, Math.round(b + (255 - b) * factor)));
+  
+  return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
 };

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,9 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useCreateHabitLog } from "@/hooks/useHabitLogs";
 import { useHabits } from "@/hooks/useHabits";
-import { validateTextInput, validateNumber } from "@/utils/validation";
-import { logResourceEvent } from "@/utils/auditLog";
-import { useAuth } from "@/contexts/AuthContext";
+import { validateNumber, validateNotes } from "@/utils/unifiedValidation";
+import { securityLogger } from "@/utils/enhancedSecurityLogger";
+import { useAuth } from "@/contexts/UnifiedAuthContext";
 import { format } from "date-fns";
 
 const habitLogSchema = z.object({
@@ -53,7 +52,7 @@ export function HabitLogForm({ onSuccess }: HabitLogFormProps) {
   const onSubmit = async (data: HabitLogFormData) => {
     setLoading(true);
     try {
-      // Validate inputs using our security utilities
+      // Validate inputs using our unified validation system
       const valueValidation = validateNumber(data.actual_value || 0, { 
         min: 0, 
         max: 10000, 
@@ -65,7 +64,7 @@ export function HabitLogForm({ onSuccess }: HabitLogFormProps) {
         return;
       }
 
-      const notesValidation = validateTextInput(data.notes || "", { maxLength: 1000 });
+      const notesValidation = validateNotes(data.notes || "");
       if (!notesValidation.isValid) {
         form.setError("notes", { message: notesValidation.error });
         setLoading(false);
@@ -81,7 +80,7 @@ export function HabitLogForm({ onSuccess }: HabitLogFormProps) {
       });
 
       // Log the habit log creation
-      logResourceEvent('activity.create', user?.id || '', data.habit_id, {
+      await securityLogger.logResourceEvent('activity.create', user?.id || '', data.habit_id, {
         habit_name: selectedHabit?.name,
         completed: data.completed,
         actual_value: valueValidation.value,

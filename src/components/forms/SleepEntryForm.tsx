@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateSleepEntry } from "@/hooks/useSleepEntries";
-import { validateTextInput, validateNumber } from "@/utils/validation";
-import { logResourceEvent } from "@/utils/auditLog";
-import { useAuth } from "@/contexts/AuthContext";
+import { validateNumber, validateNotes } from "@/utils/unifiedValidation";
+import { securityLogger } from "@/utils/enhancedSecurityLogger";
+import { useAuth } from "@/contexts/UnifiedAuthContext";
 import { format } from "date-fns";
 
 const sleepSchema = z.object({
@@ -49,7 +48,7 @@ export function SleepEntryForm({ onSuccess }: SleepEntryFormProps) {
   const onSubmit = async (data: SleepFormData) => {
     setLoading(true);
     try {
-      // Validate inputs using our security utilities
+      // Validate inputs using our unified validation system
       const durationValidation = validateNumber(data.sleep_duration_minutes, { 
         min: 30, 
         max: 1440, 
@@ -74,7 +73,7 @@ export function SleepEntryForm({ onSuccess }: SleepEntryFormProps) {
         return;
       }
 
-      const notesValidation = validateTextInput(data.notes || "", { maxLength: 1000 });
+      const notesValidation = validateNotes(data.notes || "");
       if (!notesValidation.isValid) {
         form.setError("notes", { message: notesValidation.error });
         setLoading(false);
@@ -91,7 +90,7 @@ export function SleepEntryForm({ onSuccess }: SleepEntryFormProps) {
       });
 
       // Log the sleep entry creation as an "activity.create" audit event
-      logResourceEvent('activity.create', user?.id || '', 'sleep', {
+      await securityLogger.logResourceEvent('activity.create', user?.id || '', 'sleep', {
         sleep_duration_hours: Math.round(durationValidation.value! / 60 * 10) / 10,
         sleep_quality: qualityValidation.value,
       });
