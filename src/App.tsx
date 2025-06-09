@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { UnifiedAuthProvider } from "@/contexts/UnifiedAuthContext";
 import { TimerProvider } from "@/contexts/TimerContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { AuthForm } from "@/components/auth/AuthForm";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import Index from "./pages/Index";
 import Categories from "./pages/Categories";
 import Analytics from "./pages/Analytics";
@@ -39,7 +39,7 @@ function App() {
             <Toaster />
             <BrowserRouter>
               <Routes>
-                <Route path="/auth" element={<AuthForm />} />
+                <Route path="/auth" element={<AuthGuard />} />
                 <Route
                   path="/"
                   element={

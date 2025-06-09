@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export const AuthForm = () => {
   const { signIn, signUp } = useAuth();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -46,6 +48,9 @@ export const AuthForm = () => {
         setError(error.message);
       } else if (isSignUp) {
         setMessage('Check your email for the confirmation link!');
+      } else {
+        // Successful sign in - redirect to dashboard
+        navigate('/', { replace: true });
       }
     } catch (err) {
       setError('An unexpected error occurred');
