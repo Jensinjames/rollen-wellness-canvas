@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/UnifiedAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { validateTextInput } from "@/utils/validation";
-import { securityLogger } from "@/utils/enhancedSecurityLogger";
+import { logResourceEvent } from "@/utils/auditLog";
 
 interface FormErrors {
   display_name?: string;
@@ -111,9 +111,9 @@ export const useProfileData = () => {
 
       if (error) throw error;
 
-      // Log the profile update
+      // Log the profile update using the correct audit log function
       if (user) {
-        await securityLogger.logAuthEvent('profile.update', user.id, {
+        logResourceEvent('profile.update', user.id, user.id, {
           display_name_changed: nameValidation.sanitized !== displayName
         });
       }
