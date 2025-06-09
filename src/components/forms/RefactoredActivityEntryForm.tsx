@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,7 +9,7 @@ import { useCategories } from "@/hooks/categories";
 import { useCreateActivity } from "@/hooks/useActivities";
 import { validateNumber } from "@/utils/validation";
 import { logResourceEvent } from "@/utils/auditLog";
-import { useAuth } from "@/contexts/UnifiedAuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { BooleanGoalCheckbox } from "./BooleanGoalCheckbox";
 import { CategorySelector } from "./activity/CategorySelector";

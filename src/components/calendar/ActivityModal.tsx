@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import {
@@ -18,7 +19,7 @@ import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { validateTextInput, validateNumber } from "@/utils/validation";
 import { logResourceEvent } from "@/utils/auditLog";
-import { useAuth } from "@/contexts/UnifiedAuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ActivityModalProps {
   isOpen: boolean;
