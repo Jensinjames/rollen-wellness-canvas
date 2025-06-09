@@ -1,8 +1,7 @@
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/UnifiedAuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Info, 
