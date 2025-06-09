@@ -1,6 +1,7 @@
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/UnifiedAuthContext';
 import { toast } from 'sonner';
 import { validateCategoryData, logCategoryOperation } from '@/components/categories/CategoryValidation';
 import { Category } from './types';

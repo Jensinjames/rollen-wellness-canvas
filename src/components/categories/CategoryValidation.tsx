@@ -1,5 +1,6 @@
 
-import { Category } from '@/hooks/useCategories';
+import { Category } from '@/hooks/categories';
+import { validateCategoryName, validateHexColor, ValidationResult } from '@/utils/validation';
 
 export const validateCategoryData = (
   categoryData: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'path' | 'children'>,
@@ -9,9 +10,10 @@ export const validateCategoryData = (
 ): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
 
-  // Basic validation
-  if (!categoryData.name?.trim()) {
-    errors.push('Category name is required');
+  // Basic name validation using unified system
+  const nameValidation = validateCategoryName(categoryData.name);
+  if (!nameValidation.isValid) {
+    errors.push(nameValidation.error || 'Category name is invalid');
   }
 
   // Check for duplicate names in the same parent scope
@@ -44,10 +46,10 @@ export const validateCategoryData = (
     }
   }
 
-  // Color validation
-  const hexColorRegex = /^#[A-Fa-f0-9]{6}$/;
-  if (!hexColorRegex.test(categoryData.color)) {
-    errors.push('Color must be a valid 6-digit hex code');
+  // Color validation using unified system
+  const colorValidation = validateHexColor(categoryData.color);
+  if (!colorValidation.isValid) {
+    errors.push(colorValidation.error || 'Color must be a valid 6-digit hex code');
   }
 
   // Goal type validation

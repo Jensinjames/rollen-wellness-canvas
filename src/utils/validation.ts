@@ -1,53 +1,66 @@
 
 /**
- * Enhanced input validation and sanitization utilities with security improvements
+ * Unified validation system with enhanced security features
+ * Consolidates all validation logic into a single source of truth
  */
 
 import { advancedSanitizeInput, secureValidateTextInput, secureValidateNumber } from './securityValidation';
 
-// Re-export legacy functions for backward compatibility
-export const sanitizeInput = (input: string): string => {
-  const result = advancedSanitizeInput(input);
-  return result.sanitized || '';
-};
+// Core validation interfaces
+export interface ValidationResult<T = any> {
+  isValid: boolean;
+  value?: T;
+  sanitized?: string;
+  error?: string;
+  securityRisk?: 'low' | 'medium' | 'high';
+}
 
-// Enhanced validation functions
-export const validateTextInput = (
-  input: string, 
-  options: {
-    required?: boolean;
-    minLength?: number;
-    maxLength?: number;
-    allowEmpty?: boolean;
-  } = {}
-) => {
+export interface TextValidationOptions {
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
+  allowEmpty?: boolean;
+  allowSpecialChars?: boolean;
+}
+
+export interface NumberValidationOptions {
+  min?: number;
+  max?: number;
+  integer?: boolean;
+  required?: boolean;
+}
+
+// Unified text validation
+export const validateText = (
+  input: string,
+  options: TextValidationOptions = {}
+): ValidationResult<string> => {
   const result = secureValidateTextInput(input, options);
   return {
     isValid: result.isValid,
-    sanitized: result.sanitized || '',
-    error: result.error
+    value: result.sanitized,
+    sanitized: result.sanitized,
+    error: result.error,
+    securityRisk: result.securityRisk
   };
 };
 
+// Unified number validation
 export const validateNumber = (
   input: string | number,
-  options: {
-    min?: number;
-    max?: number;
-    integer?: boolean;
-    required?: boolean;
-  } = {}
-) => {
+  options: NumberValidationOptions = {}
+): ValidationResult<number> => {
   const result = secureValidateNumber(input, options);
   return {
     isValid: result.isValid,
-    value: result.value,
-    error: result.error
+    value: result.value || undefined,
+    error: result.error,
+    securityRisk: result.securityRisk
   };
 };
 
 // Email validation with enhanced security
-export const validateEmail = (email: string): { isValid: boolean; error?: string } => {
+export const validateEmail = (email: string): ValidationResult<string> => {
   if (!email || typeof email !== 'string') {
     return { isValid: false, error: 'Email is required' };
   }
@@ -69,11 +82,11 @@ export const validateEmail = (email: string): { isValid: boolean; error?: string
     return { isValid: false, error: 'Email too long' };
   }
 
-  return { isValid: true };
+  return { isValid: true, value: sanitized, sanitized };
 };
 
 // Password strength validation with enhanced security
-export const validatePassword = (password: string): { isValid: boolean; error?: string } => {
+export const validatePassword = (password: string): ValidationResult<string> => {
   if (!password || typeof password !== 'string') {
     return { isValid: false, error: 'Password is required' };
   }
@@ -101,5 +114,100 @@ export const validatePassword = (password: string): { isValid: boolean; error?: 
     };
   }
 
-  return { isValid: true };
+  return { isValid: true, value: password };
+};
+
+// Category validation
+export const validateCategoryName = (name: string): ValidationResult<string> => {
+  return validateText(name, {
+    required: true,
+    minLength: 1,
+    maxLength: 100,
+    allowEmpty: false
+  });
+};
+
+// Activity validation
+export const validateActivityName = (name: string): ValidationResult<string> => {
+  return validateText(name, {
+    required: true,
+    minLength: 1,
+    maxLength: 200,
+    allowEmpty: false
+  });
+};
+
+export const validateDuration = (duration: string | number): ValidationResult<number> => {
+  return validateNumber(duration, {
+    min: 0,
+    max: 1440, // 24 hours max
+    integer: true,
+    required: true
+  });
+};
+
+// Notes validation
+export const validateNotes = (notes: string): ValidationResult<string> => {
+  return validateText(notes, {
+    required: false,
+    maxLength: 1000,
+    allowEmpty: true
+  });
+};
+
+// Hex color validation
+export const validateHexColor = (color: string): ValidationResult<string> => {
+  if (!color || typeof color !== 'string') {
+    return { isValid: false, error: 'Color is required' };
+  }
+
+  const hexColorRegex = /^#[A-Fa-f0-9]{6}$/;
+  if (!hexColorRegex.test(color)) {
+    return { isValid: false, error: 'Color must be a valid 6-digit hex code' };
+  }
+
+  return { isValid: true, value: color, sanitized: color };
+};
+
+// Legacy compatibility exports
+export const sanitizeInput = (input: string): string => {
+  const result = advancedSanitizeInput(input);
+  return result.sanitized || '';
+};
+
+export const validateTextInput = validateText;
+
+// Legacy validation functions for backward compatibility
+export const validateTextInput_legacy = (
+  input: string, 
+  options: {
+    required?: boolean;
+    minLength?: number;
+    maxLength?: number;
+    allowEmpty?: boolean;
+  } = {}
+) => {
+  const result = secureValidateTextInput(input, options);
+  return {
+    isValid: result.isValid,
+    sanitized: result.sanitized || '',
+    error: result.error
+  };
+};
+
+export const validateNumber_legacy = (
+  input: string | number,
+  options: {
+    min?: number;
+    max?: number;
+    integer?: boolean;
+    required?: boolean;
+  } = {}
+) => {
+  const result = secureValidateNumber(input, options);
+  return {
+    isValid: result.isValid,
+    value: result.value,
+    error: result.error
+  };
 };

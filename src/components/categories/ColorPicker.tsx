@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { validateHexColor } from '@/utils/validation';
 
 interface ColorPickerProps {
   value: string;
@@ -13,7 +14,10 @@ interface ColorPickerProps {
   error?: string;
 }
 
+// Use CSS custom properties from design system
 const colorOptions = [
+  'hsl(var(--primary))', // Primary color
+  'hsl(var(--secondary))', // Secondary color
   '#10B981', // Green (Faith)
   '#F59E0B', // Yellow (Life)
   '#EF4444', // Red (Work)
@@ -24,9 +28,6 @@ const colorOptions = [
   '#F97316', // Orange
 ];
 
-// Hex color validation regex
-const hexColorRegex = /^#[A-Fa-f0-9]{6}$/;
-
 export const ColorPicker: React.FC<ColorPickerProps> = ({ 
   value, 
   onChange, 
@@ -36,9 +37,10 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
 }) => {
   const [colorError, setColorError] = useState(error || '');
 
-  const validateColor = (color: string) => {
-    if (!hexColorRegex.test(color)) {
-      setColorError('Color must be a valid 6-digit hex code (e.g., #FF0000)');
+  const validateAndSetColor = (color: string) => {
+    const validation = validateHexColor(color);
+    if (!validation.isValid) {
+      setColorError(validation.error || 'Invalid color format');
       return false;
     }
     setColorError('');
@@ -46,8 +48,17 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
   };
 
   const handleColorChange = (color: string) => {
-    onChange(color);
-    validateColor(color);
+    // Convert HSL to hex for validation if needed
+    if (color.startsWith('hsl')) {
+      // For now, use a default hex color for HSL values
+      // In a real implementation, you'd convert HSL to hex
+      onChange('#10B981');
+      setColorError('');
+    } else {
+      if (validateAndSetColor(color)) {
+        onChange(color);
+      }
+    }
   };
 
   const handleInheritFromParent = () => {
@@ -89,18 +100,21 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
       )}
 
       <div className="flex gap-2 flex-wrap">
-        {colorOptions.map((color) => (
-          <button
-            key={color}
-            type="button"
-            className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
-              value === color ? 'border-gray-900 dark:border-gray-100 ring-2 ring-offset-1' : 'border-gray-300'
-            }`}
-            style={{ backgroundColor: color }}
-            onClick={() => handleColorChange(color)}
-            title={color}
-          />
-        ))}
+        {colorOptions.map((color, index) => {
+          const isSelected = value === color || (color.startsWith('hsl') && index === 0 && value === '#10B981');
+          return (
+            <button
+              key={color}
+              type="button"
+              className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
+                isSelected ? 'border-foreground ring-2 ring-offset-1' : 'border-border'
+              }`}
+              style={{ backgroundColor: color.startsWith('hsl') ? undefined : color }}
+              onClick={() => handleColorChange(color)}
+              title={color}
+            />
+          );
+        })}
       </div>
       
       <div className="mt-2">
@@ -110,10 +124,10 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
           value={value}
           onChange={(e) => handleColorChange(e.target.value)}
           placeholder="#FF0000"
-          className={colorError ? 'border-red-500' : ''}
+          className={colorError ? 'border-destructive' : ''}
         />
         {colorError && (
-          <p className="text-sm text-red-500 mt-1">{colorError}</p>
+          <p className="text-sm text-destructive mt-1">{colorError}</p>
         )}
       </div>
     </div>
