@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,17 +18,31 @@ export const SystemSettings = () => {
 
   const handleSignOut = async () => {
     try {
+      toast({
+        title: "Signing Out",
+        description: "You are being signed out...",
+      });
+      
       await signOut();
+      
+      // This toast may not be visible due to immediate redirect,
+      // but it's good practice to include it
       toast({
         title: "Signed Out",
         description: "You have been successfully signed out.",
       });
     } catch (error) {
+      console.error('Sign out error:', error);
       toast({
         title: "Error",
-        description: "Failed to sign out. Please try again.",
+        description: "There was an issue signing out, but you will be redirected.",
         variant: "destructive",
       });
+      
+      // Force redirect even if sign out fails
+      setTimeout(() => {
+        window.location.href = '/auth';
+      }, 1000);
     }
   };
 
@@ -139,11 +152,21 @@ export const SystemSettings = () => {
         <div className="space-y-4">
           <h4 className="font-medium">System Actions</h4>
           <div className="space-y-3">
-            <Button variant="outline" onClick={clearCache} className="w-full justify-start">
+            <Button 
+              variant="outline" 
+              onClick={clearCache} 
+              className="w-full justify-start"
+              aria-label="Clear application cache and stored data"
+            >
               <RefreshCw className="h-4 w-4 mr-2" />
               Clear Cache
             </Button>
-            <Button variant="destructive" onClick={handleSignOut} className="w-full justify-start">
+            <Button 
+              variant="destructive" 
+              onClick={handleSignOut} 
+              className="w-full justify-start"
+              aria-label="Sign out of your account and return to login page"
+            >
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
             </Button>

@@ -27,13 +27,19 @@ export const UserProfile = () => {
       await signOut();
     } catch (error) {
       console.error('Error signing out:', error);
+      // Force redirect even if sign out fails
+      window.location.href = '/auth';
     }
   };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="flex items-center gap-2 px-2">
+        <Button 
+          variant="ghost" 
+          className="flex items-center gap-2 px-2"
+          aria-label={`User menu for ${user.email}`}
+        >
           <Avatar className="h-8 w-8">
             <AvatarFallback className="text-sm">
               {getInitials(user.email || '')}
@@ -50,7 +56,10 @@ export const UserProfile = () => {
           <span>Profile</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSignOut}>
+        <DropdownMenuItem 
+          onClick={handleSignOut}
+          aria-label="Sign out of your account"
+        >
           <LogOut className="mr-2 h-4 w-4" />
           <span>Sign out</span>
         </DropdownMenuItem>
