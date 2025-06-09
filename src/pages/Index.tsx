@@ -2,10 +2,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { AnalyticsSummary } from "@/components/analytics/AnalyticsSummary";
-import { WeeklyTrendChart } from "@/components/analytics/WeeklyTrendChart";
-import { GoalCompletionChart } from "@/components/analytics/GoalCompletionChart";
-import { TimeDistributionChart } from "@/components/analytics/TimeDistributionChart";
-import { WellnessDistributionChart } from "@/components/WellnessDistributionChart";
 import { ActivityHistoryTable } from "@/components/ActivityHistoryTable";
 import { Plus } from "lucide-react";
 import { RefactoredActivityEntryForm } from "@/components/forms/RefactoredActivityEntryForm";
@@ -16,10 +12,28 @@ import { useCacheInvalidation } from "@/hooks/useCachedQuery";
 import { CacheManager } from "@/components/cache/CacheManager";
 import { AppLayout } from "@/components/layout";
 import { DashboardSkeleton, AnalyticsSummarySkeleton, CategoryProgressCardSkeleton } from "@/components/dashboard/DashboardSkeleton";
+import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
+import { ChartErrorBoundary } from "@/components/error/ChartErrorBoundary";
+import { 
+  LazyWeeklyTrendChart, 
+  LazyGoalCompletionChart, 
+  LazyTimeDistributionChart 
+} from "@/components/charts/LazyCharts";
 
 export default function IndexPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const { invalidateCache } = useCacheInvalidation();
+  
+  // Use intersection observers for below-the-fold content
+  const { ref: chartsRef, shouldLoad: shouldLoadCharts } = useIntersectionObserver({
+    threshold: 0.1,
+    rootMargin: '200px'
+  });
+
+  const { ref: trendChartRef, shouldLoad: shouldLoadTrendChart } = useIntersectionObserver({
+    threshold: 0.1,
+    rootMargin: '300px'
+  });
   
   // Use the optimized dashboard data hook
   const {
@@ -116,12 +130,35 @@ export default function IndexPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <GoalCompletionChart />
-          <TimeDistributionChart />
+        {/* Lazy-loaded charts with intersection observer */}
+        <div ref={chartsRef} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ChartErrorBoundary>
+            {shouldLoadCharts ? <LazyGoalCompletionChart /> : (
+              <div className="h-96 w-full bg-muted animate-pulse rounded-lg flex items-center justify-center">
+                <span className="text-muted-foreground">Loading chart...</span>
+              </div>
+            )}
+          </ChartErrorBoundary>
+          
+          <ChartErrorBoundary>
+            {shouldLoadCharts ? <LazyTimeDistributionChart /> : (
+              <div className="h-96 w-full bg-muted animate-pulse rounded-lg flex items-center justify-center">
+                <span className="text-muted-foreground">Loading chart...</span>
+              </div>
+            )}
+          </ChartErrorBoundary>
         </div>
 
-        <WeeklyTrendChart />
+        <div ref={trendChartRef}>
+          <ChartErrorBoundary>
+            {shouldLoadTrendChart ? <LazyWeeklyTrendChart /> : (
+              <div className="h-64 w-full bg-muted animate-pulse rounded-lg flex items-center justify-center">
+                <span className="text-muted-foreground">Loading trend chart...</span>
+              </div>
+            )}
+          </ChartErrorBoundary>
+        </div>
+
         <ActivityHistoryTable />
       </div>
     </AppLayout>

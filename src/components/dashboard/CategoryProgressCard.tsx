@@ -1,7 +1,7 @@
 
 import React, { memo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CompositeDonutChart } from '@/components/charts/CompositeDonutChart';
+import { LazyCompositeDonutChart } from '@/components/charts/LazyCharts';
 import { Category } from '@/hooks/categories';
 import { generateSubcategoryGradient } from '@/utils/categoryColors';
 import { Clock, Target } from 'lucide-react';
@@ -84,7 +84,7 @@ const CategoryProgressCard: React.FC<CategoryProgressCardProps> = memo(({
       
       <CardContent className="pt-0">
         <div aria-label={`Progress chart for ${category.name}`}>
-          <CompositeDonutChart
+          <LazyCompositeDonutChart
             category={category}
             actualTime={actualTime}
             dailyGoal={dailyGoal}
