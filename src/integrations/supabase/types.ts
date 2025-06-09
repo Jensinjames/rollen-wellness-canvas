@@ -189,7 +189,7 @@ export type Database = {
           id?: string
           log_date: string
           notes?: string | null
-          user_id: string
+          user_id?: string
         }
         Update: {
           actual_value?: number | null
@@ -400,6 +400,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "user"
       frequency_type: "daily" | "weekly" | "custom"
+      preferred_activites: "preferences" | "habits"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -517,6 +518,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "user"],
       frequency_type: ["daily", "weekly", "custom"],
+      preferred_activites: ["preferences", "habits"],
     },
   },
 } as const

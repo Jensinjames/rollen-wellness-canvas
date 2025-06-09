@@ -6,6 +6,28 @@ import { toast } from 'sonner';
 import { validateCategoryData, logCategoryOperation } from '@/components/categories/CategoryValidation';
 import { Category } from './types';
 
+// Utility to sanitize payload before sending to edge function
+const sanitizePayload = (updates: Partial<Category> & { id: string }) => {
+  const sanitized: any = {};
+  
+  // Only include defined, non-null values
+  Object.entries(updates).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== 'none') {
+      sanitized[key] = value;
+    }
+  });
+  
+  // Handle parent_id specifically - convert 'none' to null for top-level categories
+  if ('parent_id' in updates) {
+    sanitized.parent_id = updates.parent_id === 'none' ? null : updates.parent_id;
+  }
+  
+  // Ensure id is always included
+  sanitized.id = updates.id;
+  
+  return sanitized;
+};
+
 export const useCreateCategory = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -55,30 +77,47 @@ export const useUpdateCategory = () => {
   const { user, session } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<Category> & { id: string }) => {
+    mutationFn: async (updates: Partial<Category> & { id: string }) => {
       if (!user || !session) throw new Error('User not authenticated');
 
+      // Sanitize the payload before sending
+      const sanitizedPayload = sanitizePayload(updates);
+
       // Log the operation
-      logCategoryOperation('update', { id, ...updates });
+      logCategoryOperation('update', sanitizedPayload);
 
-      // Call the edge function for category updates
-      const { data, error } = await supabase.functions.invoke('update-category', {
-        body: { id, ...updates },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
+      // Call the edge function with timeout handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-      if (error) {
-        console.error('Edge function error:', error);
-        throw new Error(error.message || 'Failed to update category');
+      try {
+        const { data, error } = await supabase.functions.invoke('update-category', {
+          body: sanitizedPayload,
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        clearTimeout(timeoutId);
+
+        if (error) {
+          console.error('Edge function error:', error);
+          throw new Error(error.message || 'Failed to update category');
+        }
+
+        if (!data || !data.data) {
+          throw new Error('No data returned from update operation');
+        }
+
+        return data.data;
+      } catch (error: any) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('Request timed out. Please try again.');
+        }
+        throw error;
       }
-
-      if (!data || !data.data) {
-        throw new Error('No data returned from update operation');
-      }
-
-      return data.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
@@ -86,7 +125,7 @@ export const useUpdateCategory = () => {
     },
     onError: (error) => {
       console.error('Error updating category:', error);
-      toast.error('Failed to update category');
+      toast.error(`Failed to update category: ${error.message}`);
     },
   });
 };
