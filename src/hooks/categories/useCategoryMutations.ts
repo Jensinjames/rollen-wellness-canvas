@@ -52,25 +52,33 @@ export const useCreateCategory = () => {
 
 export const useUpdateCategory = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Category> & { id: string }) => {
-      if (!user) throw new Error('User not authenticated');
+      if (!user || !session) throw new Error('User not authenticated');
 
       // Log the operation
       logCategoryOperation('update', { id, ...updates });
 
-      const { data, error } = await supabase
-        .from('categories')
-        .update(updates)
-        .eq('id', id)
-        .eq('user_id', user.id)
-        .select()
-        .single();
+      // Call the edge function for category updates
+      const { data, error } = await supabase.functions.invoke('update-category', {
+        body: { id, ...updates },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
 
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Failed to update category');
+      }
+
+      if (!data || !data.data) {
+        throw new Error('No data returned from update operation');
+      }
+
+      return data.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });

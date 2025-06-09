@@ -1,1 +1,5 @@
+
 project_id = "dhtgoqoapwxioayzbdfu"
+
+[functions.update-category]
+verify_jwt = true
