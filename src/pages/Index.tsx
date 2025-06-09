@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,9 +18,12 @@ import { useActivityTimezoneData } from "@/hooks/useActivityTimezoneData";
 import { useActivities } from "@/hooks/useActivities";
 import { useCategories } from "@/hooks/categories";
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek } from "date-fns";
+import { useCacheInvalidation } from "@/hooks/useCachedQuery";
+import { CacheManager } from "@/components/cache/CacheManager";
 
 export default function IndexPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const { invalidateCache } = useCacheInvalidation();
   const { data: categories } = useCategories();
   const { data: activities } = useActivities();
   const categoryActivityData = useCategoryActivityData();
@@ -48,24 +50,51 @@ export default function IndexPage() {
 
   const parentCategories = categories?.filter(cat => cat.level === 0 && cat.is_active) || [];
 
+  // Add cache invalidation effect for when new activities are created
+  const handleActivitySuccess = () => {
+    setIsFormOpen(false);
+    // Invalidate relevant caches when new activity is created
+    invalidateCache('activities');
+    invalidateCache('category-activity-data');
+    invalidateCache('analytics-summary');
+  };
+
   return (
     <div className="container space-y-8 py-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="outline">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Activity
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Log New Activity</DialogTitle>
-            </DialogHeader>
-            <RefactoredActivityEntryForm onSuccess={() => setIsFormOpen(false)} />
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Activity
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Log New Activity</DialogTitle>
+              </DialogHeader>
+              <RefactoredActivityEntryForm onSuccess={handleActivitySuccess} />
+            </DialogContent>
+          </Dialog>
+          
+          {process.env.NODE_ENV === 'development' && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  Cache
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Cache Management</DialogTitle>
+                </DialogHeader>
+                <CacheManager />
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
       </div>
 
       <AnalyticsSummary />
@@ -95,4 +124,3 @@ export default function IndexPage() {
     </div>
   );
 }
-
