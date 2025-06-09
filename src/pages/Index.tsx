@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,6 @@ import { TimeDistributionChart } from "@/components/analytics/TimeDistributionCh
 import { WellnessDistributionChart } from "@/components/WellnessDistributionChart";
 import { ActivityHistoryTable } from "@/components/ActivityHistoryTable";
 import { Calendar } from "@/components/Calendar";
-import { Timer } from "@/components/Timer";
 import { Plus, Activity, BarChart3, Clock, Target } from "lucide-react";
 import { RefactoredActivityEntryForm } from "@/components/forms/RefactoredActivityEntryForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -95,4 +95,3 @@ export default function IndexPage() {
     </div>
   );
 }
-
