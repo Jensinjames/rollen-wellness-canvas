@@ -1,10 +1,10 @@
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/UnifiedAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { validateTextInput } from "@/utils/validation";
-import { logResourceEvent } from "@/utils/auditLog";
+import { securityLogger } from "@/utils/enhancedSecurityLogger";
 
 interface FormErrors {
   display_name?: string;
@@ -113,7 +113,7 @@ export const useProfileData = () => {
 
       // Log the profile update
       if (user) {
-        logResourceEvent('profile.update', user.id, user.id, {
+        await securityLogger.logAuthEvent('profile.update', user.id, {
           display_name_changed: nameValidation.sanitized !== displayName
         });
       }
