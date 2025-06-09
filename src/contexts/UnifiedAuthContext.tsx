@@ -67,7 +67,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       // Log auth events for audit
       if (event === 'SIGNED_IN') {
-        await securityLogger.logAuthEvent('auth.login', session?.user?.id);
+        await securityLogger.logAuthEvent('auth.login.success', session?.user?.id);
       } else if (event === 'SIGNED_OUT') {
         await securityLogger.logAuthEvent('auth.logout', user?.id);
       } else if (event === 'TOKEN_REFRESHED') {
@@ -134,7 +134,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const emailValidation = validateEmail(email);
     if (!emailValidation.isValid) {
       const error = new Error(emailValidation.error);
-      await securityLogger.logAuthEvent('auth.login', undefined, { 
+      await securityLogger.logAuthEvent('auth.login.failure', undefined, { 
         error: emailValidation.error 
       });
       return { error };
@@ -146,7 +146,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     });
 
     if (error) {
-      await securityLogger.logAuthEvent('auth.login', undefined, { 
+      await securityLogger.logAuthEvent('auth.login.failure', undefined, { 
         error: error.message, 
         email_domain: email.split('@')[1] 
       });

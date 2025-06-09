@@ -14,6 +14,9 @@ export type SecurityEventType =
   | 'security.account_locked'
   | 'data.unauthorized_access_attempt'
   | 'data.bulk_operation'
+  | 'activity.create'
+  | 'activity.update'
+  | 'activity.delete'
   | 'validation.input_rejected';
 
 interface SecurityLogDetails {
@@ -87,6 +90,21 @@ class EnhancedSecurityLogger {
     await this.logSecurityEvent(eventType, {
       event_details: additionalDetails,
       risk_level: eventType.includes('failure') || eventType.includes('rate_limited') ? 'medium' : 'low',
+    }, userId);
+  }
+
+  async logResourceEvent(
+    eventType: Extract<SecurityEventType, `activity.${string}`>,
+    userId: string,
+    resourceId: string,
+    additionalDetails?: Record<string, any>
+  ): Promise<void> {
+    await this.logSecurityEvent(eventType, {
+      event_details: {
+        resource_id: resourceId,
+        ...additionalDetails,
+      },
+      risk_level: 'low',
     }, userId);
   }
 
