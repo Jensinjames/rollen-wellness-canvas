@@ -1,56 +1,33 @@
 
 import { useState } from "react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AnalyticsSummary } from "@/components/analytics/AnalyticsSummary";
-import { CategoryAnalytics } from "@/components/analytics/CategoryAnalytics";
 import { WeeklyTrendChart } from "@/components/analytics/WeeklyTrendChart";
 import { GoalCompletionChart } from "@/components/analytics/GoalCompletionChart";
 import { TimeDistributionChart } from "@/components/analytics/TimeDistributionChart";
 import { WellnessDistributionChart } from "@/components/WellnessDistributionChart";
 import { ActivityHistoryTable } from "@/components/ActivityHistoryTable";
-import { Calendar } from "@/components/Calendar";
-import { Plus, Activity, BarChart3, Clock, Target } from "lucide-react";
+import { Plus } from "lucide-react";
 import { RefactoredActivityEntryForm } from "@/components/forms/RefactoredActivityEntryForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CategoryProgressCard } from "@/components/dashboard/CategoryProgressCard";
-import { useCategoryActivityData } from "@/hooks/useCategoryActivityData";
-import { useActivityTimezoneData } from "@/hooks/useActivityTimezoneData";
-import { useActivities } from "@/hooks/useActivities";
-import { useCategories } from "@/hooks/categories";
-import { format, startOfDay, endOfDay, startOfWeek, endOfWeek } from "date-fns";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import { useCacheInvalidation } from "@/hooks/useCachedQuery";
 import { CacheManager } from "@/components/cache/CacheManager";
 import { AppLayout } from "@/components/layout";
+import { DashboardSkeleton, AnalyticsSummarySkeleton, CategoryProgressCardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 
 export default function IndexPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const { invalidateCache } = useCacheInvalidation();
-  const { data: categories } = useCategories();
-  const { data: activities } = useActivities();
-  const categoryActivityData = useCategoryActivityData();
-  const { timezoneActivityData, timeRemainingToday, refreshTimestamp } = useActivityTimezoneData();
-
-  const now = new Date();
-  const startOfToday = startOfDay(now);
-  const endOfToday = endOfDay(now);
-  const startOfThisWeek = startOfWeek(now);
-  const endOfThisWeek = endOfWeek(now);
-
-  const todayActivities = activities?.filter(activity => {
-    const activityDate = new Date(activity.date_time);
-    return activityDate >= startOfToday && activityDate <= endOfToday;
-  }) || [];
-
-  const weekActivities = activities?.filter(activity => {
-    const activityDate = new Date(activity.date_time);
-    return activityDate >= startOfThisWeek && activityDate <= endOfThisWeek;
-  }) || [];
-
-  const todayTotalTime = todayActivities.reduce((sum, activity) => sum + activity.duration_minutes, 0);
-  const weekTotalTime = weekActivities.reduce((sum, activity) => sum + activity.duration_minutes, 0);
-
-  const parentCategories = categories?.filter(cat => cat.level === 0 && cat.is_active) || [];
+  
+  // Use the optimized dashboard data hook
+  const {
+    parentCategories,
+    categoryActivityData,
+    isLoading,
+    error
+  } = useDashboardData();
 
   // Add cache invalidation effect for when new activities are created
   const handleActivitySuccess = () => {
@@ -96,24 +73,47 @@ export default function IndexPage() {
     </>
   );
 
+  if (error) {
+    return (
+      <AppLayout pageTitle="Dashboard" headerActions={headerActions}>
+        <div className="container py-8">
+          <div className="text-center">
+            <h2 className="text-lg font-semibold text-red-600">Error loading dashboard</h2>
+            <p className="text-muted-foreground mt-2">Please try refreshing the page</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout pageTitle="Dashboard" headerActions={headerActions}>
       <div className="container space-y-8 py-8">
-        <AnalyticsSummary />
+        {isLoading ? (
+          <AnalyticsSummarySkeleton />
+        ) : (
+          <AnalyticsSummary />
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {parentCategories.map(category => {
-            const categoryData = timezoneActivityData ? timezoneActivityData[category.id] : null;
-            const actualTime = categoryData?.dailyTime || categoryData?.weeklyTime || 0;
-            return (
-              <CategoryProgressCard
-                key={category.id}
-                category={category}
-                actualTime={actualTime}
-                subcategoryTimes={categoryData?.subcategoryTimes}
-              />
-            );
-          })}
+          {isLoading ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <CategoryProgressCardSkeleton key={index} />
+            ))
+          ) : (
+            parentCategories.map(category => {
+              const categoryData = categoryActivityData[category.id];
+              const actualTime = categoryData?.weeklyTime || 0;
+              return (
+                <CategoryProgressCard
+                  key={category.id}
+                  category={category}
+                  actualTime={actualTime}
+                  subcategoryTimes={categoryData?.subcategoryTimes}
+                />
+              );
+            })
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

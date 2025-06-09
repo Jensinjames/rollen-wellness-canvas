@@ -1,10 +1,11 @@
+
+import { memo, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, Target, TrendingUp, Calendar } from "lucide-react";
 import { useActivities } from "@/hooks/useActivities";
 import { useCategories } from "@/hooks/categories";
-import { useMemo } from "react";
 
-export function AnalyticsSummary() {
+const AnalyticsSummary = memo(() => {
   const { data: activities } = useActivities();
   const { data: categories } = useCategories();
 
@@ -61,7 +62,7 @@ export function AnalyticsSummary() {
     };
   }, [activities, categories]);
 
-  const summaryCards = [
+  const summaryCards = useMemo(() => [
     {
       title: "Total Time This Week",
       value: `${analytics.totalTimeThisWeek}h`,
@@ -94,7 +95,7 @@ export function AnalyticsSummary() {
       color: "text-orange-600",
       bgColor: "bg-orange-100"
     }
-  ];
+  ], [analytics]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -116,4 +117,8 @@ export function AnalyticsSummary() {
       ))}
     </div>
   );
-}
+});
+
+AnalyticsSummary.displayName = 'AnalyticsSummary';
+
+export { AnalyticsSummary };

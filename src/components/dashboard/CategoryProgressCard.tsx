@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CompositeDonutChart } from '@/components/charts/CompositeDonutChart';
 import { Category } from '@/hooks/categories';
@@ -13,7 +13,7 @@ interface CategoryProgressCardProps {
   className?: string;
 }
 
-export const CategoryProgressCard: React.FC<CategoryProgressCardProps> = ({
+const CategoryProgressCard: React.FC<CategoryProgressCardProps> = memo(({
   category,
   actualTime,
   subcategoryTimes = {},
@@ -105,4 +105,8 @@ export const CategoryProgressCard: React.FC<CategoryProgressCardProps> = ({
       </CardContent>
     </Card>
   );
-};
+});
+
+CategoryProgressCard.displayName = 'CategoryProgressCard';
+
+export { CategoryProgressCard };
