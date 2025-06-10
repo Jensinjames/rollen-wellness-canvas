@@ -22,35 +22,45 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    // Check if request has body
-    const contentLength = req.headers.get('content-length');
-    if (!contentLength || contentLength === '0') {
-      console.error('Empty request body received');
-      return new Response(JSON.stringify({ error: 'Request body is required' }), {
-        status: 400,
+    // Enhanced logging for debugging
+    console.log('Request received:', {
+      method: req.method,
+      headers: Object.fromEntries(req.headers.entries()),
+      url: req.url
+    });
+
+    // Initialize Supabase client with user context
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('No authorization header provided');
+      return new Response(JSON.stringify({ error: 'Authorization header required' }), {
+        status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Initialize Supabase client with user context
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
     );
 
-    // Parse request body with error handling
+    // Parse request body with improved error handling
     let body;
     try {
       const bodyText = await req.text();
-      console.log('Raw request body:', bodyText);
+      console.log('Raw request body received:', bodyText);
       
       if (!bodyText || bodyText.trim() === '') {
-        throw new Error('Empty request body');
+        console.error('Empty request body received');
+        return new Response(JSON.stringify({ error: 'Request body is required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
       
       body = JSON.parse(bodyText);
@@ -84,6 +94,7 @@ Deno.serve(async (req: Request) => {
 
     // Validate required fields
     if (!id) {
+      console.error('Category ID missing from request');
       return new Response(JSON.stringify({ error: 'Category ID is required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -100,58 +111,104 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    console.log('User authenticated:', user.id);
+
     // Verify the category exists and belongs to the user
     const { data: existingCategory, error: fetchError } = await supabaseClient
       .from('categories')
-      .select('id, user_id, name')
+      .select('id, user_id, name, parent_id')
       .eq('id', id)
       .eq('user_id', user.id)
       .single();
 
     if (fetchError) {
       console.error('Error fetching category:', fetchError);
-      return new Response(JSON.stringify({ error: 'Failed to fetch category' }), {
+      return new Response(JSON.stringify({ 
+        error: 'Failed to fetch category',
+        details: fetchError.message 
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     if (!existingCategory) {
+      console.error('Category not found for user:', { categoryId: id, userId: user.id });
       return new Response(JSON.stringify({ error: 'Category not found or access denied' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Prepare update data - only include fields that are provided and valid
+    // Prepare update data with improved null/undefined handling
     const updateData: any = {};
-    if (name !== undefined && name !== null) updateData.name = name;
-    if (color !== undefined && color !== null) updateData.color = color;
-    if (description !== undefined && description !== null) updateData.description = description;
-    if (goal_type !== undefined && goal_type !== null) updateData.goal_type = goal_type;
-    if (is_boolean_goal !== undefined && is_boolean_goal !== null) updateData.is_boolean_goal = is_boolean_goal;
-    if (boolean_goal_label !== undefined && boolean_goal_label !== null) updateData.boolean_goal_label = boolean_goal_label;
-    if (daily_time_goal_minutes !== undefined && daily_time_goal_minutes !== null) updateData.daily_time_goal_minutes = daily_time_goal_minutes;
-    if (weekly_time_goal_minutes !== undefined && weekly_time_goal_minutes !== null) updateData.weekly_time_goal_minutes = weekly_time_goal_minutes;
-    if (is_active !== undefined && is_active !== null) updateData.is_active = is_active;
-    if (sort_order !== undefined && sort_order !== null) updateData.sort_order = sort_order;
-    if (parent_id !== undefined) updateData.parent_id = parent_id; // Allow null values for parent_id
-    if (level !== undefined && level !== null) updateData.level = level;
+    
+    // Handle string fields
+    if (name !== undefined && name !== null && name.trim() !== '') {
+      updateData.name = name.trim();
+    }
+    if (color !== undefined && color !== null && color.trim() !== '') {
+      updateData.color = color.trim();
+    }
+    if (description !== undefined) {
+      updateData.description = description === null ? null : description.trim();
+    }
+    if (boolean_goal_label !== undefined) {
+      updateData.boolean_goal_label = boolean_goal_label === null ? null : boolean_goal_label.trim();
+    }
+    if (goal_type !== undefined && goal_type !== null) {
+      updateData.goal_type = goal_type;
+    }
 
-    // Add updated_at timestamp
+    // Handle boolean fields
+    if (is_boolean_goal !== undefined && is_boolean_goal !== null) {
+      updateData.is_boolean_goal = Boolean(is_boolean_goal);
+    }
+    if (is_active !== undefined && is_active !== null) {
+      updateData.is_active = Boolean(is_active);
+    }
+
+    // Handle numeric fields
+    if (daily_time_goal_minutes !== undefined) {
+      updateData.daily_time_goal_minutes = daily_time_goal_minutes === null ? null : Number(daily_time_goal_minutes);
+    }
+    if (weekly_time_goal_minutes !== undefined) {
+      updateData.weekly_time_goal_minutes = weekly_time_goal_minutes === null ? null : Number(weekly_time_goal_minutes);
+    }
+    if (sort_order !== undefined && sort_order !== null) {
+      updateData.sort_order = Number(sort_order);
+    }
+    if (level !== undefined && level !== null) {
+      updateData.level = Number(level);
+    }
+
+    // Handle parent_id with special logic for 'none' string
+    if (parent_id !== undefined) {
+      if (parent_id === 'none' || parent_id === null || parent_id === '') {
+        updateData.parent_id = null;
+      } else {
+        updateData.parent_id = parent_id;
+      }
+    }
+
+    // Always update the timestamp
     updateData.updated_at = new Date().toISOString();
 
-    console.log('Update data to be sent:', updateData);
+    console.log('Sanitized update data:', updateData);
 
-    // Ensure we have something to update
-    if (Object.keys(updateData).length <= 1) { // Only updated_at
+    // Ensure we have something meaningful to update
+    const fieldsToUpdate = Object.keys(updateData).filter(key => key !== 'updated_at');
+    if (fieldsToUpdate.length === 0) {
+      console.error('No valid fields to update');
       return new Response(JSON.stringify({ error: 'No valid fields to update' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Perform the update
+    // Perform the update with detailed logging
+    console.log('Attempting to update category:', { id, updateData });
+    
     const { data: updatedCategory, error: updateError } = await supabaseClient
       .from('categories')
       .update(updateData)
@@ -161,31 +218,49 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (updateError) {
-      console.error('Error updating category:', updateError);
+      console.error('Database update error:', {
+        error: updateError,
+        code: updateError.code,
+        message: updateError.message,
+        details: updateError.details
+      });
+      
       return new Response(JSON.stringify({ 
         error: 'Failed to update category',
-        details: updateError.message 
+        details: updateError.message,
+        code: updateError.code
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log(`Category updated successfully: ${updatedCategory.name} (${updatedCategory.id})`);
+    console.log('Category updated successfully:', {
+      id: updatedCategory.id,
+      name: updatedCategory.name,
+      fieldsUpdated: fieldsToUpdate
+    });
 
     return new Response(JSON.stringify({ 
       data: updatedCategory,
-      message: 'Category updated successfully' 
+      message: 'Category updated successfully',
+      fieldsUpdated: fieldsToUpdate
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error: any) {
-    console.error('Unexpected error in update-category function:', error);
+    console.error('Unexpected error in update-category function:', {
+      error: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
     return new Response(JSON.stringify({ 
       error: 'Internal server error',
-      details: error.message 
+      details: error.message,
+      timestamp: new Date().toISOString()
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -12,20 +12,70 @@ const sanitizePayload = (updates: Partial<Category> & { id: string }) => {
   // Always include the ID
   sanitized.id = updates.id;
   
-  // Only include defined values, but handle parent_id specially
+  // Handle each field with proper type conversion and validation
   Object.entries(updates).forEach(([key, value]) => {
     if (key === 'id') return; // Already handled above
     
-    if (key === 'parent_id') {
-      // Handle parent_id conversion: 'none' -> null, keep actual UUIDs
-      if (value === 'none' || value === null) {
-        sanitized.parent_id = null;
-      } else if (typeof value === 'string' && value.trim() !== '') {
-        sanitized.parent_id = value;
-      }
-    } else if (value !== undefined && value !== null && value !== '') {
-      // For other fields, only include non-empty values
-      sanitized[key] = value;
+    switch (key) {
+      case 'parent_id':
+        // Handle parent_id conversion: 'none' -> null, keep actual UUIDs
+        if (value === 'none' || value === null || value === undefined) {
+          sanitized.parent_id = null;
+        } else if (typeof value === 'string' && value.trim() !== '') {
+          sanitized.parent_id = value.trim();
+        }
+        break;
+        
+      case 'name':
+      case 'color':
+      case 'goal_type':
+        // Required string fields - only include if non-empty
+        if (typeof value === 'string' && value.trim() !== '') {
+          sanitized[key] = value.trim();
+        }
+        break;
+        
+      case 'description':
+      case 'boolean_goal_label':
+        // Optional string fields - include null values
+        if (value === null || value === undefined) {
+          sanitized[key] = null;
+        } else if (typeof value === 'string') {
+          sanitized[key] = value.trim() === '' ? null : value.trim();
+        }
+        break;
+        
+      case 'is_boolean_goal':
+      case 'is_active':
+        // Boolean fields
+        if (typeof value === 'boolean') {
+          sanitized[key] = value;
+        }
+        break;
+        
+      case 'daily_time_goal_minutes':
+      case 'weekly_time_goal_minutes':
+        // Optional numeric fields
+        if (value === null || value === undefined) {
+          sanitized[key] = null;
+        } else if (typeof value === 'number' && !isNaN(value)) {
+          sanitized[key] = value;
+        }
+        break;
+        
+      case 'sort_order':
+      case 'level':
+        // Required numeric fields
+        if (typeof value === 'number' && !isNaN(value)) {
+          sanitized[key] = value;
+        }
+        break;
+        
+      default:
+        // For other fields, include if not undefined
+        if (value !== undefined) {
+          sanitized[key] = value;
+        }
     }
   });
   
@@ -35,7 +85,7 @@ const sanitizePayload = (updates: Partial<Category> & { id: string }) => {
     throw new Error('No fields to update');
   }
   
-  console.log('Sanitized payload:', sanitized);
+  console.log('Sanitized payload for edge function:', sanitized);
   return sanitized;
 };
 
@@ -107,49 +157,57 @@ export const useUpdateCategory = () => {
       // Log the operation
       logCategoryOperation('update', sanitizedPayload);
 
-      console.log('Sending update request with payload:', sanitizedPayload);
-      console.log('Session token exists:', !!session.access_token);
-
-      // Call the edge function with timeout handling
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      console.log('Sending update request:', {
+        payload: sanitizedPayload,
+        hasSession: !!session.access_token,
+        userId: user.id
+      });
 
       try {
+        // Call the edge function with improved error handling
         const { data, error } = await supabase.functions.invoke('update-category', {
-          body: sanitizedPayload,
+          body: JSON.stringify(sanitizedPayload),
           headers: {
             Authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
         });
 
-        clearTimeout(timeoutId);
-
         if (error) {
-          console.error('Edge function error:', error);
-          throw new Error(error.message || 'Failed to update category');
+          console.error('Edge function invocation error:', error);
+          throw new Error(error.message || 'Failed to call update function');
         }
 
-        if (!data || !data.data) {
-          console.error('No data returned from edge function:', data);
-          throw new Error('No data returned from update operation');
+        if (!data) {
+          console.error('No response data from edge function');
+          throw new Error('No response received from server');
         }
 
-        console.log('Update successful:', data.data);
+        if (!data.data) {
+          console.error('Invalid response format:', data);
+          throw new Error(data.error || 'Invalid response from server');
+        }
+
+        console.log('Category update successful:', data.data);
         return data.data;
       } catch (error: any) {
-        clearTimeout(timeoutId);
-        if (error.name === 'AbortError') {
-          throw new Error('Request timed out. Please try again.');
-        }
-        
-        // Enhanced error logging
+        // Enhanced error logging and handling
         console.error('Update category error details:', {
           error: error.message,
           payload: sanitizedPayload,
           hasSession: !!session,
-          userId: user?.id
+          userId: user?.id,
+          errorType: error.name
         });
+        
+        // Provide more user-friendly error messages
+        if (error.message.includes('timeout') || error.message.includes('fetch')) {
+          throw new Error('Network error. Please check your connection and try again.');
+        }
+        
+        if (error.message.includes('unauthorized') || error.message.includes('401')) {
+          throw new Error('Session expired. Please refresh the page and try again.');
+        }
         
         throw error;
       }
