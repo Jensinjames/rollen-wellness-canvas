@@ -22,6 +22,16 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // Check if request has body
+    const contentLength = req.headers.get('content-length');
+    if (!contentLength || contentLength === '0') {
+      console.error('Empty request body received');
+      return new Response(JSON.stringify({ error: 'Request body is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Initialize Supabase client with user context
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -33,7 +43,29 @@ Deno.serve(async (req: Request) => {
       }
     );
 
-    const body = await req.json();
+    // Parse request body with error handling
+    let body;
+    try {
+      const bodyText = await req.text();
+      console.log('Raw request body:', bodyText);
+      
+      if (!bodyText || bodyText.trim() === '') {
+        throw new Error('Empty request body');
+      }
+      
+      body = JSON.parse(bodyText);
+      console.log('Parsed request body:', body);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      return new Response(JSON.stringify({ 
+        error: 'Invalid JSON in request body',
+        details: parseError.message 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const {
       id,
       name,
@@ -91,23 +123,33 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Prepare update data - only include fields that are provided
+    // Prepare update data - only include fields that are provided and valid
     const updateData: any = {};
-    if (name !== undefined) updateData.name = name;
-    if (color !== undefined) updateData.color = color;
-    if (description !== undefined) updateData.description = description;
-    if (goal_type !== undefined) updateData.goal_type = goal_type;
-    if (is_boolean_goal !== undefined) updateData.is_boolean_goal = is_boolean_goal;
-    if (boolean_goal_label !== undefined) updateData.boolean_goal_label = boolean_goal_label;
-    if (daily_time_goal_minutes !== undefined) updateData.daily_time_goal_minutes = daily_time_goal_minutes;
-    if (weekly_time_goal_minutes !== undefined) updateData.weekly_time_goal_minutes = weekly_time_goal_minutes;
-    if (is_active !== undefined) updateData.is_active = is_active;
-    if (sort_order !== undefined) updateData.sort_order = sort_order;
-    if (parent_id !== undefined) updateData.parent_id = parent_id;
-    if (level !== undefined) updateData.level = level;
+    if (name !== undefined && name !== null) updateData.name = name;
+    if (color !== undefined && color !== null) updateData.color = color;
+    if (description !== undefined && description !== null) updateData.description = description;
+    if (goal_type !== undefined && goal_type !== null) updateData.goal_type = goal_type;
+    if (is_boolean_goal !== undefined && is_boolean_goal !== null) updateData.is_boolean_goal = is_boolean_goal;
+    if (boolean_goal_label !== undefined && boolean_goal_label !== null) updateData.boolean_goal_label = boolean_goal_label;
+    if (daily_time_goal_minutes !== undefined && daily_time_goal_minutes !== null) updateData.daily_time_goal_minutes = daily_time_goal_minutes;
+    if (weekly_time_goal_minutes !== undefined && weekly_time_goal_minutes !== null) updateData.weekly_time_goal_minutes = weekly_time_goal_minutes;
+    if (is_active !== undefined && is_active !== null) updateData.is_active = is_active;
+    if (sort_order !== undefined && sort_order !== null) updateData.sort_order = sort_order;
+    if (parent_id !== undefined) updateData.parent_id = parent_id; // Allow null values for parent_id
+    if (level !== undefined && level !== null) updateData.level = level;
 
     // Add updated_at timestamp
     updateData.updated_at = new Date().toISOString();
+
+    console.log('Update data to be sent:', updateData);
+
+    // Ensure we have something to update
+    if (Object.keys(updateData).length <= 1) { // Only updated_at
+      return new Response(JSON.stringify({ error: 'No valid fields to update' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Perform the update
     const { data: updatedCategory, error: updateError } = await supabaseClient

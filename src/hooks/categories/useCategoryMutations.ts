@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/UnifiedAuthContext';
@@ -10,21 +9,33 @@ import { Category } from './types';
 const sanitizePayload = (updates: Partial<Category> & { id: string }) => {
   const sanitized: any = {};
   
-  // Only include defined, non-null values
+  // Always include the ID
+  sanitized.id = updates.id;
+  
+  // Only include defined values, but handle parent_id specially
   Object.entries(updates).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== 'none') {
+    if (key === 'id') return; // Already handled above
+    
+    if (key === 'parent_id') {
+      // Handle parent_id conversion: 'none' -> null, keep actual UUIDs
+      if (value === 'none' || value === null) {
+        sanitized.parent_id = null;
+      } else if (typeof value === 'string' && value.trim() !== '') {
+        sanitized.parent_id = value;
+      }
+    } else if (value !== undefined && value !== null && value !== '') {
+      // For other fields, only include non-empty values
       sanitized[key] = value;
     }
   });
   
-  // Handle parent_id specifically - convert 'none' to null for top-level categories
-  if ('parent_id' in updates) {
-    sanitized.parent_id = updates.parent_id === 'none' ? null : updates.parent_id;
+  // Ensure we have at least one field to update besides id
+  const fieldsToUpdate = Object.keys(sanitized).filter(key => key !== 'id');
+  if (fieldsToUpdate.length === 0) {
+    throw new Error('No fields to update');
   }
   
-  // Ensure id is always included
-  sanitized.id = updates.id;
-  
+  console.log('Sanitized payload:', sanitized);
   return sanitized;
 };
 
@@ -80,15 +91,28 @@ export const useUpdateCategory = () => {
     mutationFn: async (updates: Partial<Category> & { id: string }) => {
       if (!user || !session) throw new Error('User not authenticated');
 
+      // Validate that we have required fields
+      if (!updates.id) {
+        throw new Error('Category ID is required for update');
+      }
+
       // Sanitize the payload before sending
-      const sanitizedPayload = sanitizePayload(updates);
+      let sanitizedPayload;
+      try {
+        sanitizedPayload = sanitizePayload(updates);
+      } catch (error: any) {
+        throw new Error(`Payload validation failed: ${error.message}`);
+      }
 
       // Log the operation
       logCategoryOperation('update', sanitizedPayload);
 
+      console.log('Sending update request with payload:', sanitizedPayload);
+      console.log('Session token exists:', !!session.access_token);
+
       // Call the edge function with timeout handling
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
       try {
         const { data, error } = await supabase.functions.invoke('update-category', {
@@ -107,15 +131,26 @@ export const useUpdateCategory = () => {
         }
 
         if (!data || !data.data) {
+          console.error('No data returned from edge function:', data);
           throw new Error('No data returned from update operation');
         }
 
+        console.log('Update successful:', data.data);
         return data.data;
       } catch (error: any) {
         clearTimeout(timeoutId);
         if (error.name === 'AbortError') {
           throw new Error('Request timed out. Please try again.');
         }
+        
+        // Enhanced error logging
+        console.error('Update category error details:', {
+          error: error.message,
+          payload: sanitizedPayload,
+          hasSession: !!session,
+          userId: user?.id
+        });
+        
         throw error;
       }
     },
