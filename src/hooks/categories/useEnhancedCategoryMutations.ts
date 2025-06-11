@@ -26,7 +26,7 @@ const logCategoryOperation = (operation: string, payload: any, result?: any, err
   console.log('[Category Operation]', logData);
 };
 
-export const useEnhancedUpdateCategory = () => {
+export const useUpdateCategory = () => {
   const queryClient = useQueryClient();
   const { user, session } = useAuth();
 
@@ -179,9 +179,6 @@ export const useEnhancedUpdateCategory = () => {
     },
   });
 };
-
-// Re-export the enhanced hook as the main update hook
-export { useEnhancedUpdateCategory as useUpdateCategory };
 
 // Export validation utilities for use in components
 export { validateCategoryUpdatePayload, sanitizeCategoryPayload } from '@/utils/categoryValidation';
