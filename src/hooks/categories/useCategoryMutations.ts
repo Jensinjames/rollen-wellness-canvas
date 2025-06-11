@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/UnifiedAuthContext';
@@ -164,32 +165,33 @@ export const useUpdateCategory = () => {
       });
 
       try {
-        // Call the edge function with improved error handling
-        const { data, error } = await supabase.functions.invoke('update-category', {
-          body: JSON.stringify(sanitizedPayload),
+        // Call the edge function with proper body stringification
+        const response = await fetch(`https://dhtgoqoapwxioayzbdfu.supabase.co/functions/v1/update-category`, {
+          method: 'POST',
           headers: {
-            Authorization: `Bearer ${session.access_token}`,
+            'Authorization': `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
+          body: JSON.stringify(sanitizedPayload),
         });
 
-        if (error) {
-          console.error('Edge function invocation error:', error);
-          throw new Error(error.message || 'Failed to call update function');
+        console.log('Edge function response status:', response.status);
+
+        const responseData = await response.json();
+        console.log('Edge function response data:', responseData);
+
+        if (!response.ok) {
+          console.error('Edge function error response:', responseData);
+          throw new Error(responseData.error || `Server error: ${response.status}`);
         }
 
-        if (!data) {
-          console.error('No response data from edge function');
-          throw new Error('No response received from server');
+        if (!responseData.data) {
+          console.error('Invalid response format:', responseData);
+          throw new Error(responseData.error || 'Invalid response from server');
         }
 
-        if (!data.data) {
-          console.error('Invalid response format:', data);
-          throw new Error(data.error || 'Invalid response from server');
-        }
-
-        console.log('Category update successful:', data.data);
-        return data.data;
+        console.log('Category update successful:', responseData.data);
+        return responseData.data;
       } catch (error: any) {
         // Enhanced error logging and handling
         console.error('Update category error details:', {
