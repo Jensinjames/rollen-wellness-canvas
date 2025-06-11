@@ -81,23 +81,51 @@ export const useUpdateCategory = () => {
         Object.entries(sanitizedPayload).filter(([_, value]) => value !== undefined)
       );
 
+      // Ensure we have at least the id field
+      if (!cleanPayload.id) {
+        cleanPayload.id = updates.id;
+      }
+
       logCategoryOperation('update', cleanPayload);
 
-      console.log('[Enhanced Category Update]', {
+      // Enhanced logging for debugging
+      console.log('[Enhanced Category Update Request]', {
         payload: cleanPayload,
+        payloadSize: JSON.stringify(cleanPayload).length,
         hasSession: !!session.access_token,
         userId: user.id,
-        validationWarnings: validation.warnings
+        validationWarnings: validation.warnings,
+        sessionExpiry: session.expires_at
       });
 
       try {
-        // Call the enhanced edge function
-        const { data, error } = await supabase.functions.invoke('update-category', {
-          body: JSON.stringify(cleanPayload),
+        // Prepare request body as JSON string
+        const requestBody = JSON.stringify(cleanPayload);
+        
+        console.log('[Request Body Debug]', {
+          bodyString: requestBody,
+          bodyLength: requestBody.length,
+          bodyIsEmpty: requestBody === '' || requestBody === '{}',
           headers: {
-            Authorization: `Bearer ${session.access_token}`,
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          }
+        });
+
+        // Call the enhanced edge function with explicit headers
+        const { data, error } = await supabase.functions.invoke('update-category', {
+          body: requestBody,
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
+        });
+
+        console.log('[Edge Function Response Debug]', {
+          data,
+          error,
+          hasData: !!data,
+          hasError: !!error
         });
 
         if (error) {

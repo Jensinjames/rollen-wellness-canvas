@@ -81,15 +81,33 @@ Deno.serve(async (req: Request) => {
       }
     );
 
-    // Parse request body with enhanced validation
+    // Enhanced request body parsing with detailed logging
     let body;
+    let bodyText = '';
     try {
-      const bodyText = await req.text();
-      logOperation('info', 'Raw request received', { requestId, bodyLength: bodyText.length });
+      // Get content-type for debugging
+      const contentType = req.headers.get('content-type') || 'not-specified';
+      
+      bodyText = await req.text();
+      logOperation('info', 'Raw request received', { 
+        requestId, 
+        bodyLength: bodyText.length,
+        contentType: contentType,
+        hasAuthHeader: !!authHeader,
+        bodyPreview: bodyText.length > 0 ? bodyText.substring(0, 100) : 'empty'
+      });
       
       if (!bodyText || bodyText.trim() === '') {
-        logOperation('warn', 'Empty request body', { requestId });
-        return new Response(JSON.stringify({ error: 'Request body is required' }), {
+        logOperation('warn', 'Empty request body', { 
+          requestId,
+          contentType,
+          headers: Object.fromEntries(req.headers.entries())
+        });
+        return new Response(JSON.stringify({ 
+          error: 'Request body is required',
+          details: 'The request body appears to be empty or missing',
+          requestId 
+        }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -102,10 +120,16 @@ Deno.serve(async (req: Request) => {
         categoryId: body.id 
       });
     } catch (parseError) {
-      logOperation('error', 'JSON parse error', { requestId, error: parseError.message });
+      logOperation('error', 'JSON parse error', { 
+        requestId, 
+        error: parseError.message,
+        bodyText: bodyText.substring(0, 200),
+        bodyLength: bodyText.length
+      });
       return new Response(JSON.stringify({ 
         error: 'Invalid JSON in request body',
-        details: parseError.message 
+        details: parseError.message,
+        requestId
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -188,7 +212,8 @@ Deno.serve(async (req: Request) => {
       logOperation('warn', 'Validation errors', { requestId, errors: validationErrors });
       return new Response(JSON.stringify({ 
         error: 'Validation failed',
-        details: validationErrors 
+        details: validationErrors,
+        requestId
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -199,7 +224,10 @@ Deno.serve(async (req: Request) => {
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) {
       logOperation('error', 'Authentication error', { requestId, error: userError?.message });
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      return new Response(JSON.stringify({ 
+        error: 'Unauthorized',
+        requestId 
+      }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -223,7 +251,8 @@ Deno.serve(async (req: Request) => {
       });
       return new Response(JSON.stringify({ 
         error: 'Failed to fetch category',
-        details: fetchError.message 
+        details: fetchError.message,
+        requestId
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -236,7 +265,10 @@ Deno.serve(async (req: Request) => {
         categoryId: id, 
         userId: user.id 
       });
-      return new Response(JSON.stringify({ error: 'Category not found or access denied' }), {
+      return new Response(JSON.stringify({ 
+        error: 'Category not found or access denied',
+        requestId 
+      }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -257,7 +289,10 @@ Deno.serve(async (req: Request) => {
           parentId: parent_id,
           error: parentError?.message 
         });
-        return new Response(JSON.stringify({ error: 'Parent category not found or access denied' }), {
+        return new Response(JSON.stringify({ 
+          error: 'Parent category not found or access denied',
+          requestId 
+        }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -269,7 +304,10 @@ Deno.serve(async (req: Request) => {
           parentId: parent_id,
           parentLevel: parentCategory.level 
         });
-        return new Response(JSON.stringify({ error: 'Parent category must be a top-level category (level 0)' }), {
+        return new Response(JSON.stringify({ 
+          error: 'Parent category must be a top-level category (level 0)',
+          requestId 
+        }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -334,7 +372,10 @@ Deno.serve(async (req: Request) => {
     const fieldsToUpdate = Object.keys(updateData).filter(key => key !== 'updated_at');
     if (fieldsToUpdate.length === 0) {
       logOperation('warn', 'No valid fields to update', { requestId });
-      return new Response(JSON.stringify({ error: 'No valid fields to update' }), {
+      return new Response(JSON.stringify({ 
+        error: 'No valid fields to update',
+        requestId 
+      }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -367,7 +408,8 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ 
         error: 'Failed to update category',
         details: updateError.message,
-        code: updateError.code
+        code: updateError.code,
+        requestId
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -384,7 +426,8 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ 
       data: updatedCategory,
       message: 'Category updated successfully',
-      fieldsUpdated: fieldsToUpdate
+      fieldsUpdated: fieldsToUpdate,
+      requestId
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -401,7 +444,8 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ 
       error: 'Internal server error',
       details: error.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      requestId
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
