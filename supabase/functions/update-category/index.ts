@@ -8,7 +8,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// Enhanced validation functions
+// Phase 2: Synchronized validation functions with client-side
 const validateHexColor = (color: string): boolean => {
   return /^#[0-9A-Fa-f]{6}$/.test(color);
 };
@@ -30,7 +30,7 @@ const validateNumber = (value: number, min = 0, max = Number.MAX_SAFE_INTEGER): 
          value <= max;
 };
 
-// Structured logging function
+// Phase 3: Enhanced structured logging function
 const logOperation = (level: 'info' | 'warn' | 'error', message: string, context: any = {}) => {
   const logEntry = {
     timestamp: new Date().toISOString(),
@@ -52,7 +52,10 @@ Deno.serve(async (req: Request) => {
 
   if (req.method !== 'POST') {
     logOperation('warn', 'Invalid method', { requestId, method: req.method });
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+    return new Response(JSON.stringify({ 
+      error: 'Method not allowed',
+      requestId 
+    }), {
       status: 405,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -65,7 +68,10 @@ Deno.serve(async (req: Request) => {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       logOperation('warn', 'Missing authorization header', { requestId });
-      return new Response(JSON.stringify({ error: 'Authorization header required' }), {
+      return new Response(JSON.stringify({ 
+        error: 'Authorization header required',
+        requestId 
+      }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -81,30 +87,31 @@ Deno.serve(async (req: Request) => {
       }
     );
 
-    // Enhanced request body parsing with detailed logging
+    // Phase 3: Enhanced request body parsing with comprehensive logging
     let body;
     let bodyText = '';
     try {
-      // Get content-type for debugging
       const contentType = req.headers.get('content-type') || 'not-specified';
       
       bodyText = await req.text();
-      logOperation('info', 'Raw request received', { 
+      logOperation('info', 'Raw request body received', { 
         requestId, 
         bodyLength: bodyText.length,
         contentType: contentType,
         hasAuthHeader: !!authHeader,
-        bodyPreview: bodyText.length > 0 ? bodyText.substring(0, 100) : 'empty'
+        bodyPreview: bodyText.length > 0 ? bodyText.substring(0, 200) : 'empty',
+        headers: Object.fromEntries(req.headers.entries())
       });
       
       if (!bodyText || bodyText.trim() === '') {
-        logOperation('warn', 'Empty request body', { 
+        logOperation('error', 'Empty or missing request body', { 
           requestId,
           contentType,
-          headers: Object.fromEntries(req.headers.entries())
+          bodyLength: bodyText.length,
+          rawBody: bodyText
         });
         return new Response(JSON.stringify({ 
-          error: 'Request body is required',
+          error: 'Request body is required and cannot be empty',
           details: 'The request body appears to be empty or missing',
           requestId 
         }), {
@@ -117,7 +124,8 @@ Deno.serve(async (req: Request) => {
       logOperation('info', 'Request body parsed successfully', { 
         requestId, 
         fieldsProvided: Object.keys(body),
-        categoryId: body.id 
+        categoryId: body.id,
+        bodySize: JSON.stringify(body).length
       });
     } catch (parseError) {
       logOperation('error', 'JSON parse error', { 
@@ -152,7 +160,7 @@ Deno.serve(async (req: Request) => {
       level
     } = body;
 
-    // Enhanced field validation
+    // Phase 2: Enhanced field validation with standardized error messages
     const validationErrors: string[] = [];
 
     // Required field validation
@@ -160,56 +168,54 @@ Deno.serve(async (req: Request) => {
       validationErrors.push('Category ID is required');
     }
 
-    // Color validation
+    // Phase 2: Synchronized validation rules with client-side
     if (color !== undefined && !validateHexColor(color)) {
       validationErrors.push('Color must be a valid 6-digit hex code (e.g., #FF0000)');
     }
 
-    // Goal type validation
     if (goal_type !== undefined && !validateGoalType(goal_type)) {
       validationErrors.push('Goal type must be one of: time, boolean, both');
     }
 
-    // Name validation
     if (name !== undefined && !validateString(name, 1, 100)) {
       validationErrors.push('Name must be between 1 and 100 characters');
     }
 
-    // Description validation
     if (description !== undefined && description !== null && !validateString(description, 0, 500)) {
       validationErrors.push('Description must be no more than 500 characters');
     }
 
-    // Boolean goal label validation
     if (boolean_goal_label !== undefined && boolean_goal_label !== null && !validateString(boolean_goal_label, 0, 100)) {
       validationErrors.push('Boolean goal label must be no more than 100 characters');
     }
 
-    // Time goal validation
+    // Time goal validation with synchronized ranges
     if (daily_time_goal_minutes !== undefined && daily_time_goal_minutes !== null && 
         !validateNumber(daily_time_goal_minutes, 0, 1440)) {
-      validationErrors.push('Daily time goal must be between 0 and 1440 minutes');
+      validationErrors.push('Daily time goal must be between 0 and 1440 minutes (24 hours)');
     }
 
     if (weekly_time_goal_minutes !== undefined && weekly_time_goal_minutes !== null && 
         !validateNumber(weekly_time_goal_minutes, 0, 10080)) {
-      validationErrors.push('Weekly time goal must be between 0 and 10080 minutes');
+      validationErrors.push('Weekly time goal must be between 0 and 10080 minutes (7 days)');
     }
 
-    // Sort order validation
     if (sort_order !== undefined && sort_order !== null && 
         !validateNumber(sort_order, 0, 999)) {
       validationErrors.push('Sort order must be between 0 and 999');
     }
 
-    // Level validation
     if (level !== undefined && level !== null && 
         !validateNumber(level, 0, 1)) {
       validationErrors.push('Level must be 0 (top-level) or 1 (subcategory)');
     }
 
     if (validationErrors.length > 0) {
-      logOperation('warn', 'Validation errors', { requestId, errors: validationErrors });
+      logOperation('warn', 'Validation errors detected', { 
+        requestId, 
+        errors: validationErrors,
+        categoryId: id
+      });
       return new Response(JSON.stringify({ 
         error: 'Validation failed',
         details: validationErrors,
@@ -220,12 +226,16 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Check user authentication
+    // Phase 3: Enhanced user authentication with session validation
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) {
-      logOperation('error', 'Authentication error', { requestId, error: userError?.message });
+      logOperation('error', 'Authentication error', { 
+        requestId, 
+        error: userError?.message,
+        hasAuthHeader: !!authHeader
+      });
       return new Response(JSON.stringify({ 
-        error: 'Unauthorized',
+        error: 'Unauthorized - invalid or expired session',
         requestId 
       }), {
         status: 401,
@@ -233,7 +243,11 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    logOperation('info', 'User authenticated', { requestId, userId: user.id });
+    logOperation('info', 'User authenticated successfully', { 
+      requestId, 
+      userId: user.id,
+      userEmail: user.email 
+    });
 
     // Verify the category exists and belongs to the user
     const { data: existingCategory, error: fetchError } = await supabaseClient
@@ -247,7 +261,8 @@ Deno.serve(async (req: Request) => {
       logOperation('error', 'Error fetching category', { 
         requestId, 
         error: fetchError.message,
-        categoryId: id 
+        categoryId: id,
+        userId: user.id
       });
       return new Response(JSON.stringify({ 
         error: 'Failed to fetch category',

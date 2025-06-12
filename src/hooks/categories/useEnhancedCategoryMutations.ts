@@ -88,36 +88,34 @@ export const useUpdateCategory = () => {
 
       logCategoryOperation('update', cleanPayload);
 
-      // Enhanced logging for debugging
+      // Enhanced logging for debugging - Phase 3 implementation
       console.log('[Enhanced Category Update Request]', {
         payload: cleanPayload,
         payloadSize: JSON.stringify(cleanPayload).length,
         hasSession: !!session.access_token,
         userId: user.id,
         validationWarnings: validation.warnings,
-        sessionExpiry: session.expires_at
+        sessionExpiry: session.expires_at,
+        requestTimestamp: new Date().toISOString()
       });
 
       try {
-        // Prepare request body as JSON string
-        const requestBody = JSON.stringify(cleanPayload);
-        
-        console.log('[Request Body Debug]', {
-          bodyString: requestBody,
-          bodyLength: requestBody.length,
-          bodyIsEmpty: requestBody === '' || requestBody === '{}',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          }
+        // Phase 1 Fix: Send raw object directly to supabase.functions.invoke()
+        // Remove manual JSON.stringify() and let Supabase handle serialization
+        console.log('[Request Payload Debug]', {
+          cleanPayload,
+          payloadType: typeof cleanPayload,
+          payloadKeys: Object.keys(cleanPayload),
+          hasRequiredId: !!cleanPayload.id,
+          sessionValid: !!session.access_token
         });
 
-        // Call the enhanced edge function with explicit headers
+        // Phase 1 Fix: Remove explicit Content-Type header, only send Authorization
         const { data, error } = await supabase.functions.invoke('update-category', {
-          body: requestBody,
+          body: cleanPayload, // Send as raw object, not stringified
           headers: {
             'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
+            // Removed explicit Content-Type - let Supabase handle it
           },
         });
 
@@ -125,7 +123,8 @@ export const useUpdateCategory = () => {
           data,
           error,
           hasData: !!data,
-          hasError: !!error
+          hasError: !!error,
+          responseTimestamp: new Date().toISOString()
         });
 
         if (error) {
@@ -149,24 +148,27 @@ export const useUpdateCategory = () => {
         logCategoryOperation('update', cleanPayload, data.data);
         console.log('[Category Update Success]', {
           category: data.data,
-          fieldsUpdated: data.fieldsUpdated
+          fieldsUpdated: data.fieldsUpdated,
+          requestId: data.requestId,
+          successTimestamp: new Date().toISOString()
         });
 
         return data.data;
       } catch (error: any) {
-        // Enhanced error logging and handling
+        // Phase 2: Enhanced error logging and handling with better categorization
         console.error('[Update Category Error]', {
           error: error.message,
           payload: cleanPayload,
           hasSession: !!session,
           userId: user?.id,
           errorType: error.name,
-          stack: error.stack
+          stack: error.stack,
+          errorTimestamp: new Date().toISOString()
         });
         
         logCategoryOperation('update', cleanPayload, null, error);
         
-        // Provide more user-friendly error messages
+        // Phase 2: Provide more user-friendly error messages with better categorization
         if (error.message.includes('timeout') || error.message.includes('fetch')) {
           throw new Error('Network error. Please check your connection and try again.');
         }
@@ -177,6 +179,10 @@ export const useUpdateCategory = () => {
 
         if (error.message.includes('Validation failed')) {
           throw error; // Pass validation errors as-is
+        }
+
+        if (error.message.includes('Empty request body') || error.message.includes('400')) {
+          throw new Error('Invalid request format. Please try again or contact support.');
         }
         
         throw error;
@@ -193,14 +199,16 @@ export const useUpdateCategory = () => {
       console.log('[Category Update Success Toast]', {
         categoryId: data.id,
         categoryName: data.name,
-        fieldsUpdated
+        fieldsUpdated,
+        successTimestamp: new Date().toISOString()
       });
     },
     onError: (error, variables) => {
       console.error('[Category Update Error Toast]', {
         error: error.message,
         categoryId: variables.id,
-        categoryName: variables.name
+        categoryName: variables.name,
+        errorTimestamp: new Date().toISOString()
       });
       
       toast.error(`Failed to update category: ${error.message}`);
