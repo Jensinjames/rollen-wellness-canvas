@@ -7,3 +7,6 @@ export { useSeedDefaultCategories } from './useCategorySeed';
 
 // Re-export validation utilities
 export { validateCategoryUpdatePayload, sanitizeCategoryPayload } from '@/utils/categoryValidation';
+
+// Re-export request utilities
+export { updateCategoryRequest } from './updateCategoryRequest';

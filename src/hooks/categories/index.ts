@@ -9,3 +9,4 @@ export * from './useUpdateCategory';
 export * from './useCategoryDelete';
 export * from './useCategorySeed';
 export * from './categoryLogger';
+export * from './updateCategoryRequest';
