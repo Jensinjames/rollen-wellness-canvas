@@ -9,22 +9,7 @@ import {
   sanitizeCategoryPayload,
   CategoryUpdatePayload 
 } from '@/utils/categoryValidation';
-
-// Enhanced error handling with structured logging
-const logCategoryOperation = (operation: string, payload: any, result?: any, error?: any) => {
-  const logData = {
-    timestamp: new Date().toISOString(),
-    operation,
-    categoryId: payload.id,
-    categoryName: payload.name,
-    success: !error,
-    fieldsUpdated: payload ? Object.keys(payload).filter(k => k !== 'id') : [],
-    error: error?.message,
-    result: result ? { id: result.id, name: result.name } : undefined
-  };
-  
-  console.log('[Category Operation]', logData);
-};
+import { logCategoryOperation } from './categoryLogger';
 
 export const useUpdateCategory = () => {
   const queryClient = useQueryClient();
@@ -88,7 +73,7 @@ export const useUpdateCategory = () => {
 
       logCategoryOperation('update', cleanPayload);
 
-      // Enhanced logging for debugging - Phase 3 implementation
+      // Enhanced logging for debugging
       console.log('[Enhanced Category Update Request]', {
         payload: cleanPayload,
         payloadSize: JSON.stringify(cleanPayload).length,
@@ -100,8 +85,7 @@ export const useUpdateCategory = () => {
       });
 
       try {
-        // Phase 1 Fix: Send raw object directly to supabase.functions.invoke()
-        // Remove manual JSON.stringify() and let Supabase handle serialization
+        // Send raw object directly to supabase.functions.invoke()
         console.log('[Request Payload Debug]', {
           cleanPayload,
           payloadType: typeof cleanPayload,
@@ -110,12 +94,11 @@ export const useUpdateCategory = () => {
           sessionValid: !!session.access_token
         });
 
-        // Phase 1 Fix: Remove explicit Content-Type header, only send Authorization
+        // Send as raw object, not stringified, only send Authorization header
         const { data, error } = await supabase.functions.invoke('update-category', {
-          body: cleanPayload, // Send as raw object, not stringified
+          body: cleanPayload,
           headers: {
             'Authorization': `Bearer ${session.access_token}`,
-            // Removed explicit Content-Type - let Supabase handle it
           },
         });
 
@@ -155,7 +138,7 @@ export const useUpdateCategory = () => {
 
         return data.data;
       } catch (error: any) {
-        // Phase 2: Enhanced error logging and handling with better categorization
+        // Enhanced error logging and handling
         console.error('[Update Category Error]', {
           error: error.message,
           payload: cleanPayload,
@@ -168,7 +151,7 @@ export const useUpdateCategory = () => {
         
         logCategoryOperation('update', cleanPayload, null, error);
         
-        // Phase 2: Provide more user-friendly error messages with better categorization
+        // Provide user-friendly error messages
         if (error.message.includes('timeout') || error.message.includes('fetch')) {
           throw new Error('Network error. Please check your connection and try again.');
         }
@@ -215,6 +198,3 @@ export const useUpdateCategory = () => {
     },
   });
 };
-
-// Export validation utilities for use in components
-export { validateCategoryUpdatePayload, sanitizeCategoryPayload } from '@/utils/categoryValidation';

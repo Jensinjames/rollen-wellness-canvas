@@ -5,6 +5,7 @@ export * from './utils';
 export * from './useCategoryQueries';
 export * from './useCategoryMutations';
 export * from './useCategoryCreate';
-export * from './useEnhancedCategoryMutations';
+export * from './useUpdateCategory';
 export * from './useCategoryDelete';
 export * from './useCategorySeed';
+export * from './categoryLogger';
