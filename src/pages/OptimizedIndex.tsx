@@ -11,7 +11,7 @@ import { useOptimizedDashboardData } from "@/hooks/useOptimizedDashboardData";
 import { useCacheInvalidation } from "@/hooks/useCachedQuery";
 import { CacheManager } from "@/components/cache/CacheManager";
 import { AppLayout } from "@/components/layout";
-import { CategoryProgressCardSkeleton } from "@/components/dashboard/DashboardSkeleton";
+import { DashboardSkeleton, CategoryProgressCardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 import { ChartErrorBoundary } from "@/components/error/ChartErrorBoundary";
 import { 
@@ -20,7 +20,7 @@ import {
   LazyTimeDistributionChart 
 } from "@/components/charts/LazyCharts";
 
-export default function IndexPage() {
+export default function OptimizedIndexPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const { invalidateCache } = useCacheInvalidation();
   
