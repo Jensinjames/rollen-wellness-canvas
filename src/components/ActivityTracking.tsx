@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Timer, Clock } from "lucide-react";
 import { TimerStartModal } from './timer/TimerStartModal';
+import { TimerCompletionSummary } from './timer/TimerCompletionSummary';
 import { useTimer } from '@/contexts/TimerContext';
 
 export function ActivityTracking() {
@@ -19,6 +19,12 @@ export function ActivityTracking() {
       return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleNavigateToActivity = () => {
+    // This could navigate to an activity details page or activity history
+    // For now, we'll just log it - you can implement navigation as needed
+    console.log('Navigate to activity details');
   };
 
   return (
@@ -69,6 +75,10 @@ export function ActivityTracking() {
       <TimerStartModal 
         isOpen={showTimerModal} 
         onOpenChange={setShowTimerModal} 
+      />
+      
+      <TimerCompletionSummary 
+        onNavigateToActivity={handleNavigateToActivity}
       />
     </>
   );
