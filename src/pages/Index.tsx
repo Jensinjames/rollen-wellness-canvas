@@ -1,17 +1,17 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { OptimizedAnalyticsSummary } from "@/components/analytics/OptimizedAnalyticsSummary";
+import { AnalyticsSummary } from "@/components/analytics/AnalyticsSummary";
 import { ActivityHistoryTable } from "@/components/ActivityHistoryTable";
 import { Plus } from "lucide-react";
 import { RefactoredActivityEntryForm } from "@/components/forms/RefactoredActivityEntryForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { OptimizedCategoryProgressCard } from "@/components/dashboard/OptimizedCategoryProgressCard";
-import { useOptimizedDashboardData } from "@/hooks/useOptimizedDashboardData";
+import { CategoryProgressCard } from "@/components/dashboard/CategoryProgressCard";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import { useCacheInvalidation } from "@/hooks/useCachedQuery";
 import { CacheManager } from "@/components/cache/CacheManager";
 import { AppLayout } from "@/components/layout";
-import { CategoryProgressCardSkeleton } from "@/components/dashboard/DashboardSkeleton";
+import { DashboardSkeleton, AnalyticsSummarySkeleton, CategoryProgressCardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 import { ChartErrorBoundary } from "@/components/error/ChartErrorBoundary";
 import { 
@@ -35,14 +35,13 @@ export default function IndexPage() {
     rootMargin: '300px'
   });
   
-  // Use the optimized dashboard data hook - single data source for everything
+  // Use the optimized dashboard data hook
   const {
     parentCategories,
     categoryActivityData,
-    analyticsData,
     isLoading,
     error
-  } = useOptimizedDashboardData();
+  } = useDashboardData();
 
   // Add cache invalidation effect for when new activities are created
   const handleActivitySuccess = () => {
@@ -104,7 +103,11 @@ export default function IndexPage() {
   return (
     <AppLayout pageTitle="Dashboard" headerActions={headerActions}>
       <div className="container space-y-8 py-8">
-        <OptimizedAnalyticsSummary analyticsData={analyticsData} isLoading={isLoading} />
+        {isLoading ? (
+          <AnalyticsSummarySkeleton />
+        ) : (
+          <AnalyticsSummary />
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {isLoading ? (
@@ -116,7 +119,7 @@ export default function IndexPage() {
               const categoryData = categoryActivityData[category.id];
               const actualTime = categoryData?.weeklyTime || 0;
               return (
-                <OptimizedCategoryProgressCard
+                <CategoryProgressCard
                   key={category.id}
                   category={category}
                   actualTime={actualTime}

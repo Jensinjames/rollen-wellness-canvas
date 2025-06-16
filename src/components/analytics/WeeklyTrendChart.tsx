@@ -1,14 +1,13 @@
 
-import { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from "recharts";
-import { useOptimizedActivities } from "@/hooks/useOptimizedActivities";
+import { useActivities } from "@/hooks/useActivities";
 import { useCategories } from "@/hooks/categories";
 import { useMemo } from "react";
 
-const WeeklyTrendChart = memo(() => {
-  const { data: activities } = useOptimizedActivities();
+export function WeeklyTrendChart() {
+  const { data: activities } = useActivities();
   const { data: categories } = useCategories();
 
   const chartData = useMemo(() => {
@@ -111,8 +110,4 @@ const WeeklyTrendChart = memo(() => {
       </CardContent>
     </Card>
   );
-});
-
-WeeklyTrendChart.displayName = 'WeeklyTrendChart';
-
-export { WeeklyTrendChart };
+}

@@ -1,14 +1,13 @@
 
-import { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
-import { useOptimizedActivities } from "@/hooks/useOptimizedActivities";
+import { useActivities } from "@/hooks/useActivities";
 import { useCategories } from "@/hooks/categories";
 import { useMemo } from "react";
 
-const GoalCompletionChart = memo(() => {
-  const { data: activities } = useOptimizedActivities();
+export function GoalCompletionChart() {
+  const { data: activities } = useActivities();
   const { data: categories } = useCategories();
 
   const chartData = useMemo(() => {
@@ -114,8 +113,4 @@ const GoalCompletionChart = memo(() => {
       </CardContent>
     </Card>
   );
-});
-
-GoalCompletionChart.displayName = 'GoalCompletionChart';
-
-export { GoalCompletionChart };
+}
