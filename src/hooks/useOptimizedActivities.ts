@@ -52,7 +52,7 @@ export const useOptimizedActivities = () => {
         .from('activities')
         .select(`
           *,
-          main_category:categories!activities_category_id_fkey (
+          main_category:categories!category_id (
             id,
             name,
             color,
@@ -60,7 +60,7 @@ export const useOptimizedActivities = () => {
             path,
             parent_id
           ),
-          sub_category:categories!activities_subcategory_id_fkey (
+          sub_category:categories!subcategory_id (
             id,
             name,
             color,
