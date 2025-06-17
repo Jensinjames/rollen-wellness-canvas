@@ -17,6 +17,7 @@ export type SecurityEventType =
   | 'security.suspicious_activity'
   | 'security.password_policy_violation'
   | 'security.account_locked'
+  | 'security.rate_limit_check'
   | 'data.unauthorized_access_attempt'
   | 'data.bulk_operation'
   | 'activity.create'

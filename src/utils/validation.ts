@@ -1,10 +1,16 @@
 
 import { isDevelopment } from './environment';
-import { secureValidateEmail, secureValidateTextInput } from './secureValidation';
+import { secureValidateEmail, secureValidateTextInput, secureValidateNumber } from './secureValidation';
 
 export interface ValidationResult {
   isValid: boolean;
   sanitized?: string;
+  error?: string;
+}
+
+export interface NumberValidationResult {
+  isValid: boolean;
+  value?: number | null;
   error?: string;
 }
 
@@ -20,6 +26,71 @@ export const validateName = (name: string): ValidationResult => {
     maxLength: 100,
     allowedChars: /^[a-zA-Z\s\-'\.]+$/,
     fieldName: 'name'
+  });
+};
+
+// General text input validation
+export const validateTextInput = (
+  input: string,
+  options: {
+    required?: boolean;
+    minLength?: number;
+    maxLength?: number;
+    allowEmpty?: boolean;
+    allowSpecialChars?: boolean;
+  } = {}
+): ValidationResult => {
+  return secureValidateTextInput(input, options);
+};
+
+// Category name validation
+export const validateCategoryName = (name: string): ValidationResult => {
+  return secureValidateTextInput(name, {
+    minLength: 1,
+    maxLength: 100,
+    fieldName: 'category name',
+    allowSpecialChars: false
+  });
+};
+
+// Hex color validation
+export const validateHexColor = (color: string): ValidationResult => {
+  if (!color || typeof color !== 'string') {
+    return { isValid: false, error: 'Color is required' };
+  }
+
+  const hexPattern = /^#[A-Fa-f0-9]{6}$/;
+  if (!hexPattern.test(color)) {
+    return { isValid: false, error: 'Color must be a valid 6-digit hex code (e.g., #FF0000)' };
+  }
+
+  return { isValid: true, sanitized: color.toUpperCase() };
+};
+
+// Number validation
+export const validateNumber = (
+  input: string | number,
+  options: {
+    min?: number;
+    max?: number;
+    integer?: boolean;
+    required?: boolean;
+  } = {}
+): NumberValidationResult => {
+  const result = secureValidateNumber(input, options);
+  return {
+    isValid: result.isValid,
+    value: result.value,
+    error: result.error
+  };
+};
+
+// Notes validation
+export const validateNotes = (notes: string): ValidationResult => {
+  return secureValidateTextInput(notes, {
+    maxLength: 1000,
+    allowEmpty: true,
+    fieldName: 'notes'
   });
 };
 
