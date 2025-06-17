@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { useQueryClient } from '@tanstack/react-query';
@@ -15,6 +14,7 @@ interface AuthContextType {
   loading: boolean;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
+  resetPassword: (email: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -189,6 +189,38 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return { error };
   };
 
+  const resetPassword = async (email: string) => {
+    // Validate email input
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      const error = new Error(emailValidation.error);
+      await securityLogger.logAuthEvent('auth.password_reset', undefined, { 
+        error: emailValidation.error 
+      });
+      return { error };
+    }
+
+    const redirectUrl = `${window.location.origin}/auth`;
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectUrl
+    });
+
+    if (error) {
+      await securityLogger.logAuthEvent('auth.password_reset', undefined, { 
+        error: error.message, 
+        email_domain: email.split('@')[1] 
+      });
+    } else {
+      await securityLogger.logAuthEvent('auth.password_reset', undefined, { 
+        success: true, 
+        email_domain: email.split('@')[1] 
+      });
+    }
+
+    return { error };
+  };
+
   const signOut = async () => {
     // Prevent multiple concurrent sign-out calls
     if (isSigningOut) {
@@ -229,6 +261,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     loading,
     signUp,
     signIn,
+    resetPassword,
     signOut,
   };
 
