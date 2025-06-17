@@ -1,6 +1,6 @@
 
 import { SECURITY_CONFIG } from './securityConfig';
-import { securityLogger } from './enhancedSecurityLogger';
+import { securityLogger, SecurityEventType } from './enhancedSecurityLogger';
 
 interface SessionFingerprint {
   userAgent: string;
@@ -62,7 +62,7 @@ class SecureSessionManager {
 
     // Check if session has expired
     if (sessionAge > SECURITY_CONFIG.SESSION_TIMEOUT_DURATION) {
-      this.logSecurityEvent('session_expired', userId);
+      this.logSecurityEvent('security.session_expired', userId);
       return {
         isValid: false,
         shouldWarn: false,
@@ -72,7 +72,7 @@ class SecureSessionManager {
 
     // Check if user has been inactive too long
     if (timeSinceActivity > SECURITY_CONFIG.SESSION_TIMEOUT_DURATION) {
-      this.logSecurityEvent('session_inactive_timeout', userId);
+      this.logSecurityEvent('security.session_inactive_timeout', userId);
       return {
         isValid: false,
         shouldWarn: false,
@@ -86,7 +86,7 @@ class SecureSessionManager {
 
     if (shouldWarn) {
       this.warningShown = true;
-      this.logSecurityEvent('session_warning_shown', userId);
+      this.logSecurityEvent('security.session_warning_shown', userId);
     }
 
     return {
@@ -116,7 +116,7 @@ class SecureSessionManager {
         currentFingerprint.timezone !== this.sessionFingerprint.timezone;
 
       if (criticalMismatch) {
-        this.logSecurityEvent('session_fingerprint_mismatch');
+        this.logSecurityEvent('security.session_fingerprint_mismatch');
         return false;
       }
 
@@ -139,9 +139,9 @@ class SecureSessionManager {
     this.warningShown = false;
   }
 
-  private async logSecurityEvent(eventType: string, userId?: string): Promise<void> {
+  private async logSecurityEvent(eventType: SecurityEventType, userId?: string): Promise<void> {
     try {
-      await securityLogger.logSecurityEvent(`security.${eventType}`, {
+      await securityLogger.logSecurityEvent(eventType, {
         event_details: {
           session_age: Date.now() - this.sessionStartTime,
           time_since_activity: Date.now() - this.lastActivityTime,
