@@ -9,7 +9,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { CategoryProgressCard } from "@/components/dashboard/CategoryProgressCard";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useCacheInvalidation } from "@/hooks/useCachedQuery";
-import { CacheManager } from "@/components/cache/CacheManager";
 import { AppLayout } from "@/components/layout";
 import { DashboardSkeleton, AnalyticsSummarySkeleton, CategoryProgressCardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
@@ -19,6 +18,9 @@ import {
   LazyGoalCompletionChart, 
   LazyTimeDistributionChart 
 } from "@/components/charts/LazyCharts";
+
+// Only show cache manager in development
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 export default function IndexPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -69,7 +71,7 @@ export default function IndexPage() {
         </DialogContent>
       </Dialog>
       
-      {process.env.NODE_ENV === 'development' && (
+      {isDevelopment && (
         <Dialog>
           <DialogTrigger asChild>
             <Button variant="outline" size="sm">
@@ -78,9 +80,11 @@ export default function IndexPage() {
           </DialogTrigger>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
-              <DialogTitle>Cache Management</DialogTitle>
+              <DialogTitle>Cache Management (Dev Only)</DialogTitle>
             </DialogHeader>
-            <CacheManager />
+            <div className="p-4 text-sm text-muted-foreground">
+              Cache management is only available in development mode.
+            </div>
           </DialogContent>
         </Dialog>
       )}

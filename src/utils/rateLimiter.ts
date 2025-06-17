@@ -1,114 +1,138 @@
+import { SECURITY_CONFIG } from './securityConfig';
 
 interface RateLimitEntry {
   count: number;
-  firstAttempt: number;
-  isLocked: boolean;
-  lockUntil?: number;
+  resetTime: number;
+  failedAttempts: number;
+  lastFailure?: number;
 }
 
-class RateLimiter {
-  private attempts: Map<string, RateLimitEntry> = new Map();
-  
-  private cleanupExpired(): void {
-    const now = Date.now();
-    for (const [key, entry] of this.attempts.entries()) {
-      // Remove expired entries
-      if (entry.lockUntil && now > entry.lockUntil) {
-        this.attempts.delete(key);
-      } else if (!entry.isLocked && (now - entry.firstAttempt) > 60000) { // 1 minute window
-        this.attempts.delete(key);
-      }
-    }
+class SecurityRateLimiter {
+  private store = new Map<string, RateLimitEntry>();
+  private cleanupInterval: NodeJS.Timeout;
+
+  constructor() {
+    // Clean up expired entries every 5 minutes
+    this.cleanupInterval = setInterval(() => {
+      this.cleanup();
+    }, 5 * 60 * 1000);
   }
-  
-  checkRateLimit(identifier: string, maxAttempts: number = 5, windowMs: number = 60000): {
+
+  checkRateLimit(
+    identifier: string,
+    maxRequests: number = SECURITY_CONFIG.API_RATE_LIMIT_MAX_REQUESTS,
+    windowMs: number = SECURITY_CONFIG.API_RATE_LIMIT_WINDOW
+  ): {
     allowed: boolean;
     remainingAttempts: number;
     resetTime?: number;
   } {
-    this.cleanupExpired();
-    
     const now = Date.now();
-    const entry = this.attempts.get(identifier);
+    const key = this.sanitizeIdentifier(identifier);
+    
+    let entry = this.store.get(key);
     
     if (!entry) {
-      this.attempts.set(identifier, {
-        count: 1,
-        firstAttempt: now,
-        isLocked: false
-      });
-      return { allowed: true, remainingAttempts: maxAttempts - 1 };
+      entry = {
+        count: 0,
+        resetTime: now + windowMs,
+        failedAttempts: 0
+      };
+      this.store.set(key, entry);
     }
     
-    // Check if currently locked
-    if (entry.isLocked) {
-      const lockUntil = entry.lockUntil || 0;
-      if (now < lockUntil) {
-        return { 
-          allowed: false, 
+    // Reset if window expired
+    if (now > entry.resetTime) {
+      entry.count = 0;
+      entry.resetTime = now + windowMs;
+      // Keep failed attempts for longer tracking
+    }
+    
+    // Check for lockout due to failed attempts
+    if (entry.failedAttempts >= SECURITY_CONFIG.LOGIN_ATTEMPTS_MAX) {
+      const lockoutEnd = (entry.lastFailure || 0) + SECURITY_CONFIG.LOGIN_LOCKOUT_DURATION;
+      if (now < lockoutEnd) {
+        return {
+          allowed: false,
           remainingAttempts: 0,
-          resetTime: lockUntil
+          resetTime: lockoutEnd
         };
       } else {
-        // Lock expired, reset
-        this.attempts.delete(identifier);
-        this.attempts.set(identifier, {
-          count: 1,
-          firstAttempt: now,
-          isLocked: false
-        });
-        return { allowed: true, remainingAttempts: maxAttempts - 1 };
+        // Reset failed attempts after lockout period
+        entry.failedAttempts = 0;
+        entry.lastFailure = undefined;
       }
     }
     
-    // Check if window has expired
-    if ((now - entry.firstAttempt) > windowMs) {
-      // Reset window
-      entry.count = 1;
-      entry.firstAttempt = now;
-      return { allowed: true, remainingAttempts: maxAttempts - 1 };
-    }
-    
-    // Increment count
     entry.count++;
     
-    if (entry.count > maxAttempts) {
-      // Lock the identifier
-      entry.isLocked = true;
-      entry.lockUntil = now + (15 * 60 * 1000); // 15 minutes
-      return { 
-        allowed: false, 
-        remainingAttempts: 0,
-        resetTime: entry.lockUntil
-      };
-    }
-    
-    return { 
-      allowed: true, 
-      remainingAttempts: maxAttempts - entry.count 
+    return {
+      allowed: entry.count <= maxRequests,
+      remainingAttempts: Math.max(0, maxRequests - entry.count),
+      resetTime: entry.resetTime
     };
   }
-  
+
   recordFailedAttempt(identifier: string): void {
-    this.checkRateLimit(identifier);
+    const key = this.sanitizeIdentifier(identifier);
+    const entry = this.store.get(key) || {
+      count: 0,
+      resetTime: Date.now() + SECURITY_CONFIG.API_RATE_LIMIT_WINDOW,
+      failedAttempts: 0
+    };
+    
+    entry.failedAttempts++;
+    entry.lastFailure = Date.now();
+    this.store.set(key, entry);
   }
-  
+
   recordSuccessfulAttempt(identifier: string): void {
-    this.attempts.delete(identifier);
-  }
-  
-  isLocked(identifier: string): boolean {
-    const entry = this.attempts.get(identifier);
-    if (!entry || !entry.isLocked) return false;
+    const key = this.sanitizeIdentifier(identifier);
+    const entry = this.store.get(key);
     
-    const now = Date.now();
-    if (entry.lockUntil && now > entry.lockUntil) {
-      this.attempts.delete(identifier);
-      return false;
+    if (entry) {
+      // Reset failed attempts on successful login
+      entry.failedAttempts = 0;
+      entry.lastFailure = undefined;
     }
+  }
+
+  private sanitizeIdentifier(identifier: string): string {
+    // Remove any potentially harmful characters and limit length
+    return identifier
+      .replace(/[^a-zA-Z0-9@._-]/g, '')
+      .substring(0, 100);
+  }
+
+  private cleanup(): void {
+    const now = Date.now();
     
-    return true;
+    for (const [key, entry] of this.store.entries()) {
+      // Remove entries that are well past their expiration
+      const maxAge = Math.max(
+        SECURITY_CONFIG.API_RATE_LIMIT_WINDOW,
+        SECURITY_CONFIG.LOGIN_LOCKOUT_DURATION
+      ) * 2;
+      
+      if (now > entry.resetTime + maxAge) {
+        this.store.delete(key);
+      }
+    }
+  }
+
+  destroy(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
+    this.store.clear();
   }
 }
 
-export const rateLimiter = new RateLimiter();
+export const rateLimiter = new SecurityRateLimiter();
+
+// Cleanup on page unload
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    rateLimiter.destroy();
+  });
+}

@@ -17,7 +17,7 @@ export type Database = {
           duration_minutes: number
           id: string
           is_completed: boolean | null
-          name: string
+          name: string | null
           notes: string | null
           subcategory_id: string | null
           updated_at: string | null
@@ -30,7 +30,7 @@ export type Database = {
           duration_minutes: number
           id?: string
           is_completed?: boolean | null
-          name: string
+          name?: string | null
           notes?: string | null
           subcategory_id?: string | null
           updated_at?: string | null
@@ -43,7 +43,7 @@ export type Database = {
           duration_minutes?: number
           id?: string
           is_completed?: boolean | null
-          name?: string
+          name?: string | null
           notes?: string | null
           subcategory_id?: string | null
           updated_at?: string | null
@@ -389,7 +389,15 @@ export type Database = {
         Returns: boolean
       }
       log_security_event: {
-        Args: { event_type: string; user_id?: string; details?: Json }
+        Args:
+          | { event_type: string; user_id?: string; details?: Json }
+          | {
+              event_type: string
+              user_id?: string
+              details?: Json
+              ip_address?: string
+              user_agent?: string
+            }
         Returns: undefined
       }
       seed_default_categories: {

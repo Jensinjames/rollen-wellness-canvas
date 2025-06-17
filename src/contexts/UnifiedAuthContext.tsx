@@ -6,7 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { validateEmail, validatePassword } from '@/utils/validation';
 import { securityLogger } from '@/utils/enhancedSecurityLogger';
-import { SECURITY_CONFIG } from '@/utils/securityConfig';
+import { secureSessionManager } from '@/utils/secureSessionManager';
+import { isDevelopment } from '@/utils/environment';
 
 interface AuthContextType {
   user: User | null;
@@ -23,36 +24,39 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [sessionWarningShown, setSessionWarningShown] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   
   const queryClient = useQueryClient();
 
-  // Session timeout monitoring
+  // Enhanced session monitoring with fingerprint validation
   useEffect(() => {
     if (!session || isSigningOut) return;
 
-    const checkSessionExpiry = () => {
-      const now = Date.now() / 1000;
-      const expiresAt = session.expires_at || 0;
-      const timeUntilExpiry = (expiresAt - now) * 1000;
-
-      // Show warning 5 minutes before expiry
-      if (timeUntilExpiry <= SECURITY_CONFIG.SESSION_TIMEOUT_WARNING && !sessionWarningShown) {
-        setSessionWarningShown(true);
-        console.warn('Session will expire soon. Please save your work.');
+    const checkSessionSecurity = () => {
+      // Validate session fingerprint
+      if (!secureSessionManager.validateFingerprint()) {
+        securityLogger.logAuthEvent('auth.session_hijack_detected', user?.id);
+        signOut();
+        return;
       }
 
-      // Auto-logout when session expires
-      if (timeUntilExpiry <= 0) {
-        securityLogger.logAuthEvent('auth.session_expired', user?.id);
+      // Check session validity
+      const sessionStatus = secureSessionManager.validateSession(user?.id);
+      
+      if (sessionStatus.shouldLogout) {
         signOut();
+        return;
+      }
+
+      if (sessionStatus.shouldWarn && !isDevelopment()) {
+        // Show session warning in production
+        console.warn('Session will expire soon. Please save your work.');
       }
     };
 
-    const interval = setInterval(checkSessionExpiry, 60000); // Check every minute
+    const interval = setInterval(checkSessionSecurity, 60000); // Check every minute
     return () => clearInterval(interval);
-  }, [session, sessionWarningShown, user?.id, isSigningOut]);
+  }, [session, user?.id, isSigningOut]);
 
   useEffect(() => {
     // Get initial session
@@ -66,30 +70,32 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (process.env.NODE_ENV === 'development') {
+      if (isDevelopment()) {
         console.log('Auth state changed:', event, session?.user?.email);
       }
 
       // Log auth events for audit
       if (event === 'SIGNED_IN') {
         await securityLogger.logAuthEvent('auth.login.success', session?.user?.id);
-        setIsSigningOut(false); // Reset signing out state on successful sign in
+        secureSessionManager.refreshSession();
+        setIsSigningOut(false);
       } else if (event === 'SIGNED_OUT') {
         await securityLogger.logAuthEvent('auth.logout', user?.id);
-        // Only clear state if we're not already handling sign out
+        secureSessionManager.invalidateSession();
         if (!isSigningOut) {
           clearAuthState();
         }
       } else if (event === 'TOKEN_REFRESHED') {
-        console.log('Session refreshed');
+        secureSessionManager.refreshSession();
+        if (isDevelopment()) {
+          console.log('Session refreshed');
+        }
       }
 
-      // Don't update state if we're in the middle of signing out
       if (!isSigningOut) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-        setSessionWarningShown(false);
       }
     });
 
@@ -99,7 +105,6 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const clearAuthState = () => {
     setUser(null);
     setSession(null);
-    setSessionWarningShown(false);
     setLoading(false);
     
     // Clear all React Query cache
@@ -193,13 +198,9 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setIsSigningOut(true);
     
     try {
-      // Log the event first
       await securityLogger.logAuthEvent('auth.logout', user?.id);
-      
-      // Clear local state immediately (don't wait for onAuthStateChange)
       clearAuthState();
       
-      // Call Supabase signOut with timeout
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Sign out timeout')), 5000)
       );
@@ -210,12 +211,12 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       ]);
 
     } catch (error) {
-      console.error('Sign out error:', error);
-      // Even if Supabase signOut fails, we've already cleared local state
+      if (isDevelopment()) {
+        console.error('Sign out error:', error);
+      }
     } finally {
       setIsSigningOut(false);
       
-      // Force navigation to auth page
       if (typeof window !== 'undefined') {
         window.location.href = '/auth';
       }
