@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/UnifiedAuthContext';
 import { Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { validatePasswordStrength } from '@/utils/securityConfig';
-import { validateEmail } from '@/utils/validation';
+import { secureValidateEmail, secureValidateTextInput, validateRateLimit } from '@/utils/secureValidation';
 
 export const AuthForm = () => {
   const { signIn, signUp, resetPassword } = useAuth();
@@ -32,19 +32,45 @@ export const AuthForm = () => {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
-    // Validate email
-    const emailValidation = validateEmail(email);
+    // Rate limiting check
+    const rateLimitCheck = await validateRateLimit(
+      email || 'anonymous',
+      isSignUp ? 'signup' : 'signin',
+      { maxAttempts: 5, windowMinutes: 15 }
+    );
+
+    if (!rateLimitCheck.allowed) {
+      setError(rateLimitCheck.message || 'Too many attempts. Please try again later.');
+      setIsLoading(false);
+      return;
+    }
+
+    // Enhanced email validation with security checks
+    const emailValidation = secureValidateEmail(email);
     if (!emailValidation.isValid) {
       setError(emailValidation.error || 'Invalid email address');
       setIsLoading(false);
       return;
     }
 
-    // Validate password for both sign in and sign up with consistent rules
-    const passwordValidation = validatePasswordStrength(password);
+    // Enhanced password validation
+    const passwordValidation = secureValidateTextInput(password, {
+      minLength: 1,
+      maxLength: 128,
+      fieldName: 'password'
+    });
+
     if (!passwordValidation.isValid) {
+      setError(passwordValidation.error || 'Invalid password');
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate password strength for both sign in and sign up with consistent rules
+    const passwordStrengthValidation = validatePasswordStrength(password);
+    if (!passwordStrengthValidation.isValid) {
       if (isSignUp) {
-        setPasswordErrors(passwordValidation.errors);
+        setPasswordErrors(passwordStrengthValidation.errors);
         setError('Password does not meet security requirements');
       } else {
         setError('Invalid email or password');
@@ -82,8 +108,21 @@ export const AuthForm = () => {
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
 
-    // Validate email
-    const emailValidation = validateEmail(email);
+    // Rate limiting check
+    const rateLimitCheck = await validateRateLimit(
+      email || 'anonymous',
+      'password_reset',
+      { maxAttempts: 3, windowMinutes: 60 }
+    );
+
+    if (!rateLimitCheck.allowed) {
+      setError(rateLimitCheck.message || 'Too many reset attempts. Please try again later.');
+      setIsLoading(false);
+      return;
+    }
+
+    // Enhanced email validation with security checks
+    const emailValidation = secureValidateEmail(email);
     if (!emailValidation.isValid) {
       setError(emailValidation.error || 'Invalid email address');
       setIsLoading(false);

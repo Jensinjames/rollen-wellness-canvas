@@ -1,213 +1,102 @@
 
-/**
- * Unified validation system with enhanced security features
- * Consolidates all validation logic into a single source of truth
- */
+import { isDevelopment } from './environment';
+import { secureValidateEmail, secureValidateTextInput } from './secureValidation';
 
-import { advancedSanitizeInput, secureValidateTextInput, secureValidateNumber } from './securityValidation';
-
-// Core validation interfaces
-export interface ValidationResult<T = any> {
+export interface ValidationResult {
   isValid: boolean;
-  value?: T;
   sanitized?: string;
   error?: string;
-  securityRisk?: 'low' | 'medium' | 'high';
 }
 
-export interface TextValidationOptions {
-  required?: boolean;
-  minLength?: number;
-  maxLength?: number;
-  allowEmpty?: boolean;
-  allowSpecialChars?: boolean;
-}
-
-export interface NumberValidationOptions {
-  min?: number;
-  max?: number;
-  integer?: boolean;
-  required?: boolean;
-}
-
-// Unified text validation
-export const validateText = (
-  input: string,
-  options: TextValidationOptions = {}
-): ValidationResult<string> => {
-  const result = secureValidateTextInput(input, options);
-  return {
-    isValid: result.isValid,
-    value: result.sanitized,
-    sanitized: result.sanitized,
-    error: result.error,
-    securityRisk: result.securityRisk
-  };
+// Use the enhanced email validation
+export const validateEmail = (email: string): ValidationResult => {
+  return secureValidateEmail(email);
 };
 
-// Unified number validation
-export const validateNumber = (
-  input: string | number,
-  options: NumberValidationOptions = {}
-): ValidationResult<number> => {
-  const result = secureValidateNumber(input, options);
-  return {
-    isValid: result.isValid,
-    value: result.value || undefined,
-    error: result.error,
-    securityRisk: result.securityRisk
-  };
+// Use the enhanced text validation for names
+export const validateName = (name: string): ValidationResult => {
+  return secureValidateTextInput(name, {
+    minLength: 1,
+    maxLength: 100,
+    allowedChars: /^[a-zA-Z\s\-'\.]+$/,
+    fieldName: 'name'
+  });
 };
 
-// Email validation with enhanced security
-export const validateEmail = (email: string): ValidationResult<string> => {
-  if (!email || typeof email !== 'string') {
-    return { isValid: false, error: 'Email is required' };
+// Enhanced password validation using existing security config
+export const validatePassword = (password: string): ValidationResult => {
+  const validation = secureValidateTextInput(password, {
+    minLength: 8,
+    maxLength: 128,
+    fieldName: 'password'
+  });
+
+  if (!validation.isValid) {
+    return validation;
   }
 
-  // Security validation first
-  const securityResult = advancedSanitizeInput(email);
-  if (!securityResult.isValid) {
-    return { isValid: false, error: 'Email contains invalid characters' };
-  }
-
-  const sanitized = securityResult.sanitized!;
-  
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(sanitized)) {
-    return { isValid: false, error: 'Invalid email format' };
-  }
-
-  if (sanitized.length > 254) {
-    return { isValid: false, error: 'Email too long' };
-  }
-
-  return { isValid: true, value: sanitized, sanitized };
-};
-
-// Password strength validation with enhanced security
-export const validatePassword = (password: string): ValidationResult<string> => {
-  if (!password || typeof password !== 'string') {
-    return { isValid: false, error: 'Password is required' };
-  }
-
+  // Additional password-specific checks
   if (password.length < 8) {
-    return { isValid: false, error: 'Password must be at least 8 characters' };
+    return { isValid: false, error: 'Password must be at least 8 characters long' };
   }
 
-  if (password.length > 128) {
-    return { isValid: false, error: 'Password too long' };
-  }
-
-  // Check for basic complexity
-  const hasLower = /[a-z]/.test(password);
-  const hasUpper = /[A-Z]/.test(password);
-  const hasNumber = /\d/.test(password);
+  // Basic strength check
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasLowercase = /[a-z]/.test(password);
+  const hasNumbers = /\d/.test(password);
   const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
-  const complexityCount = [hasLower, hasUpper, hasNumber, hasSpecial].filter(Boolean).length;
-  
-  if (complexityCount < 3) {
+  if (!hasUppercase || !hasLowercase || !hasNumbers || !hasSpecial) {
     return { 
       isValid: false, 
-      error: 'Password must contain at least 3 of: lowercase, uppercase, numbers, special characters' 
+      error: 'Password must contain uppercase, lowercase, numbers, and special characters'
     };
   }
 
-  return { isValid: true, value: password };
+  return { isValid: true, sanitized: password };
 };
 
-// Category validation
-export const validateCategoryName = (name: string): ValidationResult<string> => {
-  return validateText(name, {
-    required: true,
+// Validate URL inputs with security checks
+export const validateUrl = (url: string): ValidationResult => {
+  const validation = secureValidateTextInput(url, {
     minLength: 1,
-    maxLength: 100,
-    allowEmpty: false
+    maxLength: 2000,
+    fieldName: 'URL'
   });
-};
 
-// Activity validation
-export const validateActivityName = (name: string): ValidationResult<string> => {
-  return validateText(name, {
-    required: true,
-    minLength: 1,
-    maxLength: 200,
-    allowEmpty: false
-  });
-};
-
-export const validateDuration = (duration: string | number): ValidationResult<number> => {
-  return validateNumber(duration, {
-    min: 0,
-    max: 1440, // 24 hours max
-    integer: true,
-    required: true
-  });
-};
-
-// Notes validation
-export const validateNotes = (notes: string): ValidationResult<string> => {
-  return validateText(notes, {
-    required: false,
-    maxLength: 1000,
-    allowEmpty: true
-  });
-};
-
-// Hex color validation
-export const validateHexColor = (color: string): ValidationResult<string> => {
-  if (!color || typeof color !== 'string') {
-    return { isValid: false, error: 'Color is required' };
+  if (!validation.isValid) {
+    return validation;
   }
 
-  const hexColorRegex = /^#[A-Fa-f0-9]{6}$/;
-  if (!hexColorRegex.test(color)) {
-    return { isValid: false, error: 'Color must be a valid 6-digit hex code' };
-  }
+  try {
+    const urlObj = new URL(validation.sanitized!);
+    
+    // Only allow http and https protocols
+    if (!['http:', 'https:'].includes(urlObj.protocol)) {
+      return { isValid: false, error: 'URL must use HTTP or HTTPS protocol' };
+    }
 
-  return { isValid: true, value: color, sanitized: color };
+    return { isValid: true, sanitized: validation.sanitized };
+  } catch {
+    return { isValid: false, error: 'Invalid URL format' };
+  }
 };
 
-// Legacy compatibility exports
+// Sanitize and validate general text input
 export const sanitizeInput = (input: string): string => {
-  const result = advancedSanitizeInput(input);
-  return result.sanitized || '';
+  if (typeof input !== 'string') return '';
+  
+  const validation = secureValidateTextInput(input, {
+    maxLength: 10000,
+    fieldName: 'input'
+  });
+
+  return validation.sanitized || '';
 };
 
-export const validateTextInput = validateText;
-
-// Legacy validation functions for backward compatibility
-export const validateTextInput_legacy = (
-  input: string, 
-  options: {
-    required?: boolean;
-    minLength?: number;
-    maxLength?: number;
-    allowEmpty?: boolean;
-  } = {}
-) => {
-  const result = secureValidateTextInput(input, options);
-  return {
-    isValid: result.isValid,
-    sanitized: result.sanitized || '',
-    error: result.error
-  };
-};
-
-export const validateNumber_legacy = (
-  input: string | number,
-  options: {
-    min?: number;
-    max?: number;
-    integer?: boolean;
-    required?: boolean;
-  } = {}
-) => {
-  const result = secureValidateNumber(input, options);
-  return {
-    isValid: result.isValid,
-    value: result.value,
-    error: result.error
-  };
+// Development logging with environment check
+export const logValidationError = (error: string, context?: any) => {
+  if (isDevelopment()) {
+    console.error('Validation Error:', error, context);
+  }
 };
