@@ -1,4 +1,5 @@
 
+
 import { isDevelopment } from './environment';
 import { secureValidateEmail, secureValidateTextInput, secureValidateNumber } from './secureValidation';
 
@@ -40,7 +41,15 @@ export const validateTextInput = (
     allowSpecialChars?: boolean;
   } = {}
 ): ValidationResult => {
-  return secureValidateTextInput(input, options);
+  // Map our options to secureValidateTextInput options
+  const secureOptions = {
+    minLength: options.minLength,
+    maxLength: options.maxLength,
+    fieldName: 'input',
+    allowedChars: options.allowSpecialChars === false ? /^[a-zA-Z0-9\s\-'\.]+$/ : undefined
+  };
+  
+  return secureValidateTextInput(input, secureOptions);
 };
 
 // Category name validation
@@ -49,7 +58,7 @@ export const validateCategoryName = (name: string): ValidationResult => {
     minLength: 1,
     maxLength: 100,
     fieldName: 'category name',
-    allowSpecialChars: false
+    allowedChars: /^[a-zA-Z0-9\s\-'\.]+$/
   });
 };
 
@@ -77,10 +86,16 @@ export const validateNumber = (
     required?: boolean;
   } = {}
 ): NumberValidationResult => {
-  const result = secureValidateNumber(input, options);
+  const result = secureValidateNumber(input, {
+    min: options.min,
+    max: options.max,
+    allowFloat: !options.integer,
+    fieldName: 'number'
+  });
+  
   return {
     isValid: result.isValid,
-    value: result.value,
+    value: result.sanitized,
     error: result.error
   };
 };
@@ -89,7 +104,6 @@ export const validateNumber = (
 export const validateNotes = (notes: string): ValidationResult => {
   return secureValidateTextInput(notes, {
     maxLength: 1000,
-    allowEmpty: true,
     fieldName: 'notes'
   });
 };
@@ -171,3 +185,4 @@ export const logValidationError = (error: string, context?: any) => {
     console.error('Validation Error:', error, context);
   }
 };
+
