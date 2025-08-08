@@ -41,8 +41,19 @@ export const validateTextInput = (
     allowSpecialChars?: boolean;
   } = {}
 ): ValidationResult => {
-  // Map our options to secureValidateTextInput options
-  const secureOptions = {
+  // If empty is allowed and input is empty, short-circuit as valid
+  if (options.allowEmpty && (!input || input.trim() === '')) {
+    return { isValid: true, sanitized: '' };
+  }
+
+  // Map to secure validator options explicitly (no unsupported properties)
+  const secureOptions: {
+    minLength?: number;
+    maxLength?: number;
+    allowedChars?: RegExp;
+    fieldName?: string;
+    userId?: string;
+  } = {
     minLength: options.minLength,
     maxLength: options.maxLength,
     fieldName: 'input',
