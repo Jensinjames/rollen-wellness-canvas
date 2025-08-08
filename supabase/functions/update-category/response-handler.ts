@@ -1,7 +1,7 @@
 
 import { corsHeaders } from './cors.ts';
 
-export const createErrorResponse = (error: string, details?: string, requestId?: string, status = 400) => {
+export const createErrorResponse = (req: Request, error: string, details?: string, requestId?: string, status = 400) => {
   const responseBody = { 
     error,
     ...(details && { details }),
@@ -10,11 +10,11 @@ export const createErrorResponse = (error: string, details?: string, requestId?:
 
   return new Response(JSON.stringify(responseBody), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders(req.headers.get('Origin')), 'Content-Type': 'application/json' },
   });
 };
 
-export const createSuccessResponse = (data: any, fieldsUpdated: string[], requestId: string) => {
+export const createSuccessResponse = (req: Request, data: any, fieldsUpdated: string[], requestId: string) => {
   const responseBody = { 
     data,
     message: 'Category updated successfully',
@@ -24,6 +24,6 @@ export const createSuccessResponse = (data: any, fieldsUpdated: string[], reques
 
   return new Response(JSON.stringify(responseBody), {
     status: 200,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders(req.headers.get('Origin')), 'Content-Type': 'application/json' },
   });
 };

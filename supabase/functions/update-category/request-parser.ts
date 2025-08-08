@@ -9,20 +9,30 @@ export const parseRequestBody = async (req: Request, requestId: string) => {
     const contentType = req.headers.get('content-type') || 'not-specified';
     
     bodyText = await req.text();
+    // Sanitize headers to avoid leaking sensitive info
+    const headersObj = Object.fromEntries(req.headers.entries());
+    const sanitizedHeaders = Object.fromEntries(
+      Object.entries(headersObj).map(([k, v]) => {
+        const key = k.toLowerCase();
+        if (key === 'authorization' || key === 'apikey' || key === 'cookie') {
+          return [k, '[REDACTED]'];
+        }
+        return [k, v];
+      })
+    );
     logOperation('info', 'Raw request body received', { 
       requestId, 
       bodyLength: bodyText.length,
       contentType: contentType,
       bodyPreview: bodyText.length > 0 ? bodyText.substring(0, 200) : 'empty',
-      headers: Object.fromEntries(req.headers.entries())
+      headers: sanitizedHeaders
     });
     
     if (!bodyText || bodyText.trim() === '') {
       logOperation('error', 'Empty or missing request body', { 
         requestId,
         contentType,
-        bodyLength: bodyText.length,
-        rawBody: bodyText
+        bodyLength: bodyText.length
       });
       throw new Error('Request body is required and cannot be empty');
     }
@@ -39,8 +49,7 @@ export const parseRequestBody = async (req: Request, requestId: string) => {
   } catch (parseError) {
     logOperation('error', 'JSON parse error', { 
       requestId, 
-      error: parseError.message,
-      bodyText: bodyText.substring(0, 200),
+      error: (parseError as Error).message,
       bodyLength: bodyText.length
     });
     throw new Error(`Invalid JSON in request body: ${parseError.message}`);

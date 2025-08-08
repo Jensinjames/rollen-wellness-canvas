@@ -2,9 +2,19 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const allowedOrigins = (Deno.env.get('ALLOWED_ORIGINS') || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const corsHeaders = (origin?: string | null) => {
+  const allowOrigin = allowedOrigins.length
+    ? (origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0])
+    : '*';
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  } as const;
 };
 
 interface CacheEntry {
@@ -53,7 +63,7 @@ function cleanExpiredCache(): void {
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders(req.headers.get('Origin')) });
   }
 
   try {
@@ -63,7 +73,7 @@ Deno.serve(async (req: Request) => {
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Authorization required' }), {
         status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders(req.headers.get('Origin')), 'Content-Type': 'application/json' },
       });
     }
 
@@ -79,7 +89,7 @@ Deno.serve(async (req: Request) => {
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Invalid authentication' }), {
         status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders(req.headers.get('Origin')), 'Content-Type': 'application/json' },
       });
     }
 
@@ -120,6 +130,24 @@ Deno.serve(async (req: Request) => {
       cleanExpiredCache();
     }
 
+    // Server-side rate limiting per user
+    const { data: rate, error: rateErr } = await supabase.rpc('check_rate_limit', {
+      identifier: user.id,
+      max_requests: 120,
+      window_seconds: 60,
+    });
+
+    if (rateErr) {
+      console.error('Rate limit check error:', rateErr.message);
+    }
+
+    if (rate && rate.allowed === false) {
+      return new Response(JSON.stringify({ error: 'Too many requests', reset_time: rate.reset_time, remaining: rate.remaining }), {
+        status: 429,
+        headers: { ...corsHeaders(req.headers.get('Origin')), 'Content-Type': 'application/json' },
+      });
+    }
+
     // Check cache first
     if (cache.has(cacheKey)) {
       const cachedEntry = cache.get(cacheKey)!;
@@ -129,7 +157,7 @@ Deno.serve(async (req: Request) => {
           cached: true,
           cacheKey 
         }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: { ...corsHeaders(req.headers.get('Origin')), 'Content-Type': 'application/json' },
         });
       } else {
         cache.delete(cacheKey);
@@ -198,14 +226,14 @@ Deno.serve(async (req: Request) => {
       default:
         return new Response(JSON.stringify({ error: 'Unsupported query type' }), {
           status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: { ...corsHeaders(req.headers.get('Origin')), 'Content-Type': 'application/json' },
         });
     }
 
     if (error) {
       return new Response(JSON.stringify({ error: error.message }), {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders(req.headers.get('Origin')), 'Content-Type': 'application/json' },
       });
     }
 
@@ -225,14 +253,14 @@ Deno.serve(async (req: Request) => {
       cacheKey,
       cacheExpiry: config ? new Date(Date.now() + config.duration).toISOString() : null
     }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders(req.headers.get('Origin')), 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Cache layer error:', error);
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders(req.headers.get('Origin')), 'Content-Type': 'application/json' },
     });
   }
 });

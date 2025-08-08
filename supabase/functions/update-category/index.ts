@@ -14,12 +14,12 @@ Deno.serve(async (req: Request) => {
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return handleCorsOptions();
+    return handleCorsOptions(req);
   }
 
   if (req.method !== 'POST') {
     logOperation('warn', 'Invalid method', { requestId, method: req.method });
-    return createErrorResponse('Method not allowed', undefined, requestId, 405);
+    return createErrorResponse(req, 'Method not allowed', undefined, requestId, 405);
   }
 
   try {
@@ -51,7 +51,7 @@ Deno.serve(async (req: Request) => {
         errors: validationErrors,
         categoryId: body.id
       });
-      return createErrorResponse('Validation failed', validationErrors.join(', '), requestId);
+      return createErrorResponse(req, 'Validation failed', validationErrors.join(', '), requestId);
     }
 
     // Authenticate user
@@ -65,7 +65,7 @@ Deno.serve(async (req: Request) => {
       requestId
     );
 
-    return createSuccessResponse(updatedCategory, fieldsToUpdate, requestId);
+    return createSuccessResponse(req, updatedCategory, fieldsToUpdate, requestId);
 
   } catch (error: any) {
     logOperation('error', 'Unexpected error in update-category function', {
@@ -76,6 +76,7 @@ Deno.serve(async (req: Request) => {
     });
     
     return createErrorResponse(
+      req,
       'Internal server error', 
       error.message, 
       requestId, 

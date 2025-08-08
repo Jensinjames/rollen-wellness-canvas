@@ -21,8 +21,7 @@ export const authenticateUser = async (supabaseClient: any, authHeader: string |
 
   logOperation('info', 'User authenticated successfully', { 
     requestId, 
-    userId: user.id,
-    userEmail: user.email 
+    userId: user.id
   });
 
   return user;
