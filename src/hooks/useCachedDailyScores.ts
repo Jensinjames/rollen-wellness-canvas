@@ -1,13 +1,13 @@
-
 import { useCachedQuery } from './useCachedQuery';
 import { useDailyScores } from './useDailyScores';
+import { QueryKeys } from './queryKeys';
 
 export const useCachedDailyScores = (limit?: number) => {
   const { data: fallbackData } = useDailyScores(limit);
 
   return useCachedQuery({
-    queryKey: ['daily-scores', limit],
-    queryType: 'daily-scores',
+    queryKey: [QueryKeys.DailyScores, limit],
+    queryType: QueryKeys.DailyScores,
     params: limit?.toString(),
     fallbackFn: async () => {
       return fallbackData || [];

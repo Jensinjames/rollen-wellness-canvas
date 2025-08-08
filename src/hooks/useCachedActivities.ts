@@ -1,13 +1,13 @@
-
 import { useCachedQuery } from './useCachedQuery';
 import { useActivities } from './useActivities';
+import { QueryKeys } from './queryKeys';
 
 export const useCachedActivities = () => {
   const { data: fallbackData } = useActivities();
 
   return useCachedQuery({
-    queryKey: ['activities'],
-    queryType: 'activities',
+    queryKey: [QueryKeys.Activities],
+    queryType: QueryKeys.Activities,
     fallbackFn: async () => {
       // Return the fallback data from the original hook
       return fallbackData || [];

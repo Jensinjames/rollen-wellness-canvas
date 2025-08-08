@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { AnalyticsSummary } from "@/components/analytics/AnalyticsSummary";
@@ -18,6 +17,7 @@ import {
   LazyGoalCompletionChart, 
   LazyTimeDistributionChart 
 } from "@/components/charts/LazyCharts";
+import { QueryKeys } from "@/hooks/queryKeys";
 
 // Only show cache manager in development
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -49,9 +49,9 @@ export default function IndexPage() {
   const handleActivitySuccess = () => {
     setIsFormOpen(false);
     // Invalidate relevant caches when new activity is created
-    invalidateCache('activities');
-    invalidateCache('category-activity-data');
-    invalidateCache('analytics-summary');
+    invalidateCache(QueryKeys.Activities);
+    invalidateCache(QueryKeys.CategoryActivityData);
+    invalidateCache(QueryKeys.AnalyticsSummary);
   };
 
   const headerActions = (

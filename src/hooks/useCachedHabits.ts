@@ -1,13 +1,13 @@
-
 import { useCachedQuery } from './useCachedQuery';
 import { useHabits } from './useHabits';
+import { QueryKeys } from './queryKeys';
 
 export const useCachedHabits = () => {
   const { data: fallbackData } = useHabits();
 
   return useCachedQuery({
-    queryKey: ['habits'],
-    queryType: 'habits',
+    queryKey: [QueryKeys.Habits],
+    queryType: QueryKeys.Habits,
     fallbackFn: async () => {
       return fallbackData || [];
     },

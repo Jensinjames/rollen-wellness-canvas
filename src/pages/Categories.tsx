@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { AppSidebar } from '@/components/Sidebar';
 import { CategoryForm } from '@/components/categories/CategoryForm';
 import { HierarchicalCategoryCard } from '@/components/categories/HierarchicalCategoryCard';
 import { Button } from '@/components/ui/button';
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory, useSeedDefaultCategories, Category } from '@/hooks/categories';
 import { Loader2, FolderOpen, Plus, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { AppLayout } from '@/components/layout';
 
 const Categories = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -98,100 +97,78 @@ const Categories = () => {
     return 'Create New Category';
   };
 
+  const headerActions = (
+    <div className="flex items-center gap-2">
+      <Button onClick={() => setIsFormOpen(true)}>
+        <Plus className="h-4 w-4 mr-2" />
+        Add Category
+      </Button>
+      <Button onClick={handleAddDefaultCategories} variant="outline" disabled={seedDefaultCategories.isPending}>
+        <Sparkles className="h-4 w-4 mr-2" />
+        Add Suggested
+      </Button>
+    </div>
+  );
+
   if (isLoading) {
     return (
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full bg-gray-50 dark:bg-gray-900">
-          <AppSidebar />
-          <main className="flex-1 flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </main>
+      <AppLayout pageTitle="Category Management" headerActions={headerActions}>
+        <div className="min-h-[50vh] flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
         </div>
-      </SidebarProvider>
+      </AppLayout>
     );
   }
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gray-50 dark:bg-gray-900">
-        <AppSidebar />
-        <main className="flex-1">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 text-white p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger className="text-white hover:bg-white/10" />
-                <div>
-                  <h1 className="text-2xl font-bold">Category Management</h1>
-                  <p className="text-blue-100">Create and manage your personal category structure</p>
-                </div>
-              </div>
-              <Button
-                onClick={() => setIsFormOpen(true)}
-                className="bg-white text-blue-600 hover:bg-blue-50"
-              >
+    <AppLayout pageTitle="Category Management" headerActions={headerActions}>
+      <div className="p-6">
+        {categories && categories.length > 0 ? (
+          <div className="space-y-6">
+            {categories.map((category) => (
+              <HierarchicalCategoryCard
+                key={category.id}
+                category={category}
+                onEdit={handleEditCategory}
+                onArchive={handleDeleteCategory}
+                onDelete={handleDeleteCategory}
+                onAddSubcategory={handleAddSubcategory}
+                activityCount={0}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <FolderOpen className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <div className="text-gray-500 mb-4">
+              No categories yet. Create your first category to get started!
+            </div>
+            <div className="space-y-3">
+              <Button onClick={() => setIsFormOpen(true)} className="mr-3">
                 <Plus className="h-4 w-4 mr-2" />
-                Add Category
+                Create Category
+              </Button>
+              <Button onClick={handleAddDefaultCategories} variant="outline" disabled={seedDefaultCategories.isPending}>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Add Suggested Categories
               </Button>
             </div>
+            <p className="text-sm text-gray-400 mt-4">
+              Or start with suggested categories: Faith, Life, Work, and Health
+            </p>
           </div>
-
-          <div className="p-6">
-            {categories && categories.length > 0 ? (
-              <div className="space-y-6">
-                {categories.map((category) => (
-                  <HierarchicalCategoryCard
-                    key={category.id}
-                    category={category}
-                    onEdit={handleEditCategory}
-                    onArchive={handleDeleteCategory}
-                    onDelete={handleDeleteCategory}
-                    onAddSubcategory={handleAddSubcategory}
-                    activityCount={0}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <FolderOpen className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <div className="text-gray-500 mb-4">
-                  No categories yet. Create your first category to get started!
-                </div>
-                <div className="space-y-3">
-                  <Button
-                    onClick={() => setIsFormOpen(true)}
-                    className="mr-3"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Category
-                  </Button>
-                  <Button
-                    onClick={handleAddDefaultCategories}
-                    variant="outline"
-                    disabled={seedDefaultCategories.isPending}
-                  >
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Add Suggested Categories
-                  </Button>
-                </div>
-                <p className="text-sm text-gray-400 mt-4">
-                  Or start with suggested categories: Faith, Life, Work, and Health
-                </p>
-              </div>
-            )}
-          </div>
-
-          <CategoryForm
-            isOpen={isFormOpen}
-            onClose={handleCloseForm}
-            onSubmit={editingCategory ? handleUpdateCategory : handleCreateCategory}
-            category={editingCategory}
-            title={getFormTitle()}
-            forceParent={parentForNewSubcategory}
-          />
-        </main>
+        )}
       </div>
-    </SidebarProvider>
+
+      <CategoryForm
+        isOpen={isFormOpen}
+        onClose={handleCloseForm}
+        onSubmit={editingCategory ? handleUpdateCategory : handleCreateCategory}
+        category={editingCategory}
+        title={getFormTitle()}
+        forceParent={parentForNewSubcategory}
+      />
+    </AppLayout>
   );
 };
 
