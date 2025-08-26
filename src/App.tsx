@@ -24,6 +24,11 @@ const PageLoader = () => (
   </div>
 );
 
+// Priority loading for critical pages to improve LCP
+const IndexWithPriority = lazy(() => 
+  import("./pages/Index").then(module => ({ default: module.default }))
+);
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -55,7 +60,7 @@ function App() {
                     path="/"
                     element={
                       <ProtectedRoute>
-                        <Index />
+                        <IndexWithPriority />
                       </ProtectedRoute>
                     }
                   />
