@@ -64,11 +64,13 @@ class EnhancedSecurityLogger {
         user_agent: details.user_agent || browserInfo.user_agent,
       };
 
-      // Use the database function for secure logging
-      const { error } = await supabase.rpc('log_security_event', {
-        event_type: eventType,
-        user_id: userId,
-        details: logEntry.details,
+      // Use the new secure audit logging function with enhanced security
+      const { error } = await supabase.rpc('secure_log_audit_event', {
+        event_type_param: eventType,
+        user_id_param: userId,
+        details_param: logEntry.details,
+        ip_address_param: logEntry.ip_address,
+        user_agent_param: logEntry.user_agent
       });
 
       if (error && process.env.NODE_ENV === 'development') {
