@@ -23,6 +23,8 @@ export default defineConfig({
     },
   },
   build: {
+    // Target modern browsers to avoid unnecessary transpilation
+    target: ['chrome89', 'firefox88', 'safari14', 'edge89'],
     // CSS optimization for better LCP
     cssCodeSplit: true,
     rollupOptions: {
@@ -40,5 +42,9 @@ export default defineConfig({
   css: {
     // Enable CSS optimization
     devSourcemap: true,
+  },
+  esbuild: {
+    // Target modern ES syntax to reduce bundle size
+    target: 'es2020',
   },
 });
