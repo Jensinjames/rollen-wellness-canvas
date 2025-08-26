@@ -22,4 +22,23 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    // CSS optimization for better LCP
+    cssCodeSplit: true,
+    rollupOptions: {
+      output: {
+        // Optimize asset loading
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name?.endsWith('.css')) {
+            return 'assets/css/[name]-[hash][extname]';
+          }
+          return 'assets/[name]-[hash][extname]';
+        },
+      },
+    },
+  },
+  css: {
+    // Enable CSS optimization
+    devSourcemap: true,
+  },
 });

@@ -15,6 +15,10 @@
     <!-- Preconnect to common CDNs -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- CSS preload hints for better LCP -->
+    <link rel="preload" href="/src/index.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="/src/index.css"></noscript>
 
     <meta property="og:title" content="rollen-wellness-canvas" />
     <meta property="og:description" content="Lovable Generated Project" />
