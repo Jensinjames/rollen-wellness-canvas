@@ -20,6 +20,10 @@
     <link rel="preload" href="/src/index.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="/src/index.css"></noscript>
 
+    <!-- Preload critical resources to reduce dependency chain -->
+    <link rel="modulepreload" href="/src/main.tsx" />
+    <link rel="modulepreload" href="/src/App.tsx" />
+
     <meta property="og:title" content="rollen-wellness-canvas" />
     <meta property="og:description" content="Lovable Generated Project" />
     <meta property="og:type" content="website" />
