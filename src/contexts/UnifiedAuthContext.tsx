@@ -14,6 +14,7 @@ interface AuthContextType {
   loading: boolean;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signInWithGoogle: () => Promise<{ error: any }>;
   resetPassword: (email: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
@@ -76,7 +77,18 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       // Log auth events for audit
       if (event === 'SIGNED_IN') {
-        await securityLogger.logAuthEvent('auth.login.success', session?.user?.id);
+        // Check if this was an OAuth login by examining the session metadata
+        const isOAuth = session?.user?.app_metadata?.provider && 
+                       session.user.app_metadata.provider !== 'email';
+        
+        if (isOAuth) {
+          await securityLogger.logAuthEvent('auth.oauth.success', session?.user?.id, {
+            provider: session.user.app_metadata.provider
+          });
+        } else {
+          await securityLogger.logAuthEvent('auth.login.success', session?.user?.id);
+        }
+        
         secureSessionManager.refreshSession();
         setIsSigningOut(false);
       } else if (event === 'SIGNED_OUT') {
@@ -221,6 +233,38 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return { error };
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl
+        }
+      });
+
+      if (error) {
+        await securityLogger.logAuthEvent('auth.oauth.failure', undefined, { 
+          error: error.message, 
+          provider: 'google' 
+        });
+      } else {
+        await securityLogger.logAuthEvent('auth.oauth.initiate', undefined, { 
+          provider: 'google' 
+        });
+      }
+
+      return { error };
+    } catch (error: any) {
+      await securityLogger.logAuthEvent('auth.oauth.failure', undefined, { 
+        error: error?.message || 'OAuth error', 
+        provider: 'google' 
+      });
+      return { error };
+    }
+  };
+
   const signOut = async () => {
     // Prevent multiple concurrent sign-out calls
     if (isSigningOut) {
@@ -261,6 +305,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     loading,
     signUp,
     signIn,
+    signInWithGoogle,
     resetPassword,
     signOut,
   };
