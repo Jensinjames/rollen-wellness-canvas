@@ -11,7 +11,9 @@ import {
   NumberValidationResult,
   ValidationResult as BaseValidationResult
 } from '@/utils/validation';
-import { ActivityFormData, CategoryFormData, ValidationResult } from './types';
+import { ActivityFormData, CategoryFormData, ValidationResult, AuthFormData, PasswordResetFormData, AuthValidationResult } from './types';
+import { validatePasswordStrength } from '@/utils/securityConfig';
+import { secureValidateEmail, secureValidateTextInput } from '@/utils/secureValidation';
 
 export class ValidationService {
   /**
@@ -211,6 +213,100 @@ export class ValidationService {
       description: data.description?.trim() || '',
       boolean_goal_label: data.boolean_goal_label?.trim() || '',
       parent_id: data.parent_id === 'none' || data.parent_id === '' ? null : data.parent_id
+    };
+  }
+
+  /**
+   * Validates sign-in form data
+   */
+  static validateSignInForm(data: AuthFormData): AuthValidationResult {
+    const errors: string[] = [];
+
+    // Email validation
+    const emailValidation = secureValidateEmail(data.email);
+    if (!emailValidation.isValid) {
+      errors.push(emailValidation.error || 'Invalid email address');
+    }
+
+    // Password validation
+    const passwordValidation = secureValidateTextInput(data.password, {
+      minLength: 1,
+      maxLength: 128,
+      fieldName: 'password'
+    });
+
+    if (!passwordValidation.isValid) {
+      errors.push(passwordValidation.error || 'Invalid password');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+
+  /**
+   * Validates sign-up form data with password strength requirements
+   */
+  static validateSignUpForm(data: AuthFormData): AuthValidationResult {
+    const errors: string[] = [];
+
+    // Email validation
+    const emailValidation = secureValidateEmail(data.email);
+    if (!emailValidation.isValid) {
+      errors.push(emailValidation.error || 'Invalid email address');
+    }
+
+    // Password validation
+    const passwordValidation = secureValidateTextInput(data.password, {
+      minLength: 1,
+      maxLength: 128,
+      fieldName: 'password'
+    });
+
+    if (!passwordValidation.isValid) {
+      errors.push(passwordValidation.error || 'Invalid password');
+    }
+
+    // Password strength validation
+    const passwordStrengthValidation = validatePasswordStrength(data.password);
+    if (!passwordStrengthValidation.isValid) {
+      errors.push('Password does not meet security requirements');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+      passwordStrengthErrors: passwordStrengthValidation.errors
+    };
+  }
+
+  /**
+   * Validates password reset form data
+   */
+  static validatePasswordResetForm(data: PasswordResetFormData): ValidationResult {
+    const errors: string[] = [];
+
+    // Email validation
+    const emailValidation = secureValidateEmail(data.email);
+    if (!emailValidation.isValid) {
+      errors.push(emailValidation.error || 'Invalid email address');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+
+  /**
+   * Sanitizes authentication form data
+   */
+  static sanitizeAuthData(data: AuthFormData): { email: string; password: string } {
+    const emailValidation = secureValidateEmail(data.email);
+    return {
+      email: emailValidation.sanitized || data.email.trim(),
+      password: data.password // Don't sanitize password content
     };
   }
 }

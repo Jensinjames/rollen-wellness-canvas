@@ -6,11 +6,16 @@
 export { ActivityService } from './activityService';
 export { CategoryService } from './categoryService';
 export { ValidationService } from './validationService';
+export { AuthService } from './authService';
 
 export type {
   ServiceResult,
   ValidationResult,
   ActivityFormData,
   CategoryFormData,
-  ActivitySubmissionData
+  ActivitySubmissionData,
+  AuthFormData,
+  PasswordResetFormData,
+  AuthValidationResult,
+  AuthServiceResult
 } from './types';

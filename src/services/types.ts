@@ -48,3 +48,20 @@ export interface ActivitySubmissionData {
   is_completed: boolean;
   notes?: string;
 }
+
+export interface AuthFormData {
+  email: string;
+  password: string;
+}
+
+export interface PasswordResetFormData {
+  email: string;
+}
+
+export interface AuthValidationResult extends ValidationResult {
+  passwordStrengthErrors?: string[];
+}
+
+export interface AuthServiceResult<T = void> extends ServiceResult<T> {
+  requiresEmailConfirmation?: boolean;
+}
