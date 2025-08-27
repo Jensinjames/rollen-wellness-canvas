@@ -8,6 +8,7 @@ export type SecurityEventType =
   | 'auth.logout'
   | 'auth.signup'
   | 'auth.password_reset'
+  | 'auth.password_update'
   | 'auth.session_expired'
   | 'auth.session_hijack_detected'
   | 'auth.oauth.initiate'

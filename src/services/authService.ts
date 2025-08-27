@@ -6,6 +6,7 @@
 import { AuthFormData, PasswordResetFormData, AuthServiceResult } from './types';
 import { ValidationService } from './validationService';
 import { validateRateLimit } from '@/utils/secureValidation';
+import { validatePasswordStrength } from '@/utils/securityConfig';
 
 export class AuthService {
   /**
@@ -212,6 +213,58 @@ export class AuthService {
       return {
         success: false,
         error: 'Failed to sign in with Google'
+      };
+    }
+  }
+
+  /**
+   * Handles password update process with validation and rate limiting
+   */
+  static async processPasswordUpdate(
+    data: { password: string },
+    updatePasswordFn: (password: string) => Promise<{ error: any }>
+  ): Promise<AuthServiceResult> {
+    // Rate limiting check
+    const rateLimitCheck = await validateRateLimit(
+      'password_update',
+      'password_update', 
+      { maxAttempts: 3, windowMinutes: 60 }
+    );
+
+    if (!rateLimitCheck.allowed) {
+      return {
+        success: false,
+        error: rateLimitCheck.message || 'Too many password update attempts. Please try again later.'
+      };
+    }
+
+    // Validate password strength
+    const validation = validatePasswordStrength(data.password);
+    if (!validation.isValid) {
+      return {
+        success: false,
+        error: 'Password does not meet requirements',
+        errors: validation.errors
+      };
+    }
+
+    try {
+      const { error } = await updatePasswordFn(data.password);
+      
+      if (error) {
+        return {
+          success: false,
+          error: error.message
+        };
+      }
+
+      return {
+        success: true
+      };
+    } catch (err) {
+      return {
+        success: false,
+        error: 'Failed to update password'
       };
     }
   }

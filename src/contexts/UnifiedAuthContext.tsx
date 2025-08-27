@@ -16,6 +16,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signInWithGoogle: () => Promise<{ error: any }>;
   resetPassword: (email: string) => Promise<{ error: any }>;
+  updatePassword?: (password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -265,6 +266,34 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   };
 
+  const updatePassword = async (password: string) => {
+    // Validate password input
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      const error = new Error(passwordValidation.error);
+      await securityLogger.logAuthEvent('auth.password_update', user?.id, { 
+        error: passwordValidation.error 
+      });
+      return { error };
+    }
+
+    const { error } = await supabase.auth.updateUser({
+      password: password
+    });
+
+    if (error) {
+      await securityLogger.logAuthEvent('auth.password_update', user?.id, { 
+        error: error.message 
+      });
+    } else {
+      await securityLogger.logAuthEvent('auth.password_update', user?.id, { 
+        success: true 
+      });
+    }
+
+    return { error };
+  };
+
   const signOut = async () => {
     // Prevent multiple concurrent sign-out calls
     if (isSigningOut) {
@@ -307,6 +336,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     signIn,
     signInWithGoogle,
     resetPassword,
+    updatePassword,
     signOut,
   };
 

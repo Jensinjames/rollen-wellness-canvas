@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -10,13 +10,16 @@ import { useAuthForm } from '@/hooks/useAuthForm';
 import { SignInForm } from './forms/SignInForm';
 import { SignUpForm } from './forms/SignUpForm';
 import { ForgotPasswordForm } from './forms/ForgotPasswordForm';
+import { ResetPasswordForm } from './forms/ResetPasswordForm';
 import { GoogleSignInButton } from './forms/GoogleSignInButton';
 import { AlertCircle } from 'lucide-react';
 
 export const AuthForm = () => {
-  const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
+  const { signIn, signUp, signInWithGoogle, resetPassword, updatePassword } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'forgot' | 'reset'>('signin');
   
   const {
     isLoading,
@@ -31,6 +34,18 @@ export const AuthForm = () => {
     setPasswordErrors,
     clearMessages
   } = useAuthForm();
+
+  // Check for password reset token in URL
+  useEffect(() => {
+    const accessToken = searchParams.get('access_token');
+    const refreshToken = searchParams.get('refresh_token');
+    const type = searchParams.get('type');
+    
+    if (accessToken && refreshToken && type === 'recovery') {
+      setAuthMode('reset');
+      clearMessages();
+    }
+  }, [searchParams, clearMessages]);
 
   const handleSignIn = async (email: string, password: string) => {
     setLoading(true);
@@ -104,17 +119,48 @@ export const AuthForm = () => {
     setGoogleLoading(false);
   };
 
+  const handleResetPassword = async (password: string) => {
+    setLoading(true);
+    clearMessages();
+
+    if (!updatePassword) {
+      setError('Password update functionality is not available');
+      setLoading(false);
+      return;
+    }
+
+    const result = await AuthService.processPasswordUpdate(
+      { password },
+      updatePassword
+    );
+
+    if (result.success) {
+      setMessage('Password updated successfully! You can now sign in with your new password.');
+      // Redirect to home after successful password reset
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 2000);
+    } else {
+      setError(result.error || 'Password update failed');
+      if (result.errors) {
+        setPasswordErrors(result.errors);
+      }
+    }
+
+    setLoading(false);
+  };
+
   const handleShowForgotPassword = () => {
-    setShowForgotPassword(true);
+    setAuthMode('forgot');
     clearMessages();
   };
 
   const handleBackToSignIn = () => {
-    setShowForgotPassword(false);
+    setAuthMode('signin');
     clearMessages();
   };
 
-  if (showForgotPassword) {
+  if (authMode === 'forgot') {
     return (
       <ForgotPasswordForm
         onSubmit={handleForgotPassword}
@@ -122,6 +168,18 @@ export const AuthForm = () => {
         isLoading={isLoading}
         error={error}
         message={message}
+      />
+    );
+  }
+
+  if (authMode === 'reset') {
+    return (
+      <ResetPasswordForm
+        onSubmit={handleResetPassword}
+        isLoading={isLoading}
+        error={error}
+        message={message}
+        passwordErrors={passwordErrors}
       />
     );
   }
