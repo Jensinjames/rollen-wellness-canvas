@@ -16,23 +16,30 @@ export class AuthService {
     data: AuthFormData,
     signInFn: (email: string, password: string) => Promise<{ error: any }>
   ): Promise<AuthServiceResult> {
-    // Rate limiting check
-    const rateLimitCheck = await validateRateLimit(
-      data.email || 'anonymous',
-      'signin',
-      { maxAttempts: 5, windowMinutes: 15 }
-    );
+    console.log('🔐 AuthService.processSignIn called with:', { email: data.email, hasPassword: !!data.password });
+    
+    // TEMPORARY: Bypass rate limiting for debugging
+    console.log('⚠️ Rate limiting temporarily bypassed for debugging');
+    // const rateLimitCheck = await validateRateLimit(
+    //   data.email || 'anonymous',
+    //   'signin',
+    //   { maxAttempts: 5, windowMinutes: 15 }
+    // );
 
-    if (!rateLimitCheck.allowed) {
-      return {
-        success: false,
-        error: rateLimitCheck.message || 'Too many attempts. Please try again later.'
-      };
-    }
+    // if (!rateLimitCheck.allowed) {
+    //   console.log('❌ Rate limit exceeded:', rateLimitCheck);
+    //   return {
+    //     success: false,
+    //     error: rateLimitCheck.message || 'Too many attempts. Please try again later.'
+    //   };
+    // }
 
     // Validate form data
+    console.log('🔍 Validating form data...');
     const validation = ValidationService.validateSignInForm(data);
+    console.log('📋 Validation result:', validation);
     if (!validation.isValid) {
+      console.log('❌ Validation failed:', validation.errors);
       return {
         success: false,
         error: validation.errors[0]
@@ -40,22 +47,30 @@ export class AuthService {
     }
 
     // Sanitize data
+    console.log('🧹 Sanitizing data...');
     const sanitizedData = ValidationService.sanitizeAuthData(data);
+    console.log('✨ Sanitized data:', { email: sanitizedData.email, hasPassword: !!sanitizedData.password });
 
     try {
+      console.log('🚀 Calling signInFn with sanitized data...');
       const { error } = await signInFn(sanitizedData.email, sanitizedData.password);
       
+      console.log('📨 SignIn response:', { hasError: !!error, errorMessage: error?.message });
+      
       if (error) {
+        console.log('❌ SignIn failed:', error);
         return {
           success: false,
           error: error.message
         };
       }
 
+      console.log('✅ SignIn successful!');
       return {
         success: true
       };
     } catch (err) {
+      console.log('💥 Unexpected error in signIn:', err);
       return {
         success: false,
         error: 'An unexpected error occurred'

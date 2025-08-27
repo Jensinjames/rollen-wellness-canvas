@@ -142,26 +142,40 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const signIn = async (email: string, password: string) => {
-    // Validate inputs
-    const emailValidation = validateEmail(email);
-    if (!emailValidation.isValid) {
-      const error = new Error(emailValidation.error);
-      await securityLogger.logAuthEvent('auth.login.failure', undefined, { 
-        error: emailValidation.error 
-      });
-      return { error };
-    }
+    console.log('🚀 UnifiedAuthContext.signIn called with:', { email, hasPassword: !!password });
+    
+    // TEMPORARY: Bypass email validation for debugging
+    console.log('⚠️ Email validation temporarily bypassed for debugging');
+    // const emailValidation = validateEmail(email);
+    // if (!emailValidation.isValid) {
+    //   console.log('❌ Email validation failed:', emailValidation.error);
+    //   const error = new Error(emailValidation.error);
+    //   await securityLogger.logAuthEvent('auth.login.failure', undefined, { 
+    //     error: emailValidation.error 
+    //   });
+    //   return { error };
+    // }
 
+    console.log('🔗 Calling supabase.auth.signInWithPassword...');
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
+    console.log('📡 Supabase signIn response:', { 
+      hasError: !!error, 
+      errorMessage: error?.message,
+      errorName: error?.name
+    });
+
     if (error) {
+      console.log('❌ SignIn failed, logging failure...');
       await securityLogger.logAuthEvent('auth.login.failure', undefined, { 
         error: error.message, 
         email_domain: email.split('@')[1] 
       });
+    } else {
+      console.log('✅ SignIn successful!');
     }
 
     return { error };

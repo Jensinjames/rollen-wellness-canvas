@@ -12,6 +12,7 @@ import { SignUpForm } from './forms/SignUpForm';
 import { ForgotPasswordForm } from './forms/ForgotPasswordForm';
 import { ResetPasswordForm } from './forms/ResetPasswordForm';
 import { GoogleSignInButton } from './forms/GoogleSignInButton';
+import { DebugAuthTest } from './DebugAuthTest';
 import { AlertCircle } from 'lucide-react';
 
 export const AuthForm = () => {
@@ -186,7 +187,8 @@ export const AuthForm = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
-      <Card className="w-full max-w-md">
+      <div className="w-full max-w-6xl flex gap-8">
+        <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
             <span className="text-3xl">🎯</span>
@@ -241,6 +243,8 @@ export const AuthForm = () => {
           )}
         </CardContent>
       </Card>
+      <DebugAuthTest />
+      </div>
     </div>
   );
 };
