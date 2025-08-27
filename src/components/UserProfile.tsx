@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { useAuth } from '@/contexts/UnifiedAuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { LogOut, User } from 'lucide-react';
@@ -15,6 +16,7 @@ import {
 
 export const UserProfile = () => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   if (!user) return null;
 
@@ -51,7 +53,7 @@ export const UserProfile = () => {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>My Account</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled>
+        <DropdownMenuItem onClick={() => navigate('/settings?tab=profile')}>
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
