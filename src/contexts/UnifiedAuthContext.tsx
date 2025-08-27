@@ -43,42 +43,25 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+    }).catch((error) => {
+      console.error('Error getting initial session:', error);
+      setLoading(false);
     });
 
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (isDevelopment()) {
         console.log('Auth state changed:', event, session?.user?.email);
       }
 
-      // Log auth events for audit
+      // Simplified auth event handling - no async logging that can cause issues
       if (event === 'SIGNED_IN') {
-        // Check if this was an OAuth login by examining the session metadata
-        const isOAuth = session?.user?.app_metadata?.provider && 
-                       session.user.app_metadata.provider !== 'email';
-        
-        if (isOAuth) {
-          await securityLogger.logAuthEvent('auth.oauth.success', session?.user?.id, {
-            provider: session.user.app_metadata.provider
-          });
-        } else {
-          await securityLogger.logAuthEvent('auth.login.success', session?.user?.id);
-        }
-        
-        secureSessionManager.refreshSession();
         setIsSigningOut(false);
       } else if (event === 'SIGNED_OUT') {
-        await securityLogger.logAuthEvent('auth.logout', user?.id);
-        secureSessionManager.invalidateSession();
         if (!isSigningOut) {
           clearAuthState();
-        }
-      } else if (event === 'TOKEN_REFRESHED') {
-        secureSessionManager.refreshSession();
-        if (isDevelopment()) {
-          console.log('Session refreshed');
         }
       }
 
@@ -90,7 +73,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     });
 
     return () => subscription.unsubscribe();
-  }, [user?.id, isSigningOut]);
+  }, [isSigningOut]);
 
   const clearAuthState = () => {
     setUser(null);
@@ -100,9 +83,14 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     // Clear all React Query cache
     queryClient.clear();
     
-    // Clear any localStorage/sessionStorage if needed
+    // Clear Supabase auth tokens
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('supabase.auth.token');
+      // Clear all Supabase auth-related localStorage items
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-') || key.includes('supabase')) {
+          localStorage.removeItem(key);
+        }
+      });
       sessionStorage.clear();
     }
   };

@@ -22,5 +22,22 @@ export const AuthGuard: React.FC = () => {
   }
 
   // If not authenticated, show the auth form
-  return <AuthForm />;
+  try {
+    return <AuthForm />;
+  } catch (error) {
+    console.error('AuthForm error:', error);
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-destructive mb-4">Authentication Error</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-primary text-primary-foreground rounded"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    );
+  }
 };
