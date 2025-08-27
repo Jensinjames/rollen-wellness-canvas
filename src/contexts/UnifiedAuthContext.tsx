@@ -30,35 +30,12 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
   
   const queryClient = useQueryClient();
 
-  // Enhanced session monitoring with fingerprint validation
-  useEffect(() => {
-    if (!session || isSigningOut) return;
-
-    const checkSessionSecurity = () => {
-      // Validate session fingerprint
-      if (!secureSessionManager.validateFingerprint()) {
-        securityLogger.logAuthEvent('auth.session_hijack_detected', user?.id);
-        signOut();
-        return;
-      }
-
-      // Check session validity
-      const sessionStatus = secureSessionManager.validateSession(user?.id);
-      
-      if (sessionStatus.shouldLogout) {
-        signOut();
-        return;
-      }
-
-      if (sessionStatus.shouldWarn && !isDevelopment()) {
-        // Show session warning in production
-        console.warn('Session will expire soon. Please save your work.');
-      }
-    };
-
-    const interval = setInterval(checkSessionSecurity, 60000); // Check every minute
-    return () => clearInterval(interval);
-  }, [session, user?.id, isSigningOut]);
+  // Temporarily disable session monitoring to prevent blank screen issues
+  // TODO: Re-enable with better error handling
+  // useEffect(() => {
+  //   if (!session || isSigningOut) return;
+  //   // Session monitoring code disabled
+  // }, [session, user?.id, isSigningOut]);
 
   useEffect(() => {
     // Get initial session
