@@ -8,6 +8,7 @@ import { TimerProvider } from "@/contexts/TimerContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { AppErrorBoundary } from "@/components/error/AppErrorBoundary";
+import { RouteErrorBoundary } from "@/components/error/RouteErrorBoundary";
 import { Suspense, lazy } from "react";
 
 // Lazy load page components to reduce initial bundle size
@@ -57,48 +58,72 @@ function App() {
               <BrowserRouter>
                 <Suspense fallback={<PageLoader />}>
                   <Routes>
-                    <Route path="/auth" element={<AuthGuard />} />
+                    <Route 
+                      path="/auth" 
+                      element={
+                        <RouteErrorBoundary>
+                          <AuthGuard />
+                        </RouteErrorBoundary>
+                      } 
+                    />
                     <Route
                       path="/"
                       element={
-                        <ProtectedRoute>
-                          <IndexWithPriority />
-                        </ProtectedRoute>
+                        <RouteErrorBoundary>
+                          <ProtectedRoute>
+                            <IndexWithPriority />
+                          </ProtectedRoute>
+                        </RouteErrorBoundary>
                       }
                     />
                     <Route
                       path="/categories"
                       element={
-                        <ProtectedRoute>
-                          <Categories />
-                        </ProtectedRoute>
+                        <RouteErrorBoundary>
+                          <ProtectedRoute>
+                            <Categories />
+                          </ProtectedRoute>
+                        </RouteErrorBoundary>
                       }
                     />
                     <Route
                       path="/analytics"
                       element={
-                        <ProtectedRoute>
-                          <Analytics />
-                        </ProtectedRoute>
+                        <RouteErrorBoundary>
+                          <ProtectedRoute>
+                            <Analytics />
+                          </ProtectedRoute>
+                        </RouteErrorBoundary>
                       }
                     />
                     <Route
                       path="/calendar"
                       element={
-                        <ProtectedRoute>
-                          <Calendar />
-                        </ProtectedRoute>
+                        <RouteErrorBoundary>
+                          <ProtectedRoute>
+                            <Calendar />
+                          </ProtectedRoute>
+                        </RouteErrorBoundary>
                       }
                     />
                     <Route
                       path="/settings"
                       element={
-                        <ProtectedRoute>
-                          <Settings />
-                        </ProtectedRoute>
+                        <RouteErrorBoundary>
+                          <ProtectedRoute>
+                            <Settings />
+                          </ProtectedRoute>
+                        </RouteErrorBoundary>
                       }
                     />
-                    <Route path="*" element={<NotFound />} />
+                    <Route 
+                      path="*" 
+                      element={
+                        <RouteErrorBoundary>
+                          <NotFound />
+                        </RouteErrorBoundary>
+                      } 
+                    />
                   </Routes>
                 </Suspense>
               </BrowserRouter>

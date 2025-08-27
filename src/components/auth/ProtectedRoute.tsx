@@ -23,5 +23,22 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/auth" replace />;
   }
 
-  return <>{children}</>;
+  try {
+    return <>{children}</>;
+  } catch (error) {
+    console.error('ProtectedRoute render error:', error);
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-destructive mb-4">Application Error</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-primary text-primary-foreground rounded"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    );
+  }
 };
