@@ -1,22 +1,24 @@
+/**
+ * Activity form validation logic
+ * @deprecated Use ValidationService from @/services instead
+ * This file is kept for backward compatibility but should be migrated to use the service layer
+ */
 
 import { validateTextInput, validateNumber } from "@/utils/validation";
 
-export interface ActivityFormData {
-  category_id: string;
-  subcategory_id: string;
-  date_time: string;
-  duration_minutes: number;
-  is_completed?: boolean;
-  notes?: string;
-}
+// Re-export the service types for backward compatibility
+export type { ActivityFormData } from '@/services/types';
 
 export interface ValidationResult {
   isValid: boolean;
   error?: string;
 }
 
+/**
+ * @deprecated Use ValidationService.validateActivity instead
+ */
 export const validateActivityForm = (
-  data: ActivityFormData,
+  data: import('@/services/types').ActivityFormData,
   goalType: string,
   parentCategories: any[],
   availableSubcategories: any[]

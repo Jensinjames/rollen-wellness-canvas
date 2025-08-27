@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Category, useParentCategories, useAllCategories, useUpdateCategory, useCreateCategory } from '@/hooks/categories';
-import { validateCategoryData, logCategoryOperation } from './CategoryValidation';
+import { CategoryService } from '@/services';
 import { CategoryFormHeader } from './CategoryFormHeader';
 import { CategoryFormValidation } from './CategoryFormValidation';
 import { CategoryFormContent } from './CategoryFormContent';
@@ -33,27 +33,10 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
   
   const isAddingSubcategory = !!forceParent;
   const isEditing = !!category;
-  
-  const getDefaultColor = () => {
-    if (isEditing && category?.color) return category.color;
-    if (isAddingSubcategory && forceParent?.color) return forceParent.color;
-    return '#10B981';
-  };
 
-  const [formData, setFormData] = useState({
-    name: '',
-    color: '#10B981',
-    description: '',
-    is_active: true,
-    sort_order: 0,
-    parent_id: 'none',
-    level: 0,
-    goal_type: 'time' as 'time' | 'boolean' | 'both',
-    is_boolean_goal: false,
-    boolean_goal_label: '',
-    daily_time_goal_minutes: undefined as number | undefined,
-    weekly_time_goal_minutes: undefined as number | undefined,
-  });
+  const [formData, setFormData] = useState(
+    CategoryService.createDefaultFormData(category, forceParent)
+  );
 
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [submitError, setSubmitError] = useState<string>('');
@@ -63,76 +46,49 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      const defaultParentId = forceParent?.id || (isAddingSubcategory ? '' : 'none');
-      
-      setFormData({
-        name: category?.name || '',
-        color: getDefaultColor(),
-        description: category?.description || '',
-        is_active: category?.is_active ?? true,
-        sort_order: category?.sort_order || 0,
-        parent_id: category?.parent_id || defaultParentId,
-        level: forceParent ? 1 : (category?.level || 0),
-        goal_type: category?.goal_type || 'time',
-        is_boolean_goal: category?.is_boolean_goal || false,
-        boolean_goal_label: category?.boolean_goal_label || '',
-        daily_time_goal_minutes: category?.daily_time_goal_minutes,
-        weekly_time_goal_minutes: category?.weekly_time_goal_minutes,
-      });
+      setFormData(CategoryService.createDefaultFormData(category, forceParent));
       setValidationErrors([]);
       setSubmitError('');
     }
-  }, [isOpen, category, forceParent, isAddingSubcategory]);
+  }, [isOpen, category, forceParent]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name.trim()) {
-      setValidationErrors(['Category name is required']);
-      return;
-    }
-    
-    const isSubcategory = isAddingSubcategory || formData.parent_id !== 'none';
-    
-    const submissionData = {
-      ...formData,
-      level: isSubcategory ? 1 : 0,
-      parent_id: isSubcategory ? (formData.parent_id === 'none' ? forceParent?.id : formData.parent_id) : undefined,
-    };
-
-    // Pass the current category's ID to exclude it from duplicate checks during updates
-    const validation = validateCategoryData(
-      submissionData, 
-      isSubcategory, 
-      allCategories || [],
-      category?.id || null
-    );
-    
-    if (!validation.isValid) {
-      setValidationErrors(validation.errors);
-      return;
-    }
-
     setValidationErrors([]);
     setSubmitError('');
 
+    // Use service to prepare submission data
+    const result = CategoryService.prepareSubmissionData(
+      formData,
+      forceParent,
+      allCategories || [],
+      category?.id
+    );
+
+    if (!result.success) {
+      setValidationErrors(result.errors || [result.error || 'Validation failed']);
+      return;
+    }
+
     try {
-      logCategoryOperation(
+      // Log the operation
+      const isSubcategory = isAddingSubcategory || formData.parent_id !== 'none';
+      CategoryService.logCategoryOperation(
         category ? 'update' : 'create', 
-        submissionData, 
-        isSubcategory ? 'subcategory' : 'top-level category'
+        result.data,
+        CategoryService.getOperationContext(isSubcategory)
       );
 
       if (isEditing && category) {
         await updateCategoryMutation.mutateAsync({
           id: category.id,
-          ...submissionData,
+          ...result.data,
         });
       } else {
-        await createCategoryMutation.mutateAsync(submissionData);
+        await createCategoryMutation.mutateAsync(result.data);
       }
 
-      // Close form on success
       handleClose();
     } catch (error: any) {
       console.error('Error submitting category:', error);
