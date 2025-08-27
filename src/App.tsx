@@ -135,4 +135,5 @@ function App() {
   );
 }
 
+// Force rebuild to fix connection issues
 export default App;
