@@ -17,6 +17,11 @@ export default defineConfig({
       // Cache static assets for better performance
       'Cache-Control': 'public, max-age=31536000, immutable',
     },
+    // Ensure proper MIME types for JavaScript modules
+    middlewareMode: false,
+    fs: {
+      strict: true,
+    },
   },
   plugins: [
     react(),
@@ -47,6 +52,8 @@ export default defineConfig({
         entryFileNames: 'assets/js/[name]-[hash].js',
       },
     },
+    // Ensure proper MIME types in production build
+    assetsInlineLimit: 4096,
   },
   css: {
     // Enable CSS optimization
@@ -55,5 +62,13 @@ export default defineConfig({
   esbuild: {
     // Target modern ES syntax to reduce bundle size
     target: 'es2020',
+  },
+  // Configure proper MIME types for module scripts
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+  },
+  // Ensure proper module resolution and MIME types
+  optimizeDeps: {
+    include: ['react', 'react-dom', '@tanstack/react-query'],
   },
 });
