@@ -11,6 +11,8 @@ interface ProtectedRouteProps {
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth();
 
+  console.log('[ProtectedRoute] Auth state:', { user: !!user, loading });
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">

@@ -8,6 +8,8 @@ import { Loader2 } from 'lucide-react';
 export const AuthGuard: React.FC = () => {
   const { user, loading } = useAuth();
 
+  console.log('[AuthGuard] Auth state:', { user: !!user, loading });
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
