@@ -11,12 +11,10 @@ import { SignInForm } from './forms/SignInForm';
 import { SignUpForm } from './forms/SignUpForm';
 import { ForgotPasswordForm } from './forms/ForgotPasswordForm';
 import { ResetPasswordForm } from './forms/ResetPasswordForm';
-import { GoogleSignInButton } from './forms/GoogleSignInButton';
-import { DebugAuthTest } from './DebugAuthTest';
 import { AlertCircle } from 'lucide-react';
 
 export const AuthForm = () => {
-  const { signIn, signUp, signInWithGoogle, resetPassword, updatePassword } = useAuth();
+  const { signIn, signUp, resetPassword, updatePassword } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -27,9 +25,7 @@ export const AuthForm = () => {
     error,
     message,
     passwordErrors,
-    isGoogleLoading,
     setLoading,
-    setGoogleLoading,
     setError,
     setMessage,
     setPasswordErrors,
@@ -105,20 +101,6 @@ export const AuthForm = () => {
     setLoading(false);
   };
 
-  const handleGoogleSignIn = async () => {
-    setGoogleLoading(true);
-    clearMessages();
-
-    const result = await AuthService.processGoogleSignIn(signInWithGoogle);
-
-    if (!result.success) {
-      setError(result.error || 'Google sign in failed');
-    }
-    // Note: On successful OAuth initiation, user will be redirected to Google
-    // and then back to our app, so we don't need to handle success here
-
-    setGoogleLoading(false);
-  };
 
   const handleResetPassword = async (password: string) => {
     setLoading(true);
@@ -223,12 +205,6 @@ export const AuthForm = () => {
             </TabsContent>
           </Tabs>
 
-          <GoogleSignInButton
-            onSignIn={handleGoogleSignIn}
-            isLoading={isGoogleLoading}
-            disabled={isLoading}
-          />
-          
           {error && (
             <Alert variant="destructive" className="mt-4">
               <AlertCircle className="h-4 w-4" />
@@ -243,7 +219,6 @@ export const AuthForm = () => {
           )}
         </CardContent>
       </Card>
-      <DebugAuthTest />
       </div>
     </div>
   );

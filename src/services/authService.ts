@@ -16,30 +16,23 @@ export class AuthService {
     data: AuthFormData,
     signInFn: (email: string, password: string) => Promise<{ error: any }>
   ): Promise<AuthServiceResult> {
-    console.log('🔐 AuthService.processSignIn called with:', { email: data.email, hasPassword: !!data.password });
-    
-    // TEMPORARY: Bypass rate limiting for debugging
-    console.log('⚠️ Rate limiting temporarily bypassed for debugging');
-    // const rateLimitCheck = await validateRateLimit(
-    //   data.email || 'anonymous',
-    //   'signin',
-    //   { maxAttempts: 5, windowMinutes: 15 }
-    // );
+    // Rate limiting check
+    const rateLimitCheck = await validateRateLimit(
+      data.email || 'anonymous',
+      'signin',
+      { maxAttempts: 5, windowMinutes: 15 }
+    );
 
-    // if (!rateLimitCheck.allowed) {
-    //   console.log('❌ Rate limit exceeded:', rateLimitCheck);
-    //   return {
-    //     success: false,
-    //     error: rateLimitCheck.message || 'Too many attempts. Please try again later.'
-    //   };
-    // }
+    if (!rateLimitCheck.allowed) {
+      return {
+        success: false,
+        error: rateLimitCheck.message || 'Too many attempts. Please try again later.'
+      };
+    }
 
     // Validate form data
-    console.log('🔍 Validating form data...');
     const validation = ValidationService.validateSignInForm(data);
-    console.log('📋 Validation result:', validation);
     if (!validation.isValid) {
-      console.log('❌ Validation failed:', validation.errors);
       return {
         success: false,
         error: validation.errors[0]
@@ -47,30 +40,22 @@ export class AuthService {
     }
 
     // Sanitize data
-    console.log('🧹 Sanitizing data...');
     const sanitizedData = ValidationService.sanitizeAuthData(data);
-    console.log('✨ Sanitized data:', { email: sanitizedData.email, hasPassword: !!sanitizedData.password });
 
     try {
-      console.log('🚀 Calling signInFn with sanitized data...');
       const { error } = await signInFn(sanitizedData.email, sanitizedData.password);
       
-      console.log('📨 SignIn response:', { hasError: !!error, errorMessage: error?.message });
-      
       if (error) {
-        console.log('❌ SignIn failed:', error);
         return {
           success: false,
           error: error.message
         };
       }
 
-      console.log('✅ SignIn successful!');
       return {
         success: true
       };
     } catch (err) {
-      console.log('💥 Unexpected error in signIn:', err);
       return {
         success: false,
         error: 'An unexpected error occurred'
@@ -191,46 +176,6 @@ export class AuthService {
     }
   }
 
-  /**
-   * Handles Google OAuth sign-in with rate limiting
-   */
-  static async processGoogleSignIn(
-    signInWithGoogleFn: () => Promise<{ error: any }>
-  ): Promise<AuthServiceResult> {
-    // Rate limiting check for OAuth
-    const rateLimitCheck = await validateRateLimit(
-      'google_oauth',
-      'oauth',
-      { maxAttempts: 10, windowMinutes: 15 }
-    );
-
-    if (!rateLimitCheck.allowed) {
-      return {
-        success: false,
-        error: rateLimitCheck.message || 'Too many OAuth attempts. Please try again later.'
-      };
-    }
-
-    try {
-      const { error } = await signInWithGoogleFn();
-      
-      if (error) {
-        return {
-          success: false,
-          error: error.message
-        };
-      }
-
-      return {
-        success: true
-      };
-    } catch (err) {
-      return {
-        success: false,
-        error: 'Failed to sign in with Google'
-      };
-    }
-  }
 
   /**
    * Handles password update process with validation and rate limiting

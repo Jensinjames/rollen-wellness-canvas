@@ -14,7 +14,7 @@ interface AuthContextType {
   loading: boolean;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signInWithGoogle: () => Promise<{ error: any }>;
+  
   resetPassword: (email: string) => Promise<{ error: any }>;
   updatePassword?: (password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -142,40 +142,26 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const signIn = async (email: string, password: string) => {
-    console.log('🚀 UnifiedAuthContext.signIn called with:', { email, hasPassword: !!password });
-    
-    // TEMPORARY: Bypass email validation for debugging
-    console.log('⚠️ Email validation temporarily bypassed for debugging');
-    // const emailValidation = validateEmail(email);
-    // if (!emailValidation.isValid) {
-    //   console.log('❌ Email validation failed:', emailValidation.error);
-    //   const error = new Error(emailValidation.error);
-    //   await securityLogger.logAuthEvent('auth.login.failure', undefined, { 
-    //     error: emailValidation.error 
-    //   });
-    //   return { error };
-    // }
+    // Validate email input
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      const error = new Error(emailValidation.error);
+      await securityLogger.logAuthEvent('auth.login.failure', undefined, { 
+        error: emailValidation.error 
+      });
+      return { error };
+    }
 
-    console.log('🔗 Calling supabase.auth.signInWithPassword...');
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    console.log('📡 Supabase signIn response:', { 
-      hasError: !!error, 
-      errorMessage: error?.message,
-      errorName: error?.name
-    });
-
     if (error) {
-      console.log('❌ SignIn failed, logging failure...');
       await securityLogger.logAuthEvent('auth.login.failure', undefined, { 
         error: error.message, 
         email_domain: email.split('@')[1] 
       });
-    } else {
-      console.log('✅ SignIn successful!');
     }
 
     return { error };
@@ -213,37 +199,6 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return { error };
   };
 
-  const signInWithGoogle = async () => {
-    try {
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectUrl
-        }
-      });
-
-      if (error) {
-        await securityLogger.logAuthEvent('auth.oauth.failure', undefined, { 
-          error: error.message, 
-          provider: 'google' 
-        });
-      } else {
-        await securityLogger.logAuthEvent('auth.oauth.initiate', undefined, { 
-          provider: 'google' 
-        });
-      }
-
-      return { error };
-    } catch (error: any) {
-      await securityLogger.logAuthEvent('auth.oauth.failure', undefined, { 
-        error: error?.message || 'OAuth error', 
-        provider: 'google' 
-      });
-      return { error };
-    }
-  };
 
   const updatePassword = async (password: string) => {
     // Validate password input
@@ -313,7 +268,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     loading,
     signUp,
     signIn,
-    signInWithGoogle,
+    
     resetPassword,
     updatePassword,
     signOut,

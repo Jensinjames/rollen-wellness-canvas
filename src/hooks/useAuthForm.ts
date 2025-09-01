@@ -9,7 +9,6 @@ export interface AuthFormState {
   error: string | null;
   message: string | null;
   passwordErrors: string[];
-  isGoogleLoading: boolean;
 }
 
 export const useAuthForm = () => {
@@ -17,17 +16,13 @@ export const useAuthForm = () => {
     isLoading: false,
     error: null,
     message: null,
-    passwordErrors: [],
-    isGoogleLoading: false
+    passwordErrors: []
   });
 
   const setLoading = (loading: boolean) => {
     setState(prev => ({ ...prev, isLoading: loading }));
   };
 
-  const setGoogleLoading = (loading: boolean) => {
-    setState(prev => ({ ...prev, isGoogleLoading: loading }));
-  };
 
   const setError = (error: string | null) => {
     setState(prev => ({ ...prev, error, message: null }));
@@ -46,8 +41,7 @@ export const useAuthForm = () => {
       isLoading: false,
       error: null,
       message: null,
-      passwordErrors: [],
-      isGoogleLoading: false
+      passwordErrors: []
     });
   };
 
@@ -56,14 +50,14 @@ export const useAuthForm = () => {
       ...prev, 
       error: null, 
       message: null, 
-      passwordErrors: [] 
+      passwordErrors: []
     }));
   };
 
   return {
     ...state,
     setLoading,
-    setGoogleLoading,
+    
     setError,
     setMessage,
     setPasswordErrors,
