@@ -19,9 +19,13 @@
     <!-- Preload critical fonts to reduce LCP render delay -->
     <link rel="preload" href="https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2" as="font" type="font/woff2" crossorigin />
     
-    <!-- CSS preload hints for better LCP -->
-    <link rel="preload" href="/src/index.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="/src/index.css"></noscript>
+    <!-- Non-blocking CSS loading to prevent render blocking -->
+    <link rel="preload" href="/src/index.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="/src/index.css" /></noscript>
+    <style>
+      /* Critical CSS for initial render - prevents FOUC while CSS loads */
+      *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#fff;color:#000}#root{min-height:100vh}
+    </style>
 
     <!-- Preload critical resources to reduce dependency chain -->
     <link rel="modulepreload" href="/src/main.tsx" />
