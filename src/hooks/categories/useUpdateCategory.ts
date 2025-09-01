@@ -30,20 +30,8 @@ export const useUpdateCategory = () => {
       
       toast.success(successMessage);
       
-      console.log('[Category Update Success Toast]', {
-        categoryId: data.id,
-        categoryName: data.name,
-        fieldsUpdated,
-        successTimestamp: new Date().toISOString()
-      });
     },
     onError: (error, variables) => {
-      console.error('[Category Update Error Toast]', {
-        error: error.message,
-        categoryId: variables.id,
-        categoryName: variables.name,
-        errorTimestamp: new Date().toISOString()
-      });
       
       toast.error(`Failed to update category: ${error.message}`);
     },

@@ -26,16 +26,10 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isSigningOut, setIsSigningOut] = useState(false);
+  
   
   const queryClient = useQueryClient();
 
-  // Temporarily disable session monitoring to prevent blank screen issues
-  // TODO: Re-enable with better error handling
-  // useEffect(() => {
-  //   if (!session || isSigningOut) return;
-  //   // Session monitoring code disabled
-  // }, [session, user?.id, isSigningOut]);
 
   useEffect(() => {
     // Get initial session
@@ -44,7 +38,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setUser(session?.user ?? null);
       setLoading(false);
     }).catch((error) => {
-      console.error('Error getting initial session:', error);
+      
       setLoading(false);
     });
 
@@ -52,28 +46,19 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (isDevelopment()) {
-        console.log('Auth state changed:', event, session?.user?.email);
-      }
 
-      // Simplified auth event handling - no async logging that can cause issues
-      if (event === 'SIGNED_IN') {
-        setIsSigningOut(false);
-      } else if (event === 'SIGNED_OUT') {
-        if (!isSigningOut) {
-          clearAuthState();
-        }
-      }
-
-      if (!isSigningOut) {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+      // Simplified auth event handling
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+      
+      if (event === 'SIGNED_OUT') {
+        clearAuthState();
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [isSigningOut]);
+  }, []);
 
   const clearAuthState = () => {
     setUser(null);
@@ -229,12 +214,6 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const signOut = async () => {
-    // Prevent multiple concurrent sign-out calls
-    if (isSigningOut) {
-      return;
-    }
-
-    setIsSigningOut(true);
     
     try {
       await securityLogger.logAuthEvent('auth.logout', user?.id);
@@ -250,11 +229,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       ]);
 
     } catch (error) {
-      if (isDevelopment()) {
-        console.error('Sign out error:', error);
-      }
     } finally {
-      setIsSigningOut(false);
       
       if (typeof window !== 'undefined') {
         window.location.href = '/auth';

@@ -54,13 +54,6 @@ export const useCachedQuery = <T>({
 
         const cacheResponse = response as CacheResponse<T>;
         
-        // Log cache performance
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`Cache ${cacheResponse.cached ? 'HIT' : 'MISS'} for ${queryType}`, {
-            cacheKey: cacheResponse.cacheKey,
-            cacheExpiry: cacheResponse.cacheExpiry,
-          });
-        }
 
         return cacheResponse.data;
       } catch (cacheError) {
@@ -99,7 +92,7 @@ export const useCacheInvalidation = () => {
         exact: false 
       });
 
-      console.log(`Cache invalidated for ${queryType}`);
+      
     } catch (error) {
       console.error('Failed to invalidate cache:', error);
     }

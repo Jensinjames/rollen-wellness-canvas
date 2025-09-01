@@ -41,7 +41,7 @@ export const updateCategoryRequest = async (
   // Show warnings if any
   if (validation.warnings.length > 0) {
     validation.warnings.forEach(warning => {
-      console.warn(`[Category Update Warning]`, warning);
+      
     });
   }
 
@@ -60,26 +60,9 @@ export const updateCategoryRequest = async (
 
   logCategoryOperation('update', cleanPayload);
 
-  // Enhanced logging for debugging
-  console.log('[Enhanced Category Update Request]', {
-    payload: cleanPayload,
-    payloadSize: JSON.stringify(cleanPayload).length,
-    hasSession: !!session.access_token,
-    userId: user.id,
-    validationWarnings: validation.warnings,
-    sessionExpiry: session.expires_at,
-    requestTimestamp: new Date().toISOString()
-  });
 
   try {
     // Send raw object directly to supabase.functions.invoke()
-    console.log('[Request Payload Debug]', {
-      cleanPayload,
-      payloadType: typeof cleanPayload,
-      payloadKeys: Object.keys(cleanPayload),
-      hasRequiredId: !!cleanPayload.id,
-      sessionValid: !!session.access_token
-    });
 
     // Send as raw object, not stringified, only send Authorization header
     const { data, error } = await supabase.functions.invoke('update-category', {
@@ -89,16 +72,8 @@ export const updateCategoryRequest = async (
       },
     });
 
-    console.log('[Edge Function Response Debug]', {
-      data,
-      error,
-      hasData: !!data,
-      hasError: !!error,
-      responseTimestamp: new Date().toISOString()
-    });
 
     if (error) {
-      console.error('[Edge Function Error]', error);
       logCategoryOperation('update', cleanPayload, null, error);
       throw new Error(error.message || 'Failed to call update function');
     }
@@ -116,25 +91,10 @@ export const updateCategoryRequest = async (
     }
 
     logCategoryOperation('update', cleanPayload, data.data);
-    console.log('[Category Update Success]', {
-      category: data.data,
-      fieldsUpdated: data.fieldsUpdated,
-      requestId: data.requestId,
-      successTimestamp: new Date().toISOString()
-    });
 
     return data.data;
   } catch (error: any) {
     // Enhanced error logging and handling
-    console.error('[Update Category Error]', {
-      error: error.message,
-      payload: cleanPayload,
-      hasSession: !!session,
-      userId: user?.id,
-      errorType: error.name,
-      stack: error.stack,
-      errorTimestamp: new Date().toISOString()
-    });
     
     logCategoryOperation('update', cleanPayload, null, error);
     

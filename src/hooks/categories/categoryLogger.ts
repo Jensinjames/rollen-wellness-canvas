@@ -13,5 +13,5 @@ export const logCategoryOperation = (operation: string, payload: any, result?: a
     result: result ? { id: result.id, name: result.name } : undefined
   };
   
-  console.log('[Category Operation]', logData);
+  
 };

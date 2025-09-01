@@ -41,7 +41,7 @@ export const useCategoryActivityData = () => {
     // Process activities with new category/subcategory structure
     activities.forEach(activity => {
       if (!activity.category_id || !activity.subcategory_id) {
-        console.warn('Activity missing required category or subcategory:', activity);
+        
         return;
       }
 

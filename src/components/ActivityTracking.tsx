@@ -24,7 +24,7 @@ export function ActivityTracking() {
   const handleNavigateToActivity = () => {
     // This could navigate to an activity details page or activity history
     // For now, we'll just log it - you can implement navigation as needed
-    console.log('Navigate to activity details');
+    
   };
 
   return (

@@ -49,14 +49,4 @@ export const validateCategoryData = (
  * @deprecated Use CategoryService.logCategoryOperation instead
  */
 export const logCategoryOperation = (operation: 'create' | 'update', categoryData: any, context?: string) => {
-  console.log(`[Category ${operation.toUpperCase()}]${context ? ` ${context}` : ''}:`, {
-    name: categoryData.name,
-    parent_id: categoryData.parent_id,
-    level: categoryData.level,
-    goal_type: categoryData.goal_type,
-    is_boolean_goal: categoryData.is_boolean_goal,
-    isSubcategory: categoryData.level === 1,
-    hasParent: !!categoryData.parent_id,
-    timestamp: new Date().toISOString()
-  });
 };
