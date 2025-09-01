@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Category, useParentCategories, useAllCategories, useUpdateCategory, useCreateCategory } from '@/hooks/categories';
-import { CategoryService } from '@/services';
+import { createDefaultCategoryFormData, prepareCategorySubmissionData, isCategoryFormReady, logCategoryOperation, getCategoryOperationContext } from '@/services/category';
 import { CategoryFormHeader } from './CategoryFormHeader';
 import { CategoryFormValidation } from './CategoryFormValidation';
 import { CategoryFormContent } from './CategoryFormContent';
@@ -35,7 +35,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
   const isEditing = !!category;
 
   const [formData, setFormData] = useState(
-    CategoryService.createDefaultFormData(category, forceParent)
+    createDefaultCategoryFormData(category, forceParent)
   );
 
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -46,7 +46,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      setFormData(CategoryService.createDefaultFormData(category, forceParent));
+      setFormData(createDefaultCategoryFormData(category, forceParent));
       setValidationErrors([]);
       setSubmitError('');
     }
@@ -59,7 +59,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
     setSubmitError('');
 
     // Use service to prepare submission data
-    const result = CategoryService.prepareSubmissionData(
+    const result = prepareCategorySubmissionData(
       formData,
       forceParent,
       allCategories || [],
@@ -74,10 +74,10 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
     try {
       // Log the operation
       const isSubcategory = isAddingSubcategory || formData.parent_id !== 'none';
-      CategoryService.logCategoryOperation(
+      logCategoryOperation(
         category ? 'update' : 'create', 
         result.data,
-        CategoryService.getOperationContext(isSubcategory)
+        getCategoryOperationContext(isSubcategory)
       );
 
       if (isEditing && category) {

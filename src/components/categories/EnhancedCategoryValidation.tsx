@@ -3,7 +3,7 @@ import React from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, CheckCircle, Info } from 'lucide-react';
-import { CategoryValidationResult } from '@/utils/categoryValidation';
+import { CategoryValidationResult } from '@/validation';
 
 interface EnhancedCategoryValidationProps {
   validation: CategoryValidationResult;

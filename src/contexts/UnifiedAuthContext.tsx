@@ -3,7 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { validateEmail, validatePassword } from '@/utils/validation';
+import { validateEmail, validatePassword } from '@/validation';
 import { securityLogger } from '@/utils/enhancedSecurityLogger';
 import { secureSessionManager } from '@/utils/secureSessionManager';
 import { isDevelopment } from '@/utils/environment';

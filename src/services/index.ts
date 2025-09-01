@@ -1,21 +1,41 @@
 /**
- * Service layer exports
+ * Service layer exports - Phase 2 Updated
  * Central access point for all business logic services
  */
 
-export { ActivityService } from './activityService';
-export { CategoryService } from './categoryService';
-export { ValidationService } from './validationService';
-export { AuthService } from './authService';
+// Re-export activity service
+export * from './activityService';
 
-export type {
-  ServiceResult,
-  ValidationResult,
-  ActivityFormData,
-  CategoryFormData,
-  ActivitySubmissionData,
-  AuthFormData,
-  PasswordResetFormData,
-  AuthValidationResult,
-  AuthServiceResult
-} from './types';
+// Re-export category functions (avoid conflicts)
+export { 
+  createDefaultCategoryFormData,
+  prepareCategorySubmissionData,
+  validateCategoryData,
+  getDefaultCategoryColor,
+  logCategoryOperation,
+  isCategoryFormReady,
+  getCategoryOperationContext,
+  handleCategoryFieldUpdate
+} from './category';
+
+// Re-export auth functions (avoid conflicts)
+export {
+  processSignIn,
+  processSignUp,
+  processPasswordReset,
+  processPasswordUpdate
+} from './auth';
+
+// Re-export validation functions (avoid conflicts) 
+export {
+  validateActivityForm,
+  validateCategoryForm,
+  validateSignInForm,
+  validateSignUpForm,
+  validatePasswordResetForm,
+  sanitizeActivityData,
+  sanitizeCategoryData as sanitizeCategoryFormData
+} from './validation';
+
+// Re-export types
+export * from './types';

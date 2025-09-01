@@ -5,7 +5,7 @@
  */
 
 import { Category } from '@/hooks/categories';
-import { ValidationService } from '@/services';
+import { validateCategoryForm } from '@/services/validation';
 
 /**
  * @deprecated Use ValidationService.validateCategory instead
@@ -32,7 +32,7 @@ export const validateCategoryData = (
     weekly_time_goal_minutes: categoryData.weekly_time_goal_minutes,
   };
 
-  const result = ValidationService.validateCategory(
+  const result = validateCategoryForm(
     formData,
     isSubcategory,
     existingCategories,

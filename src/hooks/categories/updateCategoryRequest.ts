@@ -2,10 +2,10 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Category } from './types';
 import { 
-  validateCategoryUpdatePayload, 
-  sanitizeCategoryPayload,
-  CategoryUpdatePayload 
-} from '@/utils/categoryValidation';
+  validateCategoryPayload, 
+  sanitizeInput,
+  CategoryValidationResult 
+} from '@/validation';
 import { logCategoryOperation } from './categoryLogger';
 
 export const updateCategoryRequest = async (
@@ -14,7 +14,7 @@ export const updateCategoryRequest = async (
   user: any
 ) => {
   // Create payload for validation
-  const payload: CategoryUpdatePayload = {
+  const payload = {
     id: updates.id,
     name: updates.name,
     color: updates.color,
@@ -31,7 +31,7 @@ export const updateCategoryRequest = async (
   };
 
   // Client-side validation
-  const validation = validateCategoryUpdatePayload(payload);
+  const validation = validateCategoryPayload(payload);
   if (!validation.isValid) {
     const errorMessage = `Validation failed: ${validation.errors.join(', ')}`;
     logCategoryOperation('update', payload, null, { message: errorMessage });
@@ -46,11 +46,11 @@ export const updateCategoryRequest = async (
   }
 
   // Sanitize the payload
-  const sanitizedPayload = sanitizeCategoryPayload(payload);
+  // Use sanitized payload directly
 
   // Filter out undefined values to only send fields that are being updated
   const cleanPayload = Object.fromEntries(
-    Object.entries(sanitizedPayload).filter(([_, value]) => value !== undefined)
+    Object.entries(payload).filter(([_, value]) => value !== undefined)
   );
 
   // Ensure we have at least the id field
