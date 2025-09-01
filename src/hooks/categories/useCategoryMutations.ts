@@ -6,7 +6,7 @@ export { useDeleteCategory } from './useCategoryDelete';
 export { useSeedDefaultCategories } from './useCategorySeed';
 
 // Re-export validation utilities
-export { validateCategoryUpdatePayload, sanitizeCategoryPayload } from '@/utils/categoryValidation';
+export { validateCategoryPayload, sanitizeInput } from '@/validation';
 
 // Re-export request utilities
 export { updateCategoryRequest } from './updateCategoryRequest';

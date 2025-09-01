@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/UnifiedAuthContext';
-import { AuthService } from '@/services/authService';
+import { processSignIn, processSignUp, processPasswordReset, processPasswordUpdate } from '@/services/auth';
 import { useAuthForm } from '@/hooks/useAuthForm';
 import { SignInForm } from './forms/SignInForm';
 import { SignUpForm } from './forms/SignUpForm';
@@ -48,7 +48,7 @@ export const AuthForm = () => {
     setLoading(true);
     clearMessages();
 
-    const result = await AuthService.processSignIn(
+    const result = await processSignIn(
       { email, password },
       signIn
     );
@@ -66,7 +66,7 @@ export const AuthForm = () => {
     setLoading(true);
     clearMessages();
 
-    const result = await AuthService.processSignUp(
+    const result = await processSignUp(
       { email, password },
       signUp
     );
@@ -87,7 +87,7 @@ export const AuthForm = () => {
     setLoading(true);
     clearMessages();
 
-    const result = await AuthService.processPasswordReset(
+    const result = await processPasswordReset(
       { email },
       resetPassword
     );
@@ -112,7 +112,7 @@ export const AuthForm = () => {
       return;
     }
 
-    const result = await AuthService.processPasswordUpdate(
+    const result = await processPasswordUpdate(
       { password },
       updatePassword
     );

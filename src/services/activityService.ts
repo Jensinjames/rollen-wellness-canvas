@@ -4,7 +4,7 @@
  */
 
 import { format } from 'date-fns';
-import { ValidationService } from './validationService';
+import { validateActivityForm, sanitizeActivityData } from './validation';
 import { ActivityFormData, ActivitySubmissionData, ServiceResult } from './types';
 import { logResourceEvent } from '@/utils/auditLog';
 
@@ -33,10 +33,10 @@ export class ActivityService {
     availableSubcategories: any[]
   ): ServiceResult<ActivitySubmissionData> {
     // Sanitize input data
-    const sanitizedData = ValidationService.sanitizeActivityData(formData);
+    const sanitizedData = sanitizeActivityData(formData);
 
     // Validate the form data
-    const validation = ValidationService.validateActivity(
+    const validation = validateActivityForm(
       sanitizedData, 
       goalType, 
       parentCategories, 
@@ -107,7 +107,7 @@ export class ActivityService {
     if (loading) return false;
     if (!formData.category_id || availableSubcategories.length === 0) return false;
 
-    const validation = ValidationService.validateActivity(
+    const validation = validateActivityForm(
       formData, 
       goalType, 
       parentCategories, 
