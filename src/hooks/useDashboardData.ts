@@ -19,6 +19,15 @@ export const useDashboardData = (): DashboardData => {
   const { data: activities, isLoading: activitiesLoading, error: activitiesError } = useCachedActivities();
   const { data: categories, isLoading: categoriesLoading, error: categoriesError } = useCachedCategories();
 
+  // Log data state for debugging
+  console.log('Dashboard data state:', {
+    activitiesCount: activities?.length || 0,
+    categoriesCount: categories?.length || 0,
+    activitiesLoading,
+    categoriesLoading,
+    hasErrors: !!(activitiesError || categoriesError)
+  });
+
   // Memoize date calculations to avoid recalculating on every render
   const dateRanges = useMemo(() => {
     const now = new Date();
@@ -56,19 +65,42 @@ export const useDashboardData = (): DashboardData => {
 
   // Memoize parent categories
   const parentCategories = useMemo(() => {
-    if (!categories) return [];
-    return categories.filter(cat => cat.level === 0 && cat.is_active) || [];
+    if (!categories || !Array.isArray(categories)) {
+      console.warn('Categories data is invalid:', categories);
+      return [];
+    }
+    return categories.filter(cat => 
+      cat && 
+      typeof cat === 'object' && 
+      cat.level === 0 && 
+      cat.is_active &&
+      cat.id &&
+      cat.name
+    ) || [];
   }, [categories]);
 
   // Memoize category activity data - this replaces the N+1 query pattern
   const categoryActivityData = useMemo(() => {
-    if (!activities || !categories) return {};
+    if (!activities || !categories || !Array.isArray(activities) || !Array.isArray(categories)) {
+      console.warn('Invalid activity or category data for processing:', { 
+        activitiesType: typeof activities, 
+        categoriesType: typeof categories,
+        activitiesIsArray: Array.isArray(activities),
+        categoriesIsArray: Array.isArray(categories)
+      });
+      return {};
+    }
 
     const data: { [categoryId: string]: { dailyTime: number; weeklyTime: number; subcategoryTimes: { [subcategoryId: string]: number } } } = {};
 
     parentCategories.forEach(category => {
+      if (!category || !category.id) {
+        console.warn('Invalid category in parentCategories:', category);
+        return;
+      }
+      
       // Get all category and subcategory IDs for this parent category
-      const allCategoryIds = [category.id, ...(category.children?.map(c => c.id) || [])];
+      const allCategoryIds = [category.id, ...(category.children?.map(c => c?.id).filter(Boolean) || [])];
       
       // Filter activities for this category family
       const todayCategoryActivities = todayActivities.filter(activity => 

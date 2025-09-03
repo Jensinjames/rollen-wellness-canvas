@@ -19,10 +19,25 @@ const EnhancedCategoryCard: React.FC<EnhancedCategoryCardProps> = memo(({
   subcategoryTimes = {},
   className = ''
 }) => {
+  // Data validation and logging
+  if (!category || !category.id || !category.name) {
+    console.error('EnhancedCategoryCard: Invalid category data', category);
+    return null;
+  }
+
+  const safeActualTime = Math.max(0, Number(actualTime) || 0);
   const categoryColor = category.color || '#6B7280';
   const dailyGoal = category.daily_time_goal_minutes;
   const weeklyGoal = category.weekly_time_goal_minutes;
   const goalTime = dailyGoal || weeklyGoal || 0;
+  
+  console.log('EnhancedCategoryCard render:', {
+    categoryId: category.id,
+    categoryName: category.name,
+    actualTime: safeActualTime,
+    goalTime,
+    subcategoryCount: Object.keys(subcategoryTimes).length
+  });
   
   const formatTime = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -30,9 +45,9 @@ const EnhancedCategoryCard: React.FC<EnhancedCategoryCardProps> = memo(({
     return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
   };
 
-  const progressPercentage = goalTime > 0 ? Math.round((actualTime / goalTime) * 100) : 0;
-  const deficiency = Math.max(0, goalTime - actualTime);
-  const isOnTrack = actualTime >= goalTime;
+  const progressPercentage = goalTime > 0 ? Math.round((safeActualTime / goalTime) * 100) : 0;
+  const deficiency = Math.max(0, goalTime - safeActualTime);
+  const isOnTrack = safeActualTime >= goalTime;
   const goalType = dailyGoal ? 'Daily' : weeklyGoal ? 'Weekly' : 'No Goal';
 
   return (
@@ -57,9 +72,9 @@ const EnhancedCategoryCard: React.FC<EnhancedCategoryCardProps> = memo(({
         {/* Donut Chart */}
         <div className="flex justify-center">
           <LazyCompositeDonutChart
-            key={`chart-${category.id}-${actualTime}`} // Force re-render when data changes
+            key={`chart-${category.id}-${safeActualTime}`} // Force re-render when data changes
             category={category}
-            actualTime={actualTime}
+            actualTime={safeActualTime}
             dailyGoal={dailyGoal}
             weeklyGoal={weeklyGoal}
             subcategoryTimes={subcategoryTimes}
@@ -85,7 +100,7 @@ const EnhancedCategoryCard: React.FC<EnhancedCategoryCardProps> = memo(({
               <span>Actual</span>
             </div>
             <div className="font-medium text-sm">
-              {formatTime(actualTime)}
+              {formatTime(safeActualTime)}
             </div>
             <div className={cn(
               "text-xs font-medium",
@@ -118,7 +133,7 @@ const EnhancedCategoryCard: React.FC<EnhancedCategoryCardProps> = memo(({
             <div className="space-y-2">
               {category.children.map((subcategory, index) => {
                 const time = subcategoryTimes[subcategory.id] || 0;
-                const percentage = actualTime > 0 ? Math.round((time / actualTime) * 100) : 0;
+                const percentage = safeActualTime > 0 ? Math.round((time / safeActualTime) * 100) : 0;
                 const color = generateSubcategoryGradient(categoryColor, index, category.children!.length);
                 
                 return (

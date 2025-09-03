@@ -1,5 +1,5 @@
 import { useCachedQuery } from './useCachedQuery';
-import { useCategories } from './categories';
+import { useCategories } from './categories/useCategoryQueries';
 import { buildCategoryTree } from './categories/utils';
 import { QueryKeys } from './queryKeys';
 
