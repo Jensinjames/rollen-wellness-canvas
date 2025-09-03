@@ -35,6 +35,11 @@ const CompositeDonutChartInternal: React.FC<CompositeDonutChartProps> = ({
   const [isClient, setIsClient] = useState(false);
   const [renderError, setRenderError] = useState<string | null>(null);
 
+  // Stable key to force re-render when data changes (prevents React error #310)
+  const chartKey = useMemo(() => {
+    return `${categoryName}-${actualTime}-${Object.keys(subcategoryTimes).length}-${Object.values(subcategoryTimes).reduce((sum, val) => sum + val, 0)}`;
+  }, [categoryName, actualTime, subcategoryTimes]);
+
   // Ensure we're on client side for SVG rendering
   useEffect(() => {
     setIsClient(true);
@@ -193,11 +198,12 @@ const CompositeDonutChartInternal: React.FC<CompositeDonutChartProps> = ({
   };
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative ${className}`} key={chartKey}>
       <ResponsiveContainer width="100%" height={200}>
-        <PieChart>
+        <PieChart key={`chart-${chartKey}`}>
           {/* Outer ring - Goal vs Actual */}
           <Pie
+            key={`outer-${chartKey}`}
             data={chartData.outerData}
             dataKey="value"
             cx="50%"
@@ -208,12 +214,13 @@ const CompositeDonutChartInternal: React.FC<CompositeDonutChartProps> = ({
             endAngle={450}
           >
             {chartData.outerData.map((entry, index) => (
-              <Cell key={`outer-${index}`} fill={entry.color} stroke="white" strokeWidth={2} />
+              <Cell key={`outer-${chartKey}-${index}`} fill={entry.color} stroke="white" strokeWidth={2} />
             ))}
           </Pie>
           
           {/* Inner ring - Subcategory breakdown */}
           <Pie
+            key={`inner-${chartKey}`}
             data={chartData.innerData}
             dataKey="value"
             cx="50%"
@@ -224,7 +231,7 @@ const CompositeDonutChartInternal: React.FC<CompositeDonutChartProps> = ({
             endAngle={450}
           >
             {chartData.innerData.map((entry, index) => (
-              <Cell key={`inner-${index}`} fill={entry.color} stroke="white" strokeWidth={1} />
+              <Cell key={`inner-${chartKey}-${index}`} fill={entry.color} stroke="white" strokeWidth={1} />
             ))}
           </Pie>
           

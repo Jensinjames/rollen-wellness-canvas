@@ -94,7 +94,7 @@ export const useDashboardData = (): DashboardData => {
     return validParents;
   }, [categories]);
 
-  // Enhanced category activity data processing with better validation
+  // Enhanced category activity data processing with comprehensive validation and subcategory mapping
   const categoryActivityData = useMemo(() => {
     if (!activities || !categories || !Array.isArray(activities) || !Array.isArray(categories)) {
       console.warn('Invalid activity or category data for processing:', { 
@@ -108,7 +108,7 @@ export const useDashboardData = (): DashboardData => {
       return {};
     }
 
-    const data: { [categoryId: string]: { dailyTime: number; weeklyTime: number; subcategoryTimes: { [subcategoryId: string]: number } } } = {};
+    const data: { [categoryId: string]: { dailyTime: number; weeklyTime: number; subcategoryTimes: { [subcategoryName: string]: number } } } = {};
 
     parentCategories.forEach(category => {
       if (!category?.id || !category?.name) {
@@ -116,11 +116,28 @@ export const useDashboardData = (): DashboardData => {
         return;
       }
       
+      // Enhanced subcategory mapping with comprehensive validation
+      const subcategoryMap = new Map<string, string>(); // subcategory.id -> subcategory.name
+      if (category.children && Array.isArray(category.children)) {
+        category.children.forEach(subcategory => {
+          if (subcategory?.id && subcategory?.name && typeof subcategory.name === 'string' && subcategory.name.trim() !== '') {
+            subcategoryMap.set(subcategory.id, subcategory.name.trim());
+          }
+        });
+      }
+      
       // Get all category and subcategory IDs for this parent category with validation
       const allCategoryIds = [
         category.id, 
-        ...(category.children?.map(c => c?.id).filter(id => id && typeof id === 'string') || [])
+        ...Array.from(subcategoryMap.keys())
       ];
+      
+      console.log(`Processing category "${category.name}":`, {
+        categoryId: category.id,
+        subcategoryCount: subcategoryMap.size,
+        subcategoryIds: Array.from(subcategoryMap.keys()),
+        subcategoryNames: Array.from(subcategoryMap.values())
+      });
       
       // Enhanced activity filtering with validation
       const todayCategoryActivities = todayActivities.filter(activity => 
@@ -128,7 +145,7 @@ export const useDashboardData = (): DashboardData => {
         activity.duration_minutes &&
         typeof activity.duration_minutes === 'number' &&
         activity.duration_minutes > 0 &&
-        (allCategoryIds.includes(activity.category_id) || allCategoryIds.includes(activity.subcategory_id))
+        (activity.category_id === category.id || subcategoryMap.has(activity.subcategory_id || ''))
       );
       
       const weekCategoryActivities = weekActivities.filter(activity => 
@@ -136,7 +153,7 @@ export const useDashboardData = (): DashboardData => {
         activity.duration_minutes &&
         typeof activity.duration_minutes === 'number' &&
         activity.duration_minutes > 0 &&
-        (allCategoryIds.includes(activity.category_id) || allCategoryIds.includes(activity.subcategory_id))
+        (activity.category_id === category.id || subcategoryMap.has(activity.subcategory_id || ''))
       );
 
       // Calculate daily and weekly totals with safety checks
@@ -145,22 +162,29 @@ export const useDashboardData = (): DashboardData => {
       const weeklyTime = weekCategoryActivities.reduce((sum, activity) => 
         sum + (activity.duration_minutes || 0), 0);
 
-      // Enhanced subcategory breakdown with validation
-      const subcategoryTimes: { [subcategoryId: string]: number } = {};
-      if (category.children && Array.isArray(category.children)) {
-        category.children.forEach(subcategory => {
-          if (subcategory?.id && subcategory?.name) {
-            const subcategoryActivities = weekCategoryActivities.filter(activity => 
-              activity?.subcategory_id === subcategory.id
-            );
-            const subTime = subcategoryActivities.reduce((sum, activity) => 
-              sum + (activity.duration_minutes || 0), 0);
-            if (subTime > 0) {
-              subcategoryTimes[subcategory.id] = subTime;
-            }
+      // Enhanced subcategory breakdown using subcategory NAMES (not IDs) for chart compatibility
+      const subcategoryTimes: { [subcategoryName: string]: number } = {};
+      if (subcategoryMap.size > 0) {
+        Array.from(subcategoryMap.entries()).forEach(([subcategoryId, subcategoryName]) => {
+          const subcategoryActivities = weekCategoryActivities.filter(activity => 
+            activity?.subcategory_id === subcategoryId
+          );
+          const subTime = subcategoryActivities.reduce((sum, activity) => 
+            sum + (activity.duration_minutes || 0), 0);
+          if (subTime > 0) {
+            subcategoryTimes[subcategoryName] = subTime;
           }
         });
       }
+
+      console.log(`Category "${category.name}" data:`, {
+        dailyTime,
+        weeklyTime,
+        subcategoryTimesKeys: Object.keys(subcategoryTimes),
+        subcategoryTimesValues: Object.values(subcategoryTimes),
+        todayActivitiesCount: todayCategoryActivities.length,
+        weekActivitiesCount: weekCategoryActivities.length
+      });
 
       data[category.id] = {
         dailyTime,
@@ -171,11 +195,13 @@ export const useDashboardData = (): DashboardData => {
 
     console.log('Dashboard category activity data processed:', {
       categoriesProcessed: Object.keys(data).length,
+      totalSubcategoriesFound: Object.values(data).reduce((sum, cat) => sum + Object.keys(cat.subcategoryTimes).length, 0),
       sampleData: Object.keys(data).slice(0, 2).map(id => ({
         categoryId: id,
         dailyTime: data[id].dailyTime,
         weeklyTime: data[id].weeklyTime,
-        subcategoryCount: Object.keys(data[id].subcategoryTimes).length
+        subcategoryNames: Object.keys(data[id].subcategoryTimes),
+        subcategoryTimes: data[id].subcategoryTimes
       }))
     });
 

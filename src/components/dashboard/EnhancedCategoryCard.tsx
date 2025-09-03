@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 interface EnhancedCategoryCardProps {
   category: Category;
   actualTime: number;
-  subcategoryTimes?: { [subcategoryId: string]: number };
+  subcategoryTimes?: { [subcategoryName: string]: number }; // Changed to subcategory names
   className?: string;
 }
 
@@ -77,19 +77,7 @@ const EnhancedCategoryCard: React.FC<EnhancedCategoryCardProps> = memo(({
             actualTime={safeActualTime}
             dailyGoal={dailyGoal}
             weeklyGoal={weeklyGoal}
-            subcategoryTimes={(() => {
-              // Convert subcategory IDs to names for the chart
-              const subcategoryTimesByName: { [name: string]: number } = {};
-              if (category.children) {
-                category.children.forEach(subcategory => {
-                  const time = subcategoryTimes[subcategory.id] || 0;
-                  if (time > 0 && subcategory.name) {
-                    subcategoryTimesByName[subcategory.name] = time;
-                  }
-                });
-              }
-              return subcategoryTimesByName;
-            })()}
+            subcategoryTimes={subcategoryTimes} // Now directly using subcategory names
           />
         </div>
 
@@ -144,7 +132,7 @@ const EnhancedCategoryCard: React.FC<EnhancedCategoryCardProps> = memo(({
             </h4>
             <div className="space-y-2">
               {category.children.map((subcategory, index) => {
-                const time = subcategoryTimes[subcategory.id] || 0;
+                const time = subcategoryTimes[subcategory.name] || 0; // Use subcategory name
                 const percentage = safeActualTime > 0 ? Math.round((time / safeActualTime) * 100) : 0;
                 const color = generateSubcategoryGradient(categoryColor, index, category.children!.length);
                 
