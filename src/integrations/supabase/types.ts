@@ -139,6 +139,54 @@ export type Database = {
           },
         ]
       }
+      category_mappings: {
+        Row: {
+          category_id: string
+          confidence_score: number | null
+          created_at: string | null
+          id: string
+          subcategory_id: string | null
+          text_input: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category_id: string
+          confidence_score?: number | null
+          created_at?: string | null
+          id?: string
+          subcategory_id?: string | null
+          text_input: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category_id?: string
+          confidence_score?: number | null
+          created_at?: string | null
+          id?: string
+          subcategory_id?: string | null
+          text_input?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_category_mappings_category"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_category_mappings_subcategory"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_scores: {
         Row: {
           created_at: string

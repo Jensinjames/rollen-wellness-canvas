@@ -3,3 +3,9 @@ project_id = "dhtgoqoapwxioayzbdfu"
 
 [functions.update-category]
 verify_jwt = true
+
+[functions.ingest-text-log]
+verify_jwt = true
+
+[functions.entries-bulk]
+verify_jwt = true
