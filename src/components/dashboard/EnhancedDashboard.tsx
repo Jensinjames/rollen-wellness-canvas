@@ -70,10 +70,16 @@ const EnhancedDashboard: React.FC = memo(() => {
                 Add Activity
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent 
+              className="sm:max-w-[425px]"
+              aria-describedby="dashboard-activity-description"
+            >
               <DialogHeader>
                 <DialogTitle>Log New Activity</DialogTitle>
               </DialogHeader>
+              <div id="dashboard-activity-description" className="sr-only">
+                Create a new activity entry to track your time and progress.
+              </div>
               <RefactoredActivityEntryForm onSuccess={handleActivitySuccess} />
             </DialogContent>
           </Dialog>

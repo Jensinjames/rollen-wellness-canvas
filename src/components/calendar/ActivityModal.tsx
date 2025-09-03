@@ -253,7 +253,10 @@ export function ActivityModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent 
+        className="sm:max-w-md"
+        aria-describedby="activity-modal-description"
+      >
         <DialogHeader>
           <DialogTitle>
             {isEditing ? 'Edit Activity' : 'Add Activity'}
@@ -264,6 +267,9 @@ export function ActivityModal({
             )}
           </DialogTitle>
         </DialogHeader>
+        <div id="activity-modal-description" className="sr-only">
+          {isEditing ? 'Edit an existing activity entry' : 'Create a new activity entry'} for the selected date.
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

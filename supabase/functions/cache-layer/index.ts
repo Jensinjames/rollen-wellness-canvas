@@ -93,9 +93,23 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const queryType = url.searchParams.get('type');
-    const params = url.searchParams.get('params') || undefined;
-    const invalidate = url.searchParams.get('invalidate') === 'true';
+    // Try to get parameters from URL first, then from request body
+    let queryType = url.searchParams.get('type');
+    let params = url.searchParams.get('params') || undefined;
+    let invalidate = url.searchParams.get('invalidate') === 'true';
+
+    // If not in URL params, try request body (for useCachedQuery compatibility)
+    if (!queryType) {
+      try {
+        const body = await req.json();
+        console.log('Cache layer received body:', body);
+        queryType = body.queryType;
+        params = body.params;
+        invalidate = body.invalidate === true;
+      } catch (bodyError) {
+        console.log('No valid request body, using URL params only');
+      }
+    }
 
     if (!queryType) {
       return new Response(JSON.stringify({ error: 'Query type required' }), {
@@ -258,7 +272,15 @@ Deno.serve(async (req: Request) => {
 
   } catch (error) {
     console.error('Cache layer error:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
+    return new Response(JSON.stringify({ 
+      error: 'Internal server error',
+      details: error.message 
+    }), {
       status: 500,
       headers: { ...corsHeaders(req.headers.get('Origin')), 'Content-Type': 'application/json' },
     });

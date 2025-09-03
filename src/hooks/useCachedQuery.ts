@@ -46,6 +46,11 @@ export const useCachedQuery = <T>({
 
         if (error) {
           console.warn('Cache layer error, falling back to direct query:', error);
+          console.warn('Error details:', {
+            message: error.message,
+            name: error.name,
+            stack: error.stack
+          });
           if (fallbackFn) {
             return await fallbackFn();
           }
