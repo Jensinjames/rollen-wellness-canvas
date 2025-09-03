@@ -69,15 +69,27 @@ const EnhancedCategoryCard: React.FC<EnhancedCategoryCardProps> = memo(({
       </div>
 
       <CardContent className="p-4 space-y-4">
-        {/* Donut Chart */}
+        {/* Enhanced Donut Chart with proper data mapping */}
         <div className="flex justify-center">
           <LazyCompositeDonutChart
             key={`chart-${category.id}-${safeActualTime}`} // Force re-render when data changes
-            category={category}
+            categoryName={category.name}
             actualTime={safeActualTime}
             dailyGoal={dailyGoal}
             weeklyGoal={weeklyGoal}
-            subcategoryTimes={subcategoryTimes}
+            subcategoryTimes={(() => {
+              // Convert subcategory IDs to names for the chart
+              const subcategoryTimesByName: { [name: string]: number } = {};
+              if (category.children) {
+                category.children.forEach(subcategory => {
+                  const time = subcategoryTimes[subcategory.id] || 0;
+                  if (time > 0 && subcategory.name) {
+                    subcategoryTimesByName[subcategory.name] = time;
+                  }
+                });
+              }
+              return subcategoryTimesByName;
+            })()}
           />
         </div>
 

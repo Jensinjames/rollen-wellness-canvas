@@ -8,11 +8,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle } from 'lucide-react';
 
 interface CompositeDonutChartProps {
-  category: Category;
+  categoryName: string;
   actualTime: number; // in minutes
   dailyGoal?: number; // in minutes
   weeklyGoal?: number; // in minutes
-  subcategoryTimes?: { [subcategoryId: string]: number };
+  subcategoryTimes?: { [subcategoryName: string]: number };
   className?: string;
 }
 
@@ -25,7 +25,7 @@ interface ChartDataItem {
 }
 
 const CompositeDonutChartInternal: React.FC<CompositeDonutChartProps> = ({
-  category,
+  categoryName,
   actualTime,
   dailyGoal,
   weeklyGoal,
@@ -40,60 +40,59 @@ const CompositeDonutChartInternal: React.FC<CompositeDonutChartProps> = ({
     setIsClient(true);
   }, []);
 
-  // Validate input data
+  // Enhanced input data validation
   const validatedData = useMemo(() => {
     try {
-      // Validate category
-      if (!category || !category.id || typeof category.name !== 'string') {
-        throw new Error('Invalid category data');
+      // Validate category name
+      if (!categoryName || typeof categoryName !== 'string' || categoryName.trim() === '') {
+        throw new Error('Invalid category name');
       }
 
-      // Validate numeric values
+      // Validate numeric values with comprehensive checks
       const safeActualTime = Math.max(0, Number(actualTime) || 0);
-      const safeDailyGoal = dailyGoal ? Math.max(0, Number(dailyGoal)) : undefined;
-      const safeWeeklyGoal = weeklyGoal ? Math.max(0, Number(weeklyGoal)) : undefined;
+      const safeDailyGoal = dailyGoal && Number(dailyGoal) > 0 ? Math.max(0, Number(dailyGoal)) : undefined;
+      const safeWeeklyGoal = weeklyGoal && Number(weeklyGoal) > 0 ? Math.max(0, Number(weeklyGoal)) : undefined;
 
-      // Validate color format
-      let safeColor = category.color || '#6B7280';
-      if (!/^#[0-9A-F]{6}$/i.test(safeColor)) {
-        console.warn(`Invalid category color: ${safeColor}, using fallback`);
-        safeColor = '#6B7280';
-      }
+      // Use default primary color - this will be enhanced by design system
+      const safeColor = '#3B82F6';
 
-      // Validate subcategory times
+      // Enhanced subcategory times validation
       const safeSubcategoryTimes: { [key: string]: number } = {};
       if (subcategoryTimes && typeof subcategoryTimes === 'object') {
-        Object.entries(subcategoryTimes).forEach(([id, time]) => {
+        Object.entries(subcategoryTimes).forEach(([name, time]) => {
           const numericTime = Number(time);
-          if (!isNaN(numericTime) && numericTime >= 0) {
-            safeSubcategoryTimes[id] = numericTime;
+          if (name && 
+              typeof name === 'string' && 
+              name.trim() !== '' &&
+              !isNaN(numericTime) && 
+              numericTime > 0) {
+            safeSubcategoryTimes[name.trim()] = numericTime;
           }
         });
       }
 
       console.log('CompositeDonutChart validated data:', {
-        categoryId: category.id,
-        categoryName: category.name,
+        categoryName: categoryName.trim(),
         actualTime: safeActualTime,
         dailyGoal: safeDailyGoal,
         weeklyGoal: safeWeeklyGoal,
-        color: safeColor,
         subcategoryCount: Object.keys(safeSubcategoryTimes).length
       });
 
       return {
-        category: { ...category, color: safeColor },
+        categoryName: categoryName.trim(),
         actualTime: safeActualTime,
         dailyGoal: safeDailyGoal,
         weeklyGoal: safeWeeklyGoal,
-        subcategoryTimes: safeSubcategoryTimes
+        subcategoryTimes: safeSubcategoryTimes,
+        color: safeColor
       };
     } catch (error) {
       console.error('CompositeDonutChart validation error:', error);
       setRenderError(error instanceof Error ? error.message : 'Data validation failed');
       return null;
     }
-  }, [category, actualTime, dailyGoal, weeklyGoal, subcategoryTimes]);
+  }, [categoryName, actualTime, dailyGoal, weeklyGoal, subcategoryTimes]);
 
   if (!isClient) {
     return <Skeleton className="h-[200px] w-full rounded-full" />;
@@ -110,7 +109,7 @@ const CompositeDonutChartInternal: React.FC<CompositeDonutChartProps> = ({
       </div>
     );
   }
-  const categoryColor = validatedData.category.color;
+  const categoryColor = validatedData.color;
   
   const chartData = useMemo(() => {
     const goal = validatedData.dailyGoal || validatedData.weeklyGoal || 60; // Default 1 hour if no goal set
@@ -119,7 +118,7 @@ const CompositeDonutChartInternal: React.FC<CompositeDonutChartProps> = ({
     // Outer ring data (parent category vs goal)
     const outerData: ChartDataItem[] = [
       {
-        name: `${validatedData.category.name} (Actual)`,
+        name: `${validatedData.categoryName} (Actual)`,
         value: Math.min(validatedData.actualTime, goal),
         color: categoryColor,
         isGoal: false
@@ -135,16 +134,17 @@ const CompositeDonutChartInternal: React.FC<CompositeDonutChartProps> = ({
       });
     }
     
-    // Inner ring data (subcategory breakdown)
+    // Enhanced inner ring data (subcategory breakdown)
     const innerData: ChartDataItem[] = [];
-    if (validatedData.category.children && validatedData.category.children.length > 0) {
-      validatedData.category.children.forEach((subcategory, index) => {
-        const subcategoryTime = validatedData.subcategoryTimes[subcategory.id] || 0;
+    const subcategoryEntries = Object.entries(validatedData.subcategoryTimes);
+    
+    if (subcategoryEntries.length > 0) {
+      subcategoryEntries.forEach(([subcategoryName, subcategoryTime], index) => {
         if (subcategoryTime > 0) {
           innerData.push({
-            name: subcategory.name,
+            name: subcategoryName,
             value: subcategoryTime,
-            color: generateSubcategoryGradient(categoryColor, index, validatedData.category.children!.length),
+            color: generateSubcategoryGradient(categoryColor, index, subcategoryEntries.length),
             isSubcategory: true
           });
         }
@@ -164,7 +164,7 @@ const CompositeDonutChartInternal: React.FC<CompositeDonutChartProps> = ({
     } else {
       // No subcategories, show full actual time in inner ring
       innerData.push({
-        name: validatedData.category.name,
+        name: validatedData.categoryName,
         value: validatedData.actualTime,
         color: categoryColor,
         isSubcategory: true

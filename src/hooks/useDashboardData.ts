@@ -63,30 +63,47 @@ export const useDashboardData = (): DashboardData => {
     return { todayTotalTime: todayTime, weekTotalTime: weekTime };
   }, [todayActivities, weekActivities]);
 
-  // Memoize parent categories
+  // Enhanced parent categories filtering with comprehensive validation
   const parentCategories = useMemo(() => {
     if (!categories || !Array.isArray(categories)) {
-      console.warn('Categories data is invalid:', categories);
+      console.warn('Categories data is invalid:', { 
+        categories,
+        isArray: Array.isArray(categories),
+        type: typeof categories
+      });
       return [];
     }
-    return categories.filter(cat => 
+    
+    const validParents = categories.filter(cat => 
       cat && 
       typeof cat === 'object' && 
-      cat.level === 0 && 
-      cat.is_active &&
       cat.id &&
-      cat.name
-    ) || [];
+      cat.name &&
+      typeof cat.name === 'string' &&
+      cat.name.trim() !== '' &&
+      cat.level === 0 && 
+      cat.is_active !== false
+    );
+    
+    console.log('Dashboard parent categories:', {
+      totalCategories: categories.length,
+      validParents: validParents.length,
+      parentNames: validParents.map(p => p.name)
+    });
+    
+    return validParents;
   }, [categories]);
 
-  // Memoize category activity data - this replaces the N+1 query pattern
+  // Enhanced category activity data processing with better validation
   const categoryActivityData = useMemo(() => {
     if (!activities || !categories || !Array.isArray(activities) || !Array.isArray(categories)) {
       console.warn('Invalid activity or category data for processing:', { 
         activitiesType: typeof activities, 
         categoriesType: typeof categories,
         activitiesIsArray: Array.isArray(activities),
-        categoriesIsArray: Array.isArray(categories)
+        categoriesIsArray: Array.isArray(categories),
+        activitiesLength: activities?.length,
+        categoriesLength: categories?.length
       });
       return {};
     }
@@ -94,35 +111,54 @@ export const useDashboardData = (): DashboardData => {
     const data: { [categoryId: string]: { dailyTime: number; weeklyTime: number; subcategoryTimes: { [subcategoryId: string]: number } } } = {};
 
     parentCategories.forEach(category => {
-      if (!category || !category.id) {
+      if (!category?.id || !category?.name) {
         console.warn('Invalid category in parentCategories:', category);
         return;
       }
       
-      // Get all category and subcategory IDs for this parent category
-      const allCategoryIds = [category.id, ...(category.children?.map(c => c?.id).filter(Boolean) || [])];
+      // Get all category and subcategory IDs for this parent category with validation
+      const allCategoryIds = [
+        category.id, 
+        ...(category.children?.map(c => c?.id).filter(id => id && typeof id === 'string') || [])
+      ];
       
-      // Filter activities for this category family
+      // Enhanced activity filtering with validation
       const todayCategoryActivities = todayActivities.filter(activity => 
-        allCategoryIds.includes(activity.category_id) || allCategoryIds.includes(activity.subcategory_id)
+        activity && 
+        activity.duration_minutes &&
+        typeof activity.duration_minutes === 'number' &&
+        activity.duration_minutes > 0 &&
+        (allCategoryIds.includes(activity.category_id) || allCategoryIds.includes(activity.subcategory_id))
       );
       
       const weekCategoryActivities = weekActivities.filter(activity => 
-        allCategoryIds.includes(activity.category_id) || allCategoryIds.includes(activity.subcategory_id)
+        activity && 
+        activity.duration_minutes &&
+        typeof activity.duration_minutes === 'number' &&
+        activity.duration_minutes > 0 &&
+        (allCategoryIds.includes(activity.category_id) || allCategoryIds.includes(activity.subcategory_id))
       );
 
-      // Calculate daily and weekly totals
-      const dailyTime = todayCategoryActivities.reduce((sum, activity) => sum + activity.duration_minutes, 0);
-      const weeklyTime = weekCategoryActivities.reduce((sum, activity) => sum + activity.duration_minutes, 0);
+      // Calculate daily and weekly totals with safety checks
+      const dailyTime = todayCategoryActivities.reduce((sum, activity) => 
+        sum + (activity.duration_minutes || 0), 0);
+      const weeklyTime = weekCategoryActivities.reduce((sum, activity) => 
+        sum + (activity.duration_minutes || 0), 0);
 
-      // Calculate subcategory breakdown
+      // Enhanced subcategory breakdown with validation
       const subcategoryTimes: { [subcategoryId: string]: number } = {};
-      if (category.children) {
+      if (category.children && Array.isArray(category.children)) {
         category.children.forEach(subcategory => {
-          const subcategoryActivities = weekCategoryActivities.filter(activity => 
-            activity.subcategory_id === subcategory.id
-          );
-          subcategoryTimes[subcategory.id] = subcategoryActivities.reduce((sum, activity) => sum + activity.duration_minutes, 0);
+          if (subcategory?.id && subcategory?.name) {
+            const subcategoryActivities = weekCategoryActivities.filter(activity => 
+              activity?.subcategory_id === subcategory.id
+            );
+            const subTime = subcategoryActivities.reduce((sum, activity) => 
+              sum + (activity.duration_minutes || 0), 0);
+            if (subTime > 0) {
+              subcategoryTimes[subcategory.id] = subTime;
+            }
+          }
         });
       }
 
@@ -131,6 +167,16 @@ export const useDashboardData = (): DashboardData => {
         weeklyTime,
         subcategoryTimes
       };
+    });
+
+    console.log('Dashboard category activity data processed:', {
+      categoriesProcessed: Object.keys(data).length,
+      sampleData: Object.keys(data).slice(0, 2).map(id => ({
+        categoryId: id,
+        dailyTime: data[id].dailyTime,
+        weeklyTime: data[id].weeklyTime,
+        subcategoryCount: Object.keys(data[id].subcategoryTimes).length
+      }))
     });
 
     return data;
