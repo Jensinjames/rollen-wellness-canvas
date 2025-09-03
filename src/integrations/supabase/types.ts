@@ -63,11 +63,53 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "activities_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "category_totals"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "activities_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "goal_deficiencies"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "activities_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "subcategory_totals"
+            referencedColumns: ["subcategory_id"]
+          },
+          {
             foreignKeyName: "fk_activities_subcategory"
             columns: ["subcategory_id"]
             isOneToOne: false
             referencedRelation: "categories"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_activities_subcategory"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "category_totals"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "fk_activities_subcategory"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "goal_deficiencies"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "fk_activities_subcategory"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "subcategory_totals"
+            referencedColumns: ["subcategory_id"]
           },
         ]
       }
@@ -137,6 +179,27 @@ export type Database = {
             referencedRelation: "categories"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "category_totals"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "goal_deficiencies"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "subcategory_totals"
+            referencedColumns: ["subcategory_id"]
+          },
         ]
       }
       category_mappings: {
@@ -179,11 +242,53 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fk_category_mappings_category"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "category_totals"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "fk_category_mappings_category"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "goal_deficiencies"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "fk_category_mappings_category"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "subcategory_totals"
+            referencedColumns: ["subcategory_id"]
+          },
+          {
             foreignKeyName: "fk_category_mappings_subcategory"
             columns: ["subcategory_id"]
             isOneToOne: false
             referencedRelation: "categories"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_category_mappings_subcategory"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "category_totals"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "fk_category_mappings_subcategory"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "goal_deficiencies"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "fk_category_mappings_subcategory"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "subcategory_totals"
+            referencedColumns: ["subcategory_id"]
           },
         ]
       }
@@ -315,6 +420,27 @@ export type Database = {
             referencedRelation: "categories"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "habits_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "category_totals"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "habits_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "goal_deficiencies"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "habits_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "subcategory_totals"
+            referencedColumns: ["subcategory_id"]
+          },
         ]
       }
       profiles: {
@@ -396,11 +522,53 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "rollups_daily_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "category_totals"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "rollups_daily_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "goal_deficiencies"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "rollups_daily_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "subcategory_totals"
+            referencedColumns: ["subcategory_id"]
+          },
+          {
             foreignKeyName: "rollups_daily_subcategory_id_fkey"
             columns: ["subcategory_id"]
             isOneToOne: false
             referencedRelation: "categories"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rollups_daily_subcategory_id_fkey"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "category_totals"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "rollups_daily_subcategory_id_fkey"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "goal_deficiencies"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "rollups_daily_subcategory_id_fkey"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "subcategory_totals"
+            referencedColumns: ["subcategory_id"]
           },
         ]
       }
@@ -475,6 +643,64 @@ export type Database = {
       }
     }
     Views: {
+      category_totals: {
+        Row: {
+          activity_count: number | null
+          activity_date: string | null
+          category_id: string | null
+          category_name: string | null
+          color: string | null
+          daily_progress_percentage: number | null
+          daily_time_goal_minutes: number | null
+          total_minutes: number | null
+          user_id: string | null
+          weekly_progress_percentage: number | null
+          weekly_time_goal_minutes: number | null
+        }
+        Relationships: []
+      }
+      daily_streaks: {
+        Row: {
+          category_id: string | null
+          category_name: string | null
+          color: string | null
+          streak_end: string | null
+          streak_length: number | null
+          streak_start: string | null
+          total_streak_minutes: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activities_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "category_totals"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "activities_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "goal_deficiencies"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "activities_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "subcategory_totals"
+            referencedColumns: ["subcategory_id"]
+          },
+        ]
+      }
       daily_unaccounted_time: {
         Row: {
           activity_count: number | null
@@ -484,6 +710,66 @@ export type Database = {
           user_id: string | null
         }
         Relationships: []
+      }
+      goal_deficiencies: {
+        Row: {
+          actual_minutes: number | null
+          category_id: string | null
+          category_name: string | null
+          color: string | null
+          daily_deficiency: number | null
+          daily_time_goal_minutes: number | null
+          deficiency_date: string | null
+          is_daily_behind: boolean | null
+          is_weekly_behind: boolean | null
+          user_id: string | null
+          weekly_deficiency: number | null
+          weekly_time_goal_minutes: number | null
+        }
+        Relationships: []
+      }
+      subcategory_totals: {
+        Row: {
+          activity_count: number | null
+          activity_date: string | null
+          category_color: string | null
+          category_id: string | null
+          category_name: string | null
+          subcategory_id: string | null
+          subcategory_name: string | null
+          total_minutes: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "category_totals"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "goal_deficiencies"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "subcategory_totals"
+            referencedColumns: ["subcategory_id"]
+          },
+        ]
       }
     }
     Functions: {
