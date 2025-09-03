@@ -773,9 +773,26 @@ export type Database = {
       }
     }
     Functions: {
+      apply_sleep_cutoff: {
+        Args: { entry_datetime: string; sleep_cutoff_hour?: number }
+        Returns: string
+      }
+      calculate_unaccounted_time: {
+        Args: { p_date: string; p_user_id: string }
+        Returns: number
+      }
       cascade_delete_category: {
         Args: { category_id_param: string; user_id_param: string }
         Returns: undefined
+      }
+      check_category_guardrails: {
+        Args: {
+          p_category_id: string
+          p_date: string
+          p_new_duration_minutes: number
+          p_user_id: string
+        }
+        Returns: Json
       }
       check_rate_limit: {
         Args: {
@@ -803,6 +820,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      refresh_daily_rollups: {
+        Args: { p_date: string; p_user_id: string }
+        Returns: undefined
+      }
       secure_log_audit_event: {
         Args: {
           details_param?: Json
@@ -816,6 +837,10 @@ export type Database = {
       seed_default_categories: {
         Args: { user_id_param: string }
         Returns: undefined
+      }
+      validate_15_minute_increments: {
+        Args: { auto_round?: boolean; duration_minutes: number }
+        Returns: number
       }
     }
     Enums: {

@@ -6,6 +6,7 @@ import { EnhancedCategoryCard } from './EnhancedCategoryCard';
 import { GlobalOverviewChart } from './GlobalOverviewChart';
 import { DateRangeSelector, type DateRangeType } from './DateRangeSelector';
 import { RefactoredActivityEntryForm } from '@/components/forms/RefactoredActivityEntryForm';
+import { BusinessRulesInsights } from './BusinessRulesInsights';
 import { AnalyticsSummary } from '@/components/analytics/AnalyticsSummary';
 import { ActivityHistoryTable } from '@/components/ActivityHistoryTable';
 import { useDashboardData } from '@/hooks/useDashboardData';
@@ -129,6 +130,9 @@ const EnhancedDashboard: React.FC = memo(() => {
           </div>
         </div>
       </div>
+
+      {/* Business Rules Insights - New Phase 2 Feature */}
+      <BusinessRulesInsights />
 
       {/* Analytics Charts - Hidden on mobile */}
       <div className="hidden md:block">
