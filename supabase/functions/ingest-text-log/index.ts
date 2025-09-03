@@ -197,27 +197,51 @@ function parseTimeRangeFormat(line: string, baseDate?: string): ParsedEntry | nu
 }
 
 function parseDurationFormat(line: string, baseDate?: string): ParsedEntry | null {
-  // Pattern: "2h 15m Faith - Prayer" or "90m Work - Meeting"
-  const durationPattern = /^(?:(\d+)h\s*)?(?:(\d+)m\s*)?(.+)$/;
-  const match = line.match(durationPattern);
-  
-  if (!match) return null;
+  // Enhanced patterns: "2h 15m Faith - Prayer", "90m Work - Meeting", "30 min Faith - Prayer", "1.5h Work - Meeting"
+  const durationPatterns = [
+    /^(\d+)h\s*(\d+)m\s+(.+)$/,           // "2h 15m Activity"
+    /^(\d+)h\s+(.+)$/,                    // "2h Activity" 
+    /^(\d+)m\s+(.+)$/,                    // "90m Activity"
+    /^(\d+)\s*min\s+(.+)$/i,              // "30 min Activity"
+    /^(\d+(?:\.\d+)?)\s*hours?\s+(.+)$/i  // "1.5 hours Activity"
+  ];
 
-  const [, hours, minutes, activity] = match;
-  const totalMinutes = (parseInt(hours) || 0) * 60 + (parseInt(minutes) || 0);
-  
-  if (totalMinutes === 0) return null;
+  for (const pattern of durationPatterns) {
+    const match = line.match(pattern);
+    if (!match) continue;
 
-  const { category, subcategory, activityName } = parseActivityString(activity);
+    let totalMinutes = 0;
+    let activity = '';
 
-  return {
-    date: baseDate,
-    duration_minutes: totalMinutes,
-    activity: activityName,
-    category,
-    subcategory,
-    raw_text: line,
-  };
+    if (pattern === durationPatterns[0]) { // "2h 15m"
+      totalMinutes = parseInt(match[1]) * 60 + parseInt(match[2]);
+      activity = match[3];
+    } else if (pattern === durationPatterns[1]) { // "2h"
+      totalMinutes = parseInt(match[1]) * 60;
+      activity = match[2];
+    } else if (pattern === durationPatterns[2] || pattern === durationPatterns[3]) { // "90m" or "30 min"
+      totalMinutes = parseInt(match[1]);
+      activity = match[2];
+    } else if (pattern === durationPatterns[4]) { // "1.5 hours"
+      totalMinutes = Math.round(parseFloat(match[1]) * 60);
+      activity = match[2];
+    }
+
+    if (totalMinutes === 0) continue;
+
+    const { category, subcategory, activityName } = parseActivityString(activity);
+
+    return {
+      date: baseDate,
+      duration_minutes: totalMinutes,
+      activity: activityName,
+      category,
+      subcategory,
+      raw_text: line,
+    };
+  }
+
+  return null;
 }
 
 function parseSimpleFormat(line: string, baseDate?: string): ParsedEntry | null {
