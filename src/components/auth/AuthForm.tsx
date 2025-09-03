@@ -11,6 +11,7 @@ import { SignInForm } from './forms/SignInForm';
 import { SignUpForm } from './forms/SignUpForm';
 import { ForgotPasswordForm } from './forms/ForgotPasswordForm';
 import { ResetPasswordForm } from './forms/ResetPasswordForm';
+import { AuthDebugPanel } from './AuthDebugPanel';
 import { AlertCircle } from 'lucide-react';
 
 export const AuthForm = () => {
@@ -48,14 +49,20 @@ export const AuthForm = () => {
     setLoading(true);
     clearMessages();
 
+    console.log('AuthForm: Starting sign in process for:', email);
+
     const result = await processSignIn(
       { email, password },
       signIn
     );
 
+    console.log('AuthForm: Sign in result:', result);
+
     if (result.success) {
+      console.log('AuthForm: Sign in successful, navigating to home');
       navigate('/', { replace: true });
     } else {
+      console.error('AuthForm: Sign in failed:', result.error);
       setError(result.error || 'Sign in failed');
     }
 
@@ -208,15 +215,28 @@ export const AuthForm = () => {
           {error && (
             <Alert variant="destructive" className="mt-4">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>
+                <div className="space-y-1">
+                  <div className="font-medium">Sign In Error</div>
+                  <div className="text-sm">{error}</div>
+                  {error.includes('Invalid email or password') && (
+                    <div className="text-xs mt-2 text-muted-foreground">
+                      Don't have an account? Switch to the Sign Up tab.
+                    </div>
+                  )}
+                </div>
+              </AlertDescription>
             </Alert>
           )}
           
           {message && (
             <Alert className="mt-4">
-              <AlertDescription>{message}</AlertDescription>
+              <AlertDescription>
+                <div className="font-medium text-sm">{message}</div>
+              </AlertDescription>
             </Alert>
           )}
+          <AuthDebugPanel />
         </CardContent>
       </Card>
       </div>

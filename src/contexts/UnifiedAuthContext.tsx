@@ -32,32 +32,53 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    }).catch((error) => {
-      
-      setLoading(false);
-    });
+    let isMounted = true;
 
-    // Listen for auth changes
+    // Set up auth state listener FIRST
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-
-      // Simplified auth event handling
+      if (!isMounted) return;
+      
+      console.log('Auth state change:', event, session?.user?.email);
+      
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
       
       if (event === 'SIGNED_OUT') {
         clearAuthState();
+      } else if (event === 'SIGNED_IN' && session?.user) {
+        securityLogger.logAuthEvent('auth.login.success', session.user.id, { 
+          email_domain: session.user.email?.split('@')[1] 
+        }).catch(console.error);
       }
     });
 
-    return () => subscription.unsubscribe();
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (!isMounted) return;
+      
+      if (error) {
+        console.error('Error getting session:', error);
+        securityLogger.logAuthEvent('auth.login.failure', undefined, { 
+          error: error.message 
+        }).catch(console.error);
+      }
+      
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    }).catch((error) => {
+      if (!isMounted) return;
+      console.error('Failed to get session:', error);
+      setLoading(false);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const clearAuthState = () => {
@@ -127,6 +148,8 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const signIn = async (email: string, password: string) => {
+    console.log('Attempting sign in for:', email);
+    
     // Validate email input
     const emailValidation = validateEmail(email);
     if (!emailValidation.isValid) {
@@ -137,19 +160,43 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       return { error };
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      await securityLogger.logAuthEvent('auth.login.failure', undefined, { 
-        error: error.message, 
-        email_domain: email.split('@')[1] 
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
-    }
 
-    return { error };
+      if (error) {
+        console.error('Sign in error:', error);
+        
+        // Provide more specific error messages
+        let userFriendlyMessage = error.message;
+        if (error.message.includes('Invalid login credentials')) {
+          userFriendlyMessage = 'Invalid email or password. Please check your credentials and try again.';
+        } else if (error.message.includes('Email not confirmed')) {
+          userFriendlyMessage = 'Please check your email and click the confirmation link before signing in.';
+        } else if (error.message.includes('Too many requests')) {
+          userFriendlyMessage = 'Too many login attempts. Please wait a few minutes before trying again.';
+        }
+        
+        const enhancedError = new Error(userFriendlyMessage);
+        
+        await securityLogger.logAuthEvent('auth.login.failure', undefined, { 
+          error: error.message, 
+          email_domain: email.split('@')[1] 
+        });
+        
+        return { error: enhancedError };
+      }
+
+      console.log('Sign in successful for:', email);
+      return { error: null };
+      
+    } catch (error: any) {
+      console.error('Unexpected sign in error:', error);
+      const enhancedError = new Error('An unexpected error occurred. Please try again.');
+      return { error: enhancedError };
+    }
   };
 
   const resetPassword = async (email: string) => {
