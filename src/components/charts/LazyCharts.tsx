@@ -54,8 +54,21 @@ export const LazyTimeDistributionChart = (props: any) => (
   </Suspense>
 );
 
-export const LazyCompositeDonutChart = (props: any) => (
-  <Suspense fallback={<div className="w-full h-48"><Skeleton className="h-full w-full rounded-full" /></div>}>
-    <CompositeDonutChart {...props} />
-  </Suspense>
-);
+export const LazyCompositeDonutChart = (props: any) => {
+  // Add error logging for lazy loading issues
+  const handleError = (error: Error) => {
+    console.error('LazyCompositeDonutChart loading error:', error);
+  };
+
+  return (
+    <Suspense 
+      fallback={
+        <div className="w-full h-48 flex items-center justify-center">
+          <Skeleton className="h-full w-full rounded-full" />
+        </div>
+      }
+    >
+      <CompositeDonutChart {...props} />
+    </Suspense>
+  );
+};

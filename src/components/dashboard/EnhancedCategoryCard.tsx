@@ -57,6 +57,7 @@ const EnhancedCategoryCard: React.FC<EnhancedCategoryCardProps> = memo(({
         {/* Donut Chart */}
         <div className="flex justify-center">
           <LazyCompositeDonutChart
+            key={`chart-${category.id}-${actualTime}`} // Force re-render when data changes
             category={category}
             actualTime={actualTime}
             dailyGoal={dailyGoal}
