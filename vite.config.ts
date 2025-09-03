@@ -62,9 +62,11 @@ export default defineConfig({
           }
           return 'assets/[name]-[hash][extname]';
         },
-        // Add content hash to JS files for better caching
+        // Ensure JS files have .js extension for proper MIME type detection
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
+        // Force .js extension for all module outputs to prevent MIME type issues
+        manualChunks: undefined,
       },
     },
     // Ensure proper MIME types in production build
