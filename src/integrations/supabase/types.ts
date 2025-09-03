@@ -418,7 +418,16 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      daily_unaccounted_time: {
+        Row: {
+          activity_count: number | null
+          activity_date: string | null
+          tracked_minutes: number | null
+          unaccounted_minutes: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       cascade_delete_category: {
