@@ -10,8 +10,7 @@ import { BusinessRulesInsights } from './BusinessRulesInsights';
 import { AnalyticsSummary } from '@/components/analytics/AnalyticsSummary';
 import { ActivityHistoryTable } from '@/components/ActivityHistoryTable';
 import { useDashboardData } from '@/hooks/useDashboardData';
-import { useCacheInvalidation } from '@/hooks/useCachedQuery';
-import { QueryKeys } from '@/hooks/queryKeys';
+import { useCacheManager } from '@/hooks/useCacheManager';
 import { DashboardSkeleton, CategoryProgressCardSkeleton } from './DashboardSkeleton';
 import { ChartErrorBoundary } from '@/components/error/ChartErrorBoundary';
 import { LazyWeeklyTrendChart } from '@/components/charts/LazyCharts';
@@ -20,7 +19,7 @@ import { useNavigate } from 'react-router-dom';
 const EnhancedDashboard: React.FC = memo(() => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedDateRange, setSelectedDateRange] = useState<DateRangeType>('7D');
-  const { invalidateCache } = useCacheInvalidation();
+  const { refreshActivityData } = useCacheManager();
   const navigate = useNavigate();
   
   const {
@@ -32,9 +31,7 @@ const EnhancedDashboard: React.FC = memo(() => {
 
   const handleActivitySuccess = () => {
     setIsFormOpen(false);
-    invalidateCache(QueryKeys.Activities);
-    invalidateCache(QueryKeys.CategoryActivityData);
-    invalidateCache(QueryKeys.AnalyticsSummary);
+    refreshActivityData();
   };
 
   const handleCategoryManagement = () => {

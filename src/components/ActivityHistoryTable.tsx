@@ -3,13 +3,13 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, TrendingUp, TrendingDown, Minus, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useActivities } from "@/hooks/useActivities";
-import { useCategories } from "@/hooks/categories";
+import { useCachedActivities } from "@/hooks/useCachedActivities";
+import { useCachedCategories } from "@/hooks/useCachedCategories";
 import { useMemo } from "react";
 
 export function ActivityHistoryTable() {
-  const { data: activities } = useActivities();
-  const { data: categories } = useCategories();
+  const { data: activities } = useCachedActivities();
+  const { data: categories } = useCachedCategories();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 

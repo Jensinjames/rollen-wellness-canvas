@@ -1,7 +1,7 @@
 
 import { useMemo } from 'react';
-import { useActivities } from '@/hooks/useActivities';
-import { useCategories } from '@/hooks/categories';
+import { useCachedActivities } from '@/hooks/useCachedActivities';
+import { useCachedCategories } from '@/hooks/useCachedCategories';
 import { startOfDay, endOfDay, startOfWeek, endOfWeek } from 'date-fns';
 
 export interface DashboardData {
@@ -16,8 +16,8 @@ export interface DashboardData {
 }
 
 export const useDashboardData = (): DashboardData => {
-  const { data: activities, isLoading: activitiesLoading, error: activitiesError } = useActivities();
-  const { data: categories, isLoading: categoriesLoading, error: categoriesError } = useCategories();
+  const { data: activities, isLoading: activitiesLoading, error: activitiesError } = useCachedActivities();
+  const { data: categories, isLoading: categoriesLoading, error: categoriesError } = useCachedCategories();
 
   // Memoize date calculations to avoid recalculating on every render
   const dateRanges = useMemo(() => {
