@@ -347,6 +347,63 @@ export type Database = {
         }
         Relationships: []
       }
+      rollups_daily: {
+        Row: {
+          activity_count: number | null
+          category_id: string | null
+          created_at: string | null
+          date: string
+          goal_minutes: number | null
+          id: string
+          subcategory_id: string | null
+          total_minutes: number | null
+          unaccounted_minutes: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_count?: number | null
+          category_id?: string | null
+          created_at?: string | null
+          date: string
+          goal_minutes?: number | null
+          id?: string
+          subcategory_id?: string | null
+          total_minutes?: number | null
+          unaccounted_minutes?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_count?: number | null
+          category_id?: string | null
+          created_at?: string | null
+          date?: string
+          goal_minutes?: number | null
+          id?: string
+          subcategory_id?: string | null
+          total_minutes?: number | null
+          unaccounted_minutes?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rollups_daily_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rollups_daily_subcategory_id_fkey"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       security_audit_log: {
         Row: {
           created_at: string
