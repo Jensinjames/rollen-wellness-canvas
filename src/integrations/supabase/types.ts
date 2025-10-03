@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           category_id: string
           created_at: string
+          date_time: string | null
           duration_minutes: number
           end_time: string
           id: string
@@ -29,6 +30,7 @@ export type Database = {
         Insert: {
           category_id: string
           created_at?: string
+          date_time?: string | null
           duration_minutes: number
           end_time: string
           id?: string
@@ -40,6 +42,7 @@ export type Database = {
         Update: {
           category_id?: string
           created_at?: string
+          date_time?: string | null
           duration_minutes?: number
           end_time?: string
           id?: string
@@ -340,6 +343,14 @@ export type Database = {
       cascade_delete_category: {
         Args: { category_id: string }
         Returns: undefined
+      }
+      check_rate_limit: {
+        Args: {
+          identifier: string
+          max_requests?: number
+          window_seconds?: number
+        }
+        Returns: Json
       }
       seed_default_categories: {
         Args: { p_user_id: string }

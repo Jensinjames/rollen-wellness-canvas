@@ -3,41 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/UnifiedAuthContext';
 import { toast } from 'sonner';
+import { Activity } from '@/types/activity';
 
-export interface Activity {
-  id: string;
-  category_id: string;
-  subcategory_id: string;
-  name: string;
-  date_time: string;
-  duration_minutes: number;
-  is_completed?: boolean;
-  notes?: string;
-  created_at: string;
-  updated_at: string;
-  categories?: {
-    id: string;
-    name: string;
-    color: string;
-    level: number;
-    path: string[];
-    parent_id?: string;
-    parent?: {
-      id: string;
-      name: string;
-      color: string;
-    };
-  };
-  subcategories?: {
-    id: string;
-    name: string;
-    color: string;
-    level: number;
-    parent_id: string;
-    goal_type?: string;
-    boolean_goal_label?: string;
-  };
-}
 
 export const useActivities = () => {
   const { user } = useAuth();
@@ -51,7 +18,7 @@ export const useActivities = () => {
       const { data: activities, error: activitiesError } = await supabase
         .from('activities')
         .select('*')
-        .order('date_time', { ascending: false });
+        .order('start_time', { ascending: false });
 
       if (activitiesError) throw activitiesError;
       if (!activities) return [];

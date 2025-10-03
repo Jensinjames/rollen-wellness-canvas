@@ -1,11 +1,12 @@
 import { useCachedQuery } from './useCachedQuery';
 import { useActivities } from './useActivities';
 import { QueryKeys } from './queryKeys';
+import { Activity } from '@/types/activity';
 
-export const useCachedActivities = () => {
+export const useCachedActivities = (): { data: Activity[] | undefined; isLoading: boolean; error: Error | null } => {
   const { data: fallbackData } = useActivities();
 
-  return useCachedQuery({
+  return useCachedQuery<Activity[]>({
     queryKey: [QueryKeys.Activities],
     queryType: QueryKeys.Activities,
     fallbackFn: async () => {

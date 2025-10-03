@@ -1,15 +1,7 @@
 
 import { useState } from "react";
+import { ActivityFilters } from "@/types/activity";
 
-export interface ActivityFilters {
-  categoryIds: string[];
-  subcategoryIds: string[];
-  searchTerm: string;
-  dateRange?: {
-    from: Date;
-    to: Date;
-  };
-}
 
 export const useActivityFilters = () => {
   const [filters, setFilters] = useState<ActivityFilters>({
