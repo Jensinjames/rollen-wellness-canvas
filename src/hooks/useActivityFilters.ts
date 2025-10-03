@@ -2,6 +2,9 @@
 import { useState } from "react";
 import { ActivityFilters } from "@/types/activity";
 
+// Re-export for backward compatibility
+export type { ActivityFilters };
+
 
 export const useActivityFilters = () => {
   const [filters, setFilters] = useState<ActivityFilters>({

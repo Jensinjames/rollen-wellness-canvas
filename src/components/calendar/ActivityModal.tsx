@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useActivities, useCreateActivity, Activity } from "@/hooks/useActivities";
+import { useActivities, useCreateActivity } from "@/hooks/useActivities";
+import { Activity } from "@/types/activity";
 import { useCategories } from "@/hooks/categories";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,10 +72,13 @@ export function ActivityModal({
   useEffect(() => {
     if (isOpen) {
       if (isEditing && activity) {
+        // Activity no longer has 'name' or 'subcategory_id' - derive from category
+        const subcategory = activity.subcategory || activity.category;
+        const parentId = subcategory?.parent_id || "";
         setFormData({
-          name: activity.name,
-          categoryId: activity.category_id,
-          subcategoryId: activity.subcategory_id,
+          name: subcategory?.name || "Activity",
+          categoryId: parentId,
+          subcategoryId: activity.category_id, // category_id IS the subcategory
           duration: activity.duration_minutes.toString(),
           notes: activity.notes || "",
         });
@@ -218,22 +222,19 @@ export function ActivityModal({
       updateActivityMutation.mutate({
         id: activity.id,
         updates: {
-          name: nameValidation.sanitized,
-          category_id: formData.categoryId,
-          subcategory_id: formData.subcategoryId,
+          category_id: formData.subcategoryId, // Use subcategoryId as category_id
           duration_minutes: duration,
           notes: notesValidation.sanitized || null,
         }
       });
     } else {
+      // For new activities, only send the actual fields
       createActivity.mutate({
-        name: nameValidation.sanitized,
-        category_id: formData.categoryId,
-        subcategory_id: formData.subcategoryId,
+        category_id: formData.subcategoryId, // Use subcategoryId as category_id
         date_time: selectedDate.toISOString(),
         duration_minutes: duration,
         notes: notesValidation.sanitized || null,
-      });
+      } as any);
     }
   };
 

@@ -53,7 +53,7 @@ export function DayCell({ date, activities, onActivityClick, className }: DayCel
                   style={{ backgroundColor: category?.color || '#3B82F6' }}
                 />
                 <span className="text-xs truncate text-gray-700 dark:text-gray-300">
-                  {activity.name}
+                  {category?.name || 'Activity'}
                 </span>
               </div>
             </button>

@@ -21,6 +21,7 @@ export function ActivityHistoryTable() {
 
     return activities.slice(0, 20).map(activity => {
       const category = categoryMap.get(activity.category_id);
+      const subcategory = activity.subcategory || activity.category;
       const date = new Date(activity.date_time);
       
       // Simple trend calculation based on duration (placeholder logic)
@@ -29,7 +30,7 @@ export function ActivityHistoryTable() {
 
       return {
         id: activity.id,
-        activity: activity.name,
+        activity: subcategory?.name || category?.name || 'Unknown Activity',
         category: category?.name || 'Unknown',
         date: date.toLocaleDateString(),
         value: activity.duration_minutes >= 60 

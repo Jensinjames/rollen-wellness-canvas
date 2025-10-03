@@ -129,13 +129,11 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const finalElapsedMinutes = Math.max(1, Math.round(elapsedTime / 60)); // Minimum 1 minute
       
       await createActivity.mutateAsync({
-        name: `${currentSession.categoryName} - ${currentSession.subcategoryName}`,
-        category_id: currentSession.categoryId,
-        subcategory_id: currentSession.subcategoryId,
+        category_id: currentSession.subcategoryId, // Use subcategoryId as category_id
         date_time: currentSession.startTime.toISOString(),
         duration_minutes: finalElapsedMinutes,
         notes: currentSession.notes || undefined,
-      });
+      } as any);
 
       // Dispatch custom event for real-time dashboard updates
       window.dispatchEvent(new CustomEvent('timerCompleted', {

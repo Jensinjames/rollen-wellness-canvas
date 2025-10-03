@@ -13,7 +13,7 @@ export const useSeedDefaultCategories = () => {
       if (!user) throw new Error('User not authenticated');
 
       const { error } = await supabase.rpc('seed_default_categories', {
-        user_id_param: user.id
+        p_user_id: user.id
       });
 
       if (error) throw error;

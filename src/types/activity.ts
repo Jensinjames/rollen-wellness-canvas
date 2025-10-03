@@ -10,7 +10,6 @@
 export interface Activity {
   id: string;
   category_id: string;
-  subcategory_id: string;
   user_id: string;
   
   // Timing fields
@@ -21,7 +20,6 @@ export interface Activity {
   
   // Optional fields
   notes?: string;
-  is_completed?: boolean;
   
   // Timestamps
   created_at: string;
