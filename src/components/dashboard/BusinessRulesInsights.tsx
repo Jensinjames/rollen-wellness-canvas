@@ -5,6 +5,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useDailyStreaks, useGoalDeficiencies } from '@/hooks/useBusinessRules';
 import { Flame, AlertTriangle, Target, Calendar } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
+import type { Database } from '@/integrations/supabase/types';
+
+type ActivityStreak = Database['public']['Views']['activity_streaks']['Row'];
+type GoalDeficiency = Database['public']['Views']['goal_deficiencies']['Row'];
 
 const BusinessRulesInsights: React.FC = memo(() => {
   const { data: streaks, isLoading: streaksLoading } = useDailyStreaks();
@@ -44,29 +48,31 @@ const BusinessRulesInsights: React.FC = memo(() => {
             </div>
           ) : streaks && streaks.length > 0 ? (
             <div className="space-y-3">
-              {streaks.slice(0, 5).map((streak) => (
+              {streaks.slice(0, 5).map((streak: ActivityStreak) => (
                 <div key={`${streak.category_id}-${streak.streak_start}`} className="flex items-center justify-between p-3 rounded-lg border">
                   <div className="flex items-center gap-3">
                     <div 
                       className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: streak.color }}
+                      style={{ backgroundColor: streak.color || '#3b82f6' }}
                     />
                     <div>
-                      <p className="font-medium">{streak.category_name}</p>
+                      <p className="font-medium">{streak.category_name || 'Unknown'}</p>
                       <p className="text-sm text-muted-foreground">
-                        {format(new Date(streak.streak_start), 'MMM d')} - {format(new Date(streak.streak_end), 'MMM d')}
+                        {streak.streak_start && streak.streak_end && 
+                          `${format(new Date(streak.streak_start), 'MMM d')} - ${format(new Date(streak.streak_end), 'MMM d')}`
+                        }
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
                     <Badge 
-                      variant={isCurrentStreak(streak.streak_end) ? "default" : "secondary"}
+                      variant={streak.streak_end && isCurrentStreak(streak.streak_end) ? "default" : "secondary"}
                       className="mb-1"
                     >
-                      {streak.streak_length} days
+                      {streak.streak_length || 0} days
                     </Badge>
                     <p className="text-xs text-muted-foreground">
-                      {formatTime(streak.total_streak_minutes)}
+                      {formatTime(Number(streak.total_streak_minutes) || 0)}
                     </p>
                   </div>
                 </div>
@@ -97,7 +103,7 @@ const BusinessRulesInsights: React.FC = memo(() => {
             </div>
           ) : deficiencies && deficiencies.length > 0 ? (
             <div className="space-y-3">
-              {deficiencies.slice(0, 5).map((def) => (
+              {deficiencies.slice(0, 5).map((def: GoalDeficiency) => (
                 <Alert key={`${def.category_id}-${def.deficiency_date}`} className="border-amber-200">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>
@@ -105,23 +111,23 @@ const BusinessRulesInsights: React.FC = memo(() => {
                       <div className="flex items-center gap-2">
                         <div 
                           className="w-2 h-2 rounded-full" 
-                          style={{ backgroundColor: def.color }}
+                          style={{ backgroundColor: def.color || '#3b82f6' }}
                         />
-                        <span className="font-medium">{def.category_name}</span>
+                        <span className="font-medium">{def.category_name || 'Unknown'}</span>
                         <Calendar className="w-3 h-3 text-muted-foreground" />
                         <span className="text-sm text-muted-foreground">
-                          {format(new Date(def.deficiency_date), 'MMM d')}
+                          {def.deficiency_date && format(new Date(def.deficiency_date), 'MMM d')}
                         </span>
                       </div>
                       <div className="text-right">
-                        {def.is_daily_behind && (
+                        {def.is_daily_behind && def.daily_deficiency && (
                           <p className="text-sm text-amber-600">
-                            Daily: -{formatTime(def.daily_deficiency)}
+                            Daily: -{formatTime(Number(def.daily_deficiency))}
                           </p>
                         )}
-                        {def.is_weekly_behind && (
+                        {def.is_weekly_behind && def.weekly_deficiency && (
                           <p className="text-sm text-amber-600">
-                            Weekly: -{formatTime(def.weekly_deficiency)}
+                            Weekly: -{formatTime(Number(def.weekly_deficiency))}
                           </p>
                         )}
                       </div>
