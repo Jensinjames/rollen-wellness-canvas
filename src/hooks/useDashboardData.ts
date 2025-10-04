@@ -86,16 +86,22 @@ export const useDashboardData = (): DashboardData => {
         });
       }
       
-      // Filter activities for this category
-      const todayCategoryActivities = todayActivities.filter(activity => 
-        activity?.duration_minutes > 0 &&
-        (activity.category_id === category.id || subcategoryMap.has(activity.subcategory_id || ''))
-      );
+      // Filter activities for this category - category_id now stores subcategory
+      const todayCategoryActivities = todayActivities.filter(activity => {
+        if (!activity?.duration_minutes || activity.duration_minutes <= 0) return false;
+        
+        // Check if activity's category_id matches this parent or any of its children
+        if (activity.category_id === category.id) return true;
+        return subcategoryMap.has(activity.category_id);
+      });
       
-      const weekCategoryActivities = weekActivities.filter(activity => 
-        activity?.duration_minutes > 0 &&
-        (activity.category_id === category.id || subcategoryMap.has(activity.subcategory_id || ''))
-      );
+      const weekCategoryActivities = weekActivities.filter(activity => {
+        if (!activity?.duration_minutes || activity.duration_minutes <= 0) return false;
+        
+        // Check if activity's category_id matches this parent or any of its children
+        if (activity.category_id === category.id) return true;
+        return subcategoryMap.has(activity.category_id);
+      });
 
       // Calculate totals
       const dailyTime = todayCategoryActivities.reduce((sum, activity) => 
@@ -107,7 +113,7 @@ export const useDashboardData = (): DashboardData => {
       const subcategoryTimes: { [subcategoryName: string]: number } = {};
       Array.from(subcategoryMap.entries()).forEach(([subcategoryId, subcategoryName]) => {
         const subTime = weekCategoryActivities
-          .filter(activity => activity?.subcategory_id === subcategoryId)
+          .filter(activity => activity?.category_id === subcategoryId)
           .reduce((sum, activity) => sum + (activity.duration_minutes || 0), 0);
         if (subTime > 0) {
           subcategoryTimes[subcategoryName] = subTime;

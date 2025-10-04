@@ -42,6 +42,15 @@ export const SortableTableHead = React.forwardRef<HTMLTableCellElement, Sortable
     return (
       <TableHead
         ref={ref}
+        onClick={onSort}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onSort?.();
+          }
+        }}
+        tabIndex={0}
+        role="button"
         className={cn(
           'cursor-pointer select-none hover:bg-muted/50 transition-colors',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',

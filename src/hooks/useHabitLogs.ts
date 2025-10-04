@@ -55,7 +55,10 @@ export const useCreateHabitLog = () => {
       const { data, error } = await supabase
         .from('habit_logs')
         .insert([{
-          ...habitLogData,
+          habit_id: habitLogData.habit_id,
+          log_date: habitLogData.log_date,
+          value: habitLogData.actual_value || (habitLogData.completed ? 1 : 0),
+          notes: habitLogData.notes,
           user_id: user.id,
         }])
         .select()

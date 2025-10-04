@@ -52,13 +52,16 @@ export const useActivityTimezoneData = () => {
       };
     });
 
-    // Process activities with new category/subcategory structure
+    // Process activities - category_id now stores the subcategory
     activities.forEach(activity => {
-      if (!activity.category_id || !activity.subcategory_id) return;
+      if (!activity.category_id) return;
 
       const activityDate = new Date(activity.date_time);
       const duration = activity.duration_minutes;
-      const parentId = activity.category_id;
+      
+      // Find parent category for this activity's category_id
+      const subcategory = categories.find(c => c.id === activity.category_id);
+      const parentId = subcategory?.parent_id || activity.category_id;
 
       if (!data[parentId]) return;
 
@@ -66,8 +69,8 @@ export const useActivityTimezoneData = () => {
       data[parentId].totalTime += duration;
       
       // Track subcategory time
-      data[parentId].subcategoryTimes[activity.subcategory_id] = 
-        (data[parentId].subcategoryTimes[activity.subcategory_id] || 0) + duration;
+      data[parentId].subcategoryTimes[activity.category_id] = 
+        (data[parentId].subcategoryTimes[activity.category_id] || 0) + duration;
 
       // Add daily time
       if (activityDate >= startOfToday && activityDate <= endOfToday) {

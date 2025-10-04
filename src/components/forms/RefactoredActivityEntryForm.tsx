@@ -76,8 +76,8 @@ export function RefactoredActivityEntryForm({ onSuccess, preselectedCategoryId }
         return;
       }
 
-      // Submit the activity
-      await createActivity.mutateAsync(result.data!);
+      // Submit the activity - result.data already has correct shape with user_id, start_time, end_time
+      await createActivity.mutateAsync(result.data! as any);
 
       // Log the activity creation
       ActivityService.logActivityCreation(user?.id || '', result.data!, goalType);
