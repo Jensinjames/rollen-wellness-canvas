@@ -3,10 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/UnifiedAuthContext';
 import type { Database } from '@/integrations/supabase/types';
 
-// Types
-type ActivityStreak = Database['public']['Tables']['activity_streaks']['Row'];
-type CategoryTotal = Database['public']['Tables']['category_totals']['Row'];
-type GoalDeficiency = Database['public']['Tables']['goal_deficiencies']['Row'];
+// Types - Using Views instead of Tables for database views
+type ActivityStreak = Database['public']['Views']['activity_streaks']['Row'];
+type CategoryTotal = Database['public']['Views']['category_totals']['Row'];
+type GoalDeficiency = Database['public']['Views']['goal_deficiencies']['Row'];
 type DailyScore = Database['public']['Tables']['daily_scores']['Row'];
 
 // Activity Streaks Queries

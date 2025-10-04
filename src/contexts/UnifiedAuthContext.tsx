@@ -49,7 +49,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (event === 'SIGNED_OUT') {
         clearAuthState();
       } else if (event === 'SIGNED_IN' && session?.user) {
-        securityLogger.logAuthEvent('auth.login.success', session.user.id, { 
+        securityLogger.logAuthEvent(session.user.id, 'login.success', true, { 
           email_domain: session.user.email?.split('@')[1] 
         }).catch(console.error);
       }
@@ -61,7 +61,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       
       if (error) {
         console.error('Error getting session:', error);
-        securityLogger.logAuthEvent('auth.login.failure', undefined, { 
+        securityLogger.logAuthEvent(undefined, 'login.failure', false, { 
           error: error.message 
         }).catch(console.error);
       }
@@ -106,7 +106,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const emailValidation = validateEmail(email);
     if (!emailValidation.isValid) {
       const error = new Error(emailValidation.error);
-      await securityLogger.logAuthEvent('auth.signup', undefined, { 
+      await securityLogger.logAuthEvent(undefined, 'signup', false, { 
         error: emailValidation.error, 
         email_domain: email.split('@')[1] 
       });
@@ -116,7 +116,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.isValid) {
       const error = new Error(passwordValidation.error);
-      await securityLogger.logAuthEvent('auth.signup', undefined, { 
+      await securityLogger.logAuthEvent(undefined, 'signup', false, { 
         error: passwordValidation.error 
       });
       return { error };
@@ -133,13 +133,12 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     });
 
     if (error) {
-      await securityLogger.logAuthEvent('auth.signup', undefined, { 
+      await securityLogger.logAuthEvent(undefined, 'signup', false, { 
         error: error.message, 
         email_domain: email.split('@')[1] 
       });
     } else {
-      await securityLogger.logAuthEvent('auth.signup', undefined, { 
-        success: true, 
+      await securityLogger.logAuthEvent(undefined, 'signup', true, { 
         email_domain: email.split('@')[1] 
       });
     }
@@ -154,7 +153,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const emailValidation = validateEmail(email);
     if (!emailValidation.isValid) {
       const error = new Error(emailValidation.error);
-      await securityLogger.logAuthEvent('auth.login.failure', undefined, { 
+      await securityLogger.logAuthEvent(undefined, 'login.failure', false, { 
         error: emailValidation.error 
       });
       return { error };
@@ -181,7 +180,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
         
         const enhancedError = new Error(userFriendlyMessage);
         
-        await securityLogger.logAuthEvent('auth.login.failure', undefined, { 
+        await securityLogger.logAuthEvent(undefined, 'login.failure', false, { 
           error: error.message, 
           email_domain: email.split('@')[1] 
         });
@@ -204,7 +203,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const emailValidation = validateEmail(email);
     if (!emailValidation.isValid) {
       const error = new Error(emailValidation.error);
-      await securityLogger.logAuthEvent('auth.password_reset', undefined, { 
+      await securityLogger.logAuthEvent(undefined, 'password_reset', false, { 
         error: emailValidation.error 
       });
       return { error };
@@ -217,13 +216,12 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     });
 
     if (error) {
-      await securityLogger.logAuthEvent('auth.password_reset', undefined, { 
+      await securityLogger.logAuthEvent(undefined, 'password_reset', false, { 
         error: error.message, 
         email_domain: email.split('@')[1] 
       });
     } else {
-      await securityLogger.logAuthEvent('auth.password_reset', undefined, { 
-        success: true, 
+      await securityLogger.logAuthEvent(undefined, 'password_reset', true, { 
         email_domain: email.split('@')[1] 
       });
     }
@@ -237,7 +235,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.isValid) {
       const error = new Error(passwordValidation.error);
-      await securityLogger.logAuthEvent('auth.password_update', user?.id, { 
+      await securityLogger.logAuthEvent(user?.id, 'password_update', false, { 
         error: passwordValidation.error 
       });
       return { error };
@@ -248,13 +246,11 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     });
 
     if (error) {
-      await securityLogger.logAuthEvent('auth.password_update', user?.id, { 
+      await securityLogger.logAuthEvent(user?.id, 'password_update', false, { 
         error: error.message 
       });
     } else {
-      await securityLogger.logAuthEvent('auth.password_update', user?.id, { 
-        success: true 
-      });
+      await securityLogger.logAuthEvent(user?.id, 'password_update', true, {});
     }
 
     return { error };
@@ -263,7 +259,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const signOut = async () => {
     
     try {
-      await securityLogger.logAuthEvent('auth.logout', user?.id);
+      await securityLogger.logAuthEvent(user?.id, 'logout', true, {});
       clearAuthState();
       
       const timeoutPromise = new Promise((_, reject) => 

@@ -68,11 +68,12 @@ export function ActivityHistoryTable() {
     });
   }, [processedActivities, searchTerm, selectedCategory]);
 
-  const { sortedData, sortState, getSortProps } = useTableSort<ProcessedActivity, keyof ProcessedActivity>({
-    data: filteredData,
-    initialSortColumn: 'dateValue',
-    initialSortDirection: 'desc'
-  });
+  const { sortedData, sortState, getSortProps } = useTableSort<ProcessedActivity, keyof ProcessedActivity>(
+    filteredData,
+    (item, column) => item[column],
+    'dateValue',
+    'desc'
+  );
 
   const availableCategories = useMemo(() => {
     return Array.from(new Set(processedActivities.map(item => item.category)));

@@ -4,15 +4,16 @@ import { TableHead } from './table';
 import { cn } from '@/lib/utils';
 import type { SortDirection } from '@/hooks/useTableSort';
 
-interface SortableTableHeadProps extends React.ThHTMLAttributes<HTMLTableCellElement> {
+interface SortableTableHeadProps {
   sortDirection?: SortDirection;
   onSort?: () => void;
   sortable?: boolean;
   children: React.ReactNode;
+  className?: string;
 }
 
 export const SortableTableHead = React.forwardRef<HTMLTableCellElement, SortableTableHeadProps>(
-  ({ sortDirection = 'none', onSort, sortable = true, children, className, ...props }, ref) => {
+  ({ sortDirection = 'none', onSort, sortable = true, children, className }, ref) => {
     const getSortIcon = () => {
       if (!sortable) return null;
 
@@ -33,33 +34,30 @@ export const SortableTableHead = React.forwardRef<HTMLTableCellElement, Sortable
 
     if (!sortable) {
       return (
-        <TableHead ref={ref} className={className} {...props}>
+        <TableHead ref={ref} className={className}>
           {children}
         </TableHead>
       );
     }
 
     return (
-      <TableHead
-        ref={ref}
-        onClick={onSort}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onSort?.();
-          }
-        }}
-        tabIndex={0}
-        role="button"
-        className={cn(
-          'cursor-pointer select-none hover:bg-muted/50 transition-colors',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-          className
-        )}
-        aria-label={`${children} - ${getSortLabel()}, click to sort`}
-        {...props}
-      >
-        <div className="flex items-center">
+      <TableHead ref={ref} className={className}>
+        <div
+          onClick={onSort}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onSort?.();
+            }
+          }}
+          tabIndex={0}
+          role="button"
+          className={cn(
+            'flex items-center cursor-pointer select-none',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded'
+          )}
+          aria-label={`${children} - ${getSortLabel()}, click to sort`}
+        >
           <span>{children}</span>
           {getSortIcon()}
         </div>

@@ -141,14 +141,14 @@ class SecureSessionManager {
 
   private async logSecurityEvent(eventType: SecurityEventType, userId?: string): Promise<void> {
     try {
-      await securityLogger.logSecurityEvent(eventType, {
+      await securityLogger.logSecurityEvent(eventType, userId, {
         event_details: {
           session_age: Date.now() - this.sessionStartTime,
           time_since_activity: Date.now() - this.lastActivityTime,
           fingerprint_available: !!this.sessionFingerprint
         },
         risk_level: 'medium'
-      }, userId);
+      });
     } catch (error) {
       // Silent fail to prevent breaking session functionality
       console.error('Failed to log security event:', error);

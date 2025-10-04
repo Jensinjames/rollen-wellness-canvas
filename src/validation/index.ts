@@ -84,14 +84,14 @@ export const validateTextInput = (
 
     const hasSuspiciousContent = suspiciousPatterns.some(pattern => pattern.test(trimmed));
     if (hasSuspiciousContent) {
-      securityLogger.logSecurityEvent('validation.input_rejected', {
+      securityLogger.logSecurityEvent('validation.input_rejected', userId, {
         event_details: {
           field_name: fieldName,
           input_length: trimmed.length,
           reason: 'suspicious_content_detected'
         },
         risk_level: 'high'
-      }, userId);
+      });
       
       return { isValid: false, error: `${fieldName} contains invalid characters` };
     }
@@ -113,14 +113,14 @@ export const validateTextInput = (
     return { isValid: true, sanitized };
 
   } catch (error) {
-    securityLogger.logSecurityEvent('validation.input_rejected', {
+    securityLogger.logSecurityEvent('validation.input_rejected', userId, {
       event_details: {
         field_name: fieldName,
         error: 'validation_exception',
         message: error instanceof Error ? error.message : 'Unknown error'
       },
       risk_level: 'medium'
-    }, userId);
+    });
 
     return { isValid: false, error: `${fieldName} validation failed` };
   }
@@ -171,14 +171,14 @@ export const validateNumber = (
     }
 
     if (Math.abs(num) > Number.MAX_SAFE_INTEGER) {
-      securityLogger.logSecurityEvent('validation.input_rejected', {
+      securityLogger.logSecurityEvent('validation.input_rejected', userId, {
         event_details: {
           field_name: fieldName,
           value: num,
           reason: 'number_overflow_detected'
         },
         risk_level: 'medium'
-      }, userId);
+      });
 
       return { isValid: false, error: `${fieldName} is too large` };
     }
@@ -186,14 +186,14 @@ export const validateNumber = (
     return { isValid: true, value: num };
 
   } catch (error) {
-    securityLogger.logSecurityEvent('validation.input_rejected', {
+    securityLogger.logSecurityEvent('validation.input_rejected', userId, {
       event_details: {
         field_name: fieldName,
         error: 'number_validation_exception',
         message: error instanceof Error ? error.message : 'Unknown error'
       },
       risk_level: 'medium'
-    }, userId);
+    });
 
     return { isValid: false, error: `${fieldName} validation failed` };
   }
@@ -228,13 +228,13 @@ export const validateEmail = (email: string, userId?: string): ValidationResult 
 
   const hasSuspiciousPattern = suspiciousPatterns.some(pattern => pattern.test(textValidation.sanitized!));
   if (hasSuspiciousPattern) {
-    securityLogger.logSecurityEvent('validation.input_rejected', {
+    securityLogger.logSecurityEvent('validation.input_rejected', userId, {
       event_details: {
         field_name: 'email',
         reason: 'suspicious_email_pattern'
       },
       risk_level: 'high'
-    }, userId);
+    });
 
     return { isValid: false, error: 'Invalid email format' };
   }

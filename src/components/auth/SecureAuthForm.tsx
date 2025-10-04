@@ -47,7 +47,7 @@ export const SecureAuthForm = () => {
         const errorMessage = `Too many attempts. Please try again at ${resetTime}`;
         toast.error(errorMessage);
         setStatusMessage(errorMessage);
-        await securityLogger.logAuthEvent('auth.login.rate_limited', undefined, { 
+        await securityLogger.logAuthEvent(undefined, 'login.rate_limited', false, { 
           email, 
           remaining_attempts: rateCheck.remainingAttempts 
         });
@@ -69,7 +69,7 @@ export const SecureAuthForm = () => {
           toast.error(errorMessage);
           setStatusMessage(errorMessage);
           setPasswordErrors(validation.errors);
-          await securityLogger.logSecurityEvent('security.password_policy_violation', {
+          await securityLogger.logSecurityEvent('security.password_policy_violation', undefined, {
             event_details: { errors: validation.errors },
             risk_level: 'medium',
           });
@@ -101,7 +101,7 @@ export const SecureAuthForm = () => {
 
       if (result.error) {
         rateLimiter.recordFailedAttempt(identifier);
-        await securityLogger.logAuthEvent('auth.login.failure', undefined, {
+        await securityLogger.logAuthEvent(undefined, 'login.failure', false, {
           email,
           error: result.error.message,
           remaining_attempts: rateCheck.remainingAttempts - 1,
@@ -112,12 +112,12 @@ export const SecureAuthForm = () => {
         rateLimiter.recordSuccessfulAttempt(identifier);
         
         if (isLogin) {
-          await securityLogger.logAuthEvent('auth.login.success', result.data.user?.id, { email });
+          await securityLogger.logAuthEvent(result.data.user?.id, 'login.success', true, { email });
           const successMessage = 'Welcome back!';
           toast.success(successMessage);
           setStatusMessage(successMessage);
         } else {
-          await securityLogger.logAuthEvent('auth.signup', result.data.user?.id, { email });
+          await securityLogger.logAuthEvent(result.data.user?.id, 'signup', true, { email });
           const successMessage = 'Account created successfully! Please check your email for verification.';
           toast.success(successMessage);
           setStatusMessage(successMessage);
@@ -126,7 +126,7 @@ export const SecureAuthForm = () => {
     } catch (error) {
       console.error('Authentication error:', error);
       rateLimiter.recordFailedAttempt(email || 'anonymous');
-      await securityLogger.logAuthEvent('auth.login.failure', undefined, {
+      await securityLogger.logAuthEvent(undefined, 'login.failure', false, {
         email,
         error: error instanceof Error ? error.message : 'Unknown error',
       });

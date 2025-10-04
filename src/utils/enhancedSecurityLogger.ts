@@ -1,5 +1,15 @@
 import { supabase } from '@/integrations/supabase/client';
 
+export type SecurityEventType = 
+  | 'security.validation_error'
+  | 'security.suspicious_activity'
+  | 'security.password_policy_violation'
+  | 'validation.input_rejected'
+  | 'session.timeout_warning'
+  | 'session.force_logout'
+  | 'session.fingerprint_mismatch'
+  | string;
+
 interface SecurityEvent {
   event_type: string;
   user_id: string;
@@ -28,7 +38,7 @@ class EnhancedSecurityLogger {
 
   async logSecurityEvent(
     eventType: string,
-    userId: string,
+    userId?: string,
     details: Record<string, any> = {}
   ): Promise<void> {
     try {
@@ -36,7 +46,7 @@ class EnhancedSecurityLogger {
 
       const logEntry: SecurityEvent = {
         event_type: eventType,
-        user_id: userId,
+        user_id: userId || 'anonymous',
         timestamp: new Date().toISOString(),
         details: {
           ...details,
@@ -72,7 +82,7 @@ class EnhancedSecurityLogger {
     }
   }
 
-  async logAuthEvent(userId: string, action: string, success: boolean, details?: Record<string, any>): Promise<void> {
+  async logAuthEvent(userId: string | undefined, action: string, success: boolean, details?: Record<string, any>): Promise<void> {
     await this.logSecurityEvent('auth.' + action, userId, {
       success,
       ...details,
