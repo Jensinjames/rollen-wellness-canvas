@@ -2,18 +2,12 @@ import { useState, useMemo, useCallback } from 'react';
 
 export type SortDirection = 'asc' | 'desc' | 'none';
 
-export interface SortState<T = string> {
-  column: T | null;
+export interface SortState<K extends string> {
+  column: K | null;
   direction: SortDirection;
 }
 
-export interface UseTableSortProps<T, K extends keyof T> {
-  data: T[];
-  initialSortColumn?: K;
-  initialSortDirection?: Exclude<SortDirection, 'none'>;
-}
-
-export interface UseTableSortReturn<T, K extends keyof T> {
+export interface UseTableSortReturn<T, K extends string> {
   sortedData: T[];
   sortState: SortState<K>;
   handleSort: (column: K) => void;
@@ -26,14 +20,15 @@ export interface UseTableSortReturn<T, K extends keyof T> {
   };
 }
 
-export function useTableSort<T, K extends keyof T>({
-  data,
-  initialSortColumn,
-  initialSortDirection = 'asc'
-}: UseTableSortProps<T, K>): UseTableSortReturn<T, K> {
+export function useTableSort<T, K extends string>(
+  data: T[],
+  getSortValue: (item: T, column: K) => any,
+  initialColumn?: K,
+  initialDirection: SortDirection = 'none'
+): UseTableSortReturn<T, K> {
   const [sortState, setSortState] = useState<SortState<K>>({
-    column: initialSortColumn || null,
-    direction: initialSortColumn ? initialSortDirection : 'none'
+    column: initialColumn || null,
+    direction: initialDirection,
   });
 
   const handleSort = useCallback((column: K) => {
@@ -41,12 +36,17 @@ export function useTableSort<T, K extends keyof T>({
       if (prev.column !== column) {
         return { column, direction: 'asc' };
       }
-
-      if (prev.direction === 'asc') {
-        return { column, direction: 'desc' };
-      }
-
-      return { column: null, direction: 'none' };
+      
+      const directionMap: Record<SortDirection, SortDirection> = {
+        'none': 'asc',
+        'asc': 'desc',
+        'desc': 'none',
+      };
+      
+      return {
+        column: directionMap[prev.direction] === 'none' ? null : column,
+        direction: directionMap[prev.direction],
+      };
     });
   }, []);
 
@@ -56,22 +56,24 @@ export function useTableSort<T, K extends keyof T>({
     }
 
     return [...data].sort((a, b) => {
-      const aValue = a[sortState.column!];
-      const bValue = b[sortState.column!];
+      const aValue = getSortValue(a, sortState.column!);
+      const bValue = getSortValue(b, sortState.column!);
 
       if (aValue === bValue) return 0;
-
+      
       const comparison = aValue < bValue ? -1 : 1;
       return sortState.direction === 'asc' ? comparison : -comparison;
     });
-  }, [data, sortState]);
+  }, [data, sortState, getSortValue]);
+
+  const getSortDirection = useCallback((column: K): 'ascending' | 'descending' | 'none' => {
+    if (sortState.column !== column) return 'none';
+    if (sortState.direction === 'asc') return 'ascending';
+    if (sortState.direction === 'desc') return 'descending';
+    return 'none';
+  }, [sortState]);
 
   const getSortProps = useCallback((column: K) => {
-    const isActive = sortState.column === column;
-    const ariaSortValue = isActive
-      ? (sortState.direction === 'asc' ? 'ascending' : 'descending')
-      : 'none';
-
     return {
       onClick: () => handleSort(column),
       onKeyDown: (e: React.KeyboardEvent) => {
@@ -80,11 +82,11 @@ export function useTableSort<T, K extends keyof T>({
           handleSort(column);
         }
       },
-      'aria-sort': ariaSortValue as 'ascending' | 'descending' | 'none',
+      'aria-sort': getSortDirection(column),
       role: 'button' as const,
-      tabIndex: 0
+      tabIndex: 0 as const
     };
-  }, [sortState, handleSort]);
+  }, [sortState, handleSort, getSortDirection]);
 
   return {
     sortedData,

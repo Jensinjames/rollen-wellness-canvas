@@ -1,107 +1,72 @@
-/**
- * Data Query Hooks - Separated from Business Logic
- * Phase 2: Clean separation between data fetching and business logic
- */
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/UnifiedAuthContext';
-import { Category } from '../categories/types';
-import { buildCategoryTree } from '../categories/utils';
+import type { Database } from '@/integrations/supabase/types';
 
-// ============= Category Data Queries =============
-export const useCategoriesQuery = () => {
+// Types
+type ActivityStreak = Database['public']['Tables']['activity_streaks']['Row'];
+type CategoryTotal = Database['public']['Tables']['category_totals']['Row'];
+type GoalDeficiency = Database['public']['Tables']['goal_deficiencies']['Row'];
+type DailyScore = Database['public']['Tables']['daily_scores']['Row'];
+
+// Activity Streaks Queries
+export const useActivityStreaksQuery = () => {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['categories'],
+    queryKey: ['activity-streaks'],
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .order('level', { ascending: true })
-        .order('sort_order', { ascending: true });
+        .from('activity_streaks')
+        .select('*');
 
       if (error) throw error;
-      return buildCategoryTree(data as Category[]);
+      return data as ActivityStreak[];
     },
     enabled: !!user,
   });
 };
 
-export const useAllCategoriesQuery = () => {
+// Goal Deficiencies Queries
+export const useGoalDeficienciesQuery = () => {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['categories', 'all'],
+    queryKey: ['goal-deficiencies'],
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .order('level', { ascending: true })
-        .order('sort_order', { ascending: true });
+        .from('goal_deficiencies')
+        .select('*');
 
       if (error) throw error;
-      return data as Category[];
+      return data as GoalDeficiency[];
     },
     enabled: !!user,
   });
 };
 
-export const useParentCategoriesQuery = () => {
+// Category totals queries
+export const useCategoryTotalsQuery = (dateRange?: { start: Date; end: Date }) => {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['categories', 'parents'],
+    queryKey: ['category-totals', dateRange],
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .eq('level', 0)
-        .order('sort_order', { ascending: true });
+      let query = supabase
+        .from('category_totals')
+        .select('*');
 
-      if (error) throw error;
-      return data as Category[];
-    },
-    enabled: !!user,
-  });
-};
+      if (dateRange) {
+        // Add date filtering if needed
+      }
 
-// ============= Activity Data Queries =============
-export const useActivitiesQuery = () => {
-  const { user } = useAuth();
-
-  return useQuery({
-    queryKey: ['activities'],
-    queryFn: async () => {
-      if (!user) throw new Error('User not authenticated');
-
-      const { data, error } = await supabase
-        .from('activities')
-        .select(`
-          *,
-          category:categories!activities_category_id_fkey (
-            id, name, color
-          ),
-          subcategory:categories!activities_subcategory_id_fkey (
-            id, name, color
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('date_time', { ascending: false });
-
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -109,180 +74,36 @@ export const useActivitiesQuery = () => {
   });
 };
 
-export const useActivitiesByDateQuery = (date: string) => {
-  const { user } = useAuth();
-
-  return useQuery({
-    queryKey: ['activities', 'by-date', date],
-    queryFn: async () => {
-      if (!user) throw new Error('User not authenticated');
-
-      const startOfDay = new Date(date);
-      startOfDay.setHours(0, 0, 0, 0);
-      
-      const endOfDay = new Date(date);
-      endOfDay.setHours(23, 59, 59, 999);
-
-      const { data, error } = await supabase
-        .from('activities')
-        .select(`
-          *,
-          category:categories!activities_category_id_fkey (
-            id, name, color
-          ),
-          subcategory:categories!activities_subcategory_id_fkey (
-            id, name, color
-          )
-        `)
-        .eq('user_id', user.id)
-        .gte('date_time', startOfDay.toISOString())
-        .lte('date_time', endOfDay.toISOString())
-        .order('date_time', { ascending: false });
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user && !!date,
-  });
-};
-
-// ============= Dashboard Data Queries =============
-export const useDashboardDataQuery = () => {
-  const { user } = useAuth();
-
-  return useQuery({
-    queryKey: ['dashboard', 'summary'],
-    queryFn: async () => {
-      if (!user) throw new Error('User not authenticated');
-
-      // Fetch today's activities
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
-      const { data: todayActivities, error: activitiesError } = await supabase
-        .from('activities')
-        .select(`
-          *,
-          category:categories!activities_category_id_fkey (
-            id, name, color, goal_type, daily_time_goal_minutes
-          ),
-          subcategory:categories!activities_subcategory_id_fkey (
-            id, name, color, goal_type, daily_time_goal_minutes
-          )
-        `)
-        .eq('user_id', user.id)
-        .gte('date_time', today.toISOString())
-        .lt('date_time', tomorrow.toISOString());
-
-      if (activitiesError) throw activitiesError;
-
-      // Fetch active categories
-      const { data: categories, error: categoriesError } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true);
-
-      if (categoriesError) throw categoriesError;
-
-      return {
-        todayActivities: todayActivities || [],
-        categories: categories || []
-      };
-    },
-    enabled: !!user,
-  });
-};
-
-// ============= Habit Data Queries =============
-export const useHabitsQuery = () => {
-  const { user } = useAuth();
-
-  return useQuery({
-    queryKey: ['habits'],
-    queryFn: async () => {
-      if (!user) throw new Error('User not authenticated');
-
-      const { data, error } = await supabase
-        .from('habits')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .order('name');
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
-};
-
-export const useHabitLogsQuery = () => {
-  const { user } = useAuth();
-
-  return useQuery({
-    queryKey: ['habit_logs'],
-    queryFn: async () => {
-      if (!user) throw new Error('User not authenticated');
-
-      const { data, error } = await supabase
-        .from('habit_logs')
-        .select(`
-          *,
-          habit:habits!habit_logs_habit_id_fkey (
-            id, name, description, streak_target
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('completed_at', { ascending: false });
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
-};
-
-// ============= Sleep Data Queries =============
+// Sleep entries disabled - table not in current schema
 export const useSleepEntriesQuery = () => {
-  const { user } = useAuth();
-
   return useQuery({
-    queryKey: ['sleep_entries'],
+    queryKey: ['sleep-entries'],
     queryFn: async () => {
-      if (!user) throw new Error('User not authenticated');
-
-      const { data, error } = await supabase
-        .from('sleep_entries')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('sleep_date', { ascending: false });
-
-      if (error) throw error;
-      return data;
+      return [];
     },
-    enabled: !!user,
+    enabled: false,
   });
 };
 
-// ============= Daily Scores Queries =============
-export const useDailyScoresQuery = () => {
+// Daily Scores Queries
+export const useDailyScoresQuery = (limit?: number) => {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['daily_scores'],
+    queryKey: ['daily-scores', limit],
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('daily_scores')
         .select('*')
-        .eq('user_id', user.id)
-        .order('date', { ascending: false })
-        .limit(30); // Last 30 days
+        .order('score_date', { ascending: false });
 
+      if (limit) {
+        query = query.limit(limit);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
