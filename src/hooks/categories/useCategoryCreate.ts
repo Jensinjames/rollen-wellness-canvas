@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/UnifiedAuthContext';
 import { toast } from 'sonner';
-import { validateCategoryData, logCategoryOperation } from '@/components/categories/CategoryValidation';
+import { validateCategoryData, logCategoryOperation } from '@/services/category';
 import { Category } from './types';
 
 export const useCreateCategory = () => {

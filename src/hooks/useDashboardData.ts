@@ -2,6 +2,7 @@
 import { useMemo } from 'react';
 import { useCachedActivities } from '@/hooks/useCachedActivities';
 import { useCachedCategories } from '@/hooks/useCachedCategories';
+import { useCategoryActivitySummary } from '@/hooks/data/useCategoryActivitySummary';
 import { startOfDay, endOfDay, startOfWeek, endOfWeek } from 'date-fns';
 
 export interface DashboardData {
@@ -10,7 +11,7 @@ export interface DashboardData {
   todayTotalTime: number;
   weekTotalTime: number;
   parentCategories: any[];
-  categoryActivityData: { [categoryId: string]: { dailyTime: number; weeklyTime: number; subcategoryTimes: { [subcategoryId: string]: number } } };
+  categoryActivityData: ReturnType<typeof useCategoryActivitySummary>['data'];
   isLoading: boolean;
   error: any;
 }
@@ -18,6 +19,7 @@ export interface DashboardData {
 export const useDashboardData = (): DashboardData => {
   const { data: activities, isLoading: activitiesLoading, error: activitiesError } = useCachedActivities();
   const { data: categories, isLoading: categoriesLoading, error: categoriesError } = useCachedCategories();
+  const { data: categoryActivityData, isLoading: categoryActivityLoading } = useCategoryActivitySummary();
 
 
   // Memoize date calculations to avoid recalculating on every render
@@ -64,72 +66,6 @@ export const useDashboardData = (): DashboardData => {
     );
   }, [categories]);
 
-  // Category activity data processing with subcategory mapping
-  const categoryActivityData = useMemo(() => {
-    if (!activities?.length || !categories?.length) return {};
-
-    const data: { [categoryId: string]: { dailyTime: number; weeklyTime: number; subcategoryTimes: { [subcategoryName: string]: number } } } = {};
-
-    parentCategories.forEach(category => {
-      if (!category?.id || !category?.name) {
-        console.error('[Dashboard] Invalid category:', category);
-        return;
-      }
-      
-      // Map subcategory IDs to names
-      const subcategoryMap = new Map<string, string>();
-      if (category.children?.length) {
-        category.children.forEach(subcategory => {
-          if (subcategory?.id && subcategory?.name) {
-            subcategoryMap.set(subcategory.id, subcategory.name);
-          }
-        });
-      }
-      
-      // Filter activities for this category - category_id now stores subcategory
-      const todayCategoryActivities = todayActivities.filter(activity => {
-        if (!activity?.duration_minutes || activity.duration_minutes <= 0) return false;
-        
-        // Check if activity's category_id matches this parent or any of its children
-        if (activity.category_id === category.id) return true;
-        return subcategoryMap.has(activity.category_id);
-      });
-      
-      const weekCategoryActivities = weekActivities.filter(activity => {
-        if (!activity?.duration_minutes || activity.duration_minutes <= 0) return false;
-        
-        // Check if activity's category_id matches this parent or any of its children
-        if (activity.category_id === category.id) return true;
-        return subcategoryMap.has(activity.category_id);
-      });
-
-      // Calculate totals
-      const dailyTime = todayCategoryActivities.reduce((sum, activity) => 
-        sum + (activity.duration_minutes || 0), 0);
-      const weeklyTime = weekCategoryActivities.reduce((sum, activity) => 
-        sum + (activity.duration_minutes || 0), 0);
-
-      // Subcategory breakdown by NAME
-      const subcategoryTimes: { [subcategoryName: string]: number } = {};
-      Array.from(subcategoryMap.entries()).forEach(([subcategoryId, subcategoryName]) => {
-        const subTime = weekCategoryActivities
-          .filter(activity => activity?.category_id === subcategoryId)
-          .reduce((sum, activity) => sum + (activity.duration_minutes || 0), 0);
-        if (subTime > 0) {
-          subcategoryTimes[subcategoryName] = subTime;
-        }
-      });
-
-      data[category.id] = {
-        dailyTime,
-        weeklyTime,
-        subcategoryTimes
-      };
-    });
-
-    return data;
-  }, [activities, parentCategories, todayActivities, weekActivities]);
-
   return {
     todayActivities,
     weekActivities,
@@ -137,7 +73,7 @@ export const useDashboardData = (): DashboardData => {
     weekTotalTime,
     parentCategories,
     categoryActivityData,
-    isLoading: activitiesLoading || categoriesLoading,
+    isLoading: activitiesLoading || categoriesLoading || categoryActivityLoading,
     error: activitiesError || categoriesError
   };
 };

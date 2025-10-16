@@ -1,6 +1,7 @@
 /**
  * Validation Service - Functional Implementation
- * Phase 2: Converted from class-based to functional pattern, unified with validation module
+ * Unified validation service integrating Zod schemas with legacy validation functions
+ * Provides backward compatibility while migrating to Zod-based validation
  */
 
 import { 
@@ -14,7 +15,15 @@ import {
   NumberValidationResult,
   ValidationResult as BaseValidationResult
 } from '@/validation';
+import { 
+  activityFormSchema, 
+  categoryFormSchema, 
+  signInFormSchema, 
+  signUpFormSchema, 
+  passwordResetFormSchema 
+} from '@/validation/schemas';
 import { ActivityFormData, CategoryFormData, ValidationResult, AuthFormData, PasswordResetFormData, AuthValidationResult } from './types';
+import { ZodError } from 'zod';
 
 // ============= Activity Validation =============
 export const validateActivityForm = (

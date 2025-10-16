@@ -77,8 +77,15 @@ export const prepareCategorySubmissionData = (
 };
 
 // ============= Validation =============
+/**
+ * Validate category data for creation or update
+ * @param categoryData - The category data to validate
+ * @param isSubcategory - Whether this is a subcategory
+ * @param existingCategories - Array of existing categories for duplicate checking
+ * @param currentId - ID of the current category (null for new categories)
+ */
 export const validateCategoryData = (
-  categoryData: CategoryFormData,
+  categoryData: any,
   isSubcategory: boolean,
   existingCategories: any[] = [],
   currentId: string | null = null

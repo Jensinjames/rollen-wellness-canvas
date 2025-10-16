@@ -19,7 +19,6 @@ const Categories = () => {
   const seedDefaultCategories = useSeedDefaultCategories();
 
   const handleCreateCategory = (categoryData: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'path' | 'children'>) => {
-    console.log('Creating category:', categoryData);
     createCategoryMutation.mutate(categoryData, {
       onSuccess: () => {
         handleCloseForm();
@@ -31,7 +30,6 @@ const Categories = () => {
         } else {
           toast.error('Failed to create category. Please try again.');
         }
-        console.error('Category creation error:', error);
       }
     });
   };
@@ -52,7 +50,6 @@ const Categories = () => {
           } else {
             toast.error('Failed to update category. Please try again.');
           }
-          console.error('Category update error:', error);
         }
       });
     }
@@ -65,7 +62,6 @@ const Categories = () => {
   };
 
   const handleAddSubcategory = (parentCategory: Category) => {
-    console.log('Adding subcategory to parent:', parentCategory.name);
     setParentForNewSubcategory(parentCategory);
     setEditingCategory(undefined);
     setIsFormOpen(true);
