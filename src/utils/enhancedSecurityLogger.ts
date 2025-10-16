@@ -57,28 +57,48 @@ class EnhancedSecurityLogger {
         user_agent: details.user_agent || browserInfo.user_agent,
       };
 
-      // RPC function doesn't exist in current schema - log client-side only for now
-      // TODO: Create secure_log_audit_event RPC function in database
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[Security Audit]', logEntry);
+      // Log to server-side database for tamper-proof audit trail
+      try {
+        const { error } = await supabase.rpc('log_security_event', {
+          p_event_type: eventType,
+          p_event_details: logEntry.details,
+          p_ip_address: logEntry.ip_address,
+          p_user_agent: logEntry.user_agent,
+        });
+
+        if (error) {
+          console.error('[Security Logger] Server logging failed:', error);
+          // Fall back to localStorage if server logging fails
+          this.storeLocally(logEntry);
+        }
+      } catch (error) {
+        console.error('[Security Logger] Server logging error:', error);
+        // Fall back to localStorage if server logging fails
+        this.storeLocally(logEntry);
       }
 
-      // Store in localStorage as fallback (client-side only)
-      try {
-        const existingLogs = JSON.parse(localStorage.getItem('security_audit_logs') || '[]');
-        existingLogs.push(logEntry);
-        // Keep only last 100 logs
-        if (existingLogs.length > 100) {
-          existingLogs.shift();
-        }
-        localStorage.setItem('security_audit_logs', JSON.stringify(existingLogs));
-      } catch (e) {
-        // localStorage might be full or disabled
+      // Also log to console in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Security Audit]', logEntry);
       }
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
         console.error('[Security Logger] Error:', error);
       }
+    }
+  }
+
+  private storeLocally(logEntry: SecurityEvent): void {
+    try {
+      const existingLogs = JSON.parse(localStorage.getItem('security_audit_logs') || '[]');
+      existingLogs.push(logEntry);
+      // Keep only last 100 logs
+      if (existingLogs.length > 100) {
+        existingLogs.shift();
+      }
+      localStorage.setItem('security_audit_logs', JSON.stringify(existingLogs));
+    } catch (e) {
+      // localStorage might be full or disabled
     }
   }
 
