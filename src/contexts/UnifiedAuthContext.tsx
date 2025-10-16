@@ -40,7 +40,9 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (!isMounted) return;
       
-      console.log('Auth state change:', event, session?.user?.email);
+      if (isDevelopment()) {
+        console.log('Auth state change:', event, session?.user?.email);
+      }
       
       setSession(session);
       setUser(session?.user ?? null);
@@ -60,8 +62,10 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (!isMounted) return;
       
       if (error) {
-        console.error('Error getting session:', error);
-        securityLogger.logAuthEvent(undefined, 'login.failure', false, { 
+        if (isDevelopment()) {
+          console.error('Error getting session:', error);
+        }
+        securityLogger.logAuthEvent(undefined, 'login.failure', false, {
           error: error.message 
         }).catch(console.error);
       }
@@ -71,7 +75,9 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setLoading(false);
     }).catch((error) => {
       if (!isMounted) return;
-      console.error('Failed to get session:', error);
+      if (isDevelopment()) {
+        console.error('Failed to get session:', error);
+      }
       setLoading(false);
     });
 
@@ -147,7 +153,9 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const signIn = async (email: string, password: string) => {
-    console.log('Attempting sign in for:', email);
+    if (isDevelopment()) {
+      console.log('Attempting sign in for:', email);
+    }
     
     // Validate email input
     const emailValidation = validateEmail(email);
@@ -166,7 +174,9 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       });
 
       if (error) {
-        console.error('Sign in error:', error);
+        if (isDevelopment()) {
+          console.error('Sign in error:', error);
+        }
         
         // Provide more specific error messages
         let userFriendlyMessage = error.message;
@@ -188,11 +198,15 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
         return { error: enhancedError };
       }
 
-      console.log('Sign in successful for:', email);
+      if (isDevelopment()) {
+        console.log('Sign in successful for:', email);
+      }
       return { error: null };
       
     } catch (error: any) {
-      console.error('Unexpected sign in error:', error);
+      if (isDevelopment()) {
+        console.error('Unexpected sign in error:', error);
+      }
       const enhancedError = new Error('An unexpected error occurred. Please try again.');
       return { error: enhancedError };
     }
