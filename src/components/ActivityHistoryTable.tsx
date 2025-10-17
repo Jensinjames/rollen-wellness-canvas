@@ -265,17 +265,19 @@ export function ActivityHistoryTable() {
 
       {sortedData.length === 0 && (
         <div
-          className="p-8 text-center text-muted-foreground"
+          className="p-8 text-center space-y-2"
           role="status"
           aria-live="polite"
         >
-          <Filter className="h-8 w-8 mx-auto mb-2 opacity-50" aria-hidden="true" />
-          <p>
-            {processedActivities.length === 0
-              ? "No activities found. Start logging activities to see them here."
-              : "No activities found matching your criteria."
-            }
-          </p>
+          <Filter className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" aria-hidden="true" />
+          {processedActivities.length === 0 ? (
+            <>
+              <p className="font-medium text-muted-foreground">No activities yet!</p>
+              <p className="text-sm text-muted-foreground">Click "Add Activity" above to start tracking your time.</p>
+            </>
+          ) : (
+            <p className="text-muted-foreground">No activities found matching your criteria.</p>
+          )}
         </div>
       )}
     </Card>

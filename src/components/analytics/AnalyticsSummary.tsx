@@ -15,7 +15,8 @@ const AnalyticsSummary = memo(() => {
         totalTimeThisWeek: 0,
         goalCompletionRate: 0,
         activeStreaks: 0,
-        categoriesTracked: 0
+        categoriesTracked: 0,
+        isEmpty: true
       };
     }
 
@@ -54,11 +55,14 @@ const AnalyticsSummary = memo(() => {
       ? (completedGoals / categoriesWithGoals.length) * 100 
       : 0;
 
+    const isEmpty = flatCategories.length === 0 && weekActivities.length === 0;
+
     return {
       totalTimeThisWeek: Math.round(totalTimeThisWeek / 60 * 10) / 10, // Convert to hours
       goalCompletionRate: Math.round(goalCompletionRate),
       activeStreaks: 3, // Placeholder - would need streak calculation logic
-      categoriesTracked: flatCategories.length
+      categoriesTracked: flatCategories.length,
+      isEmpty
     };
   }, [activities, categories]);
 
@@ -100,7 +104,10 @@ const AnalyticsSummary = memo(() => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {summaryCards.map((card, index) => (
-        <Card key={index} className="hover:shadow-md transition-shadow">
+        <Card 
+          key={index} 
+          className={`hover:shadow-md transition-shadow ${analytics.isEmpty ? 'opacity-60' : ''}`}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               {card.title}
@@ -111,7 +118,12 @@ const AnalyticsSummary = memo(() => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{card.value}</div>
-            <p className="text-xs text-muted-foreground">{card.subtitle}</p>
+            <p className="text-xs text-muted-foreground">
+              {analytics.isEmpty && index === 0 
+                ? "Start logging to see stats" 
+                : card.subtitle
+              }
+            </p>
           </CardContent>
         </Card>
       ))}

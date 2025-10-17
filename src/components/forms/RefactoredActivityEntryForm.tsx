@@ -48,6 +48,9 @@ export function RefactoredActivityEntryForm({ onSuccess, preselectedCategoryId }
   const { parentCategories, selectedParentCategory, availableSubcategories } = 
     ActivityService.getCategoryRelationships(categories, selectedCategoryId);
 
+  // Check if categories exist
+  const hasCategories = parentCategories.length > 0;
+
   // Get selected subcategory to determine goal type
   const selectedSubcategoryId = form.watch("subcategory_id");
   const selectedSubcategory = availableSubcategories.find(sub => sub.id === selectedSubcategoryId);
@@ -131,6 +134,18 @@ export function RefactoredActivityEntryForm({ onSuccess, preselectedCategoryId }
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {/* No Categories Warning */}
+        {!hasCategories && (
+          <div className="p-4 border border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-900 rounded-lg">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium">
+              You need to create categories before logging activities.
+            </p>
+            <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+              Click "Manage Categories" in the header to get started.
+            </p>
+          </div>
+        )}
+
         {/* Desktop: Two-column grid, Mobile: Single column */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <DateTimeInput control={form.control} />
@@ -175,7 +190,7 @@ export function RefactoredActivityEntryForm({ onSuccess, preselectedCategoryId }
         <div className="flex justify-end gap-2 pt-4">
           <Button 
             type="submit" 
-            disabled={!isFormValid()}
+            disabled={!hasCategories || !isFormValid()}
             className="bg-blue-500 hover:bg-blue-600"
           >
             {loading ? "Logging Time..." : "Log Time"}

@@ -15,6 +15,7 @@ import { DashboardSkeleton, CategoryProgressCardSkeleton } from './DashboardSkel
 import { ChartErrorBoundary } from '@/components/error/ChartErrorBoundary';
 import { LazyWeeklyTrendChart } from '@/components/charts/LazyCharts';
 import { useNavigate } from 'react-router-dom';
+import { DashboardEmptyState } from './DashboardEmptyState';
 
 const EnhancedDashboard: React.FC = memo(() => {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -49,6 +50,9 @@ const EnhancedDashboard: React.FC = memo(() => {
     );
   }
 
+  // Show empty state if no categories exist
+  const hasCategories = !isLoading && parentCategories.length > 0;
+
   return (
     <div className="container space-y-6 py-6">
       {/* Header Actions */}
@@ -65,7 +69,7 @@ const EnhancedDashboard: React.FC = memo(() => {
           </Button>
           <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button disabled={!hasCategories}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Activity
               </Button>
@@ -86,69 +90,67 @@ const EnhancedDashboard: React.FC = memo(() => {
         </div>
       </div>
 
-      {/* Date Range Selector */}
-      <DateRangeSelector 
-        selectedRange={selectedDateRange}
-        onRangeChange={setSelectedDateRange}
-      />
+      {/* Empty State - shown when no categories exist */}
+      {!isLoading && !hasCategories && <DashboardEmptyState />}
 
-      {/* Analytics Summary */}
-      {isLoading ? (
-        <DashboardSkeleton />
-      ) : (
-        <AnalyticsSummary />
-      )}
-
-      {/* Global Overview and Category Cards Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Global Overview Chart - takes 1 column on large screens */}
-        <div className="lg:col-span-1">
-          <GlobalOverviewChart 
-            categories={parentCategories}
-            categoryActivityData={categoryActivityData}
+      {/* Main Dashboard Content - only shown when categories exist */}
+      {hasCategories && (
+        <>
+          {/* Date Range Selector */}
+          <DateRangeSelector 
+            selectedRange={selectedDateRange}
+            onRangeChange={setSelectedDateRange}
           />
-        </div>
 
-        {/* Enhanced Category Cards - takes 3 columns on large screens */}
-        <div className="lg:col-span-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {isLoading ? (
-              Array.from({ length: 6 }).map((_, index) => (
-                <CategoryProgressCardSkeleton key={index} />
-              ))
-            ) : (
-              parentCategories.map(category => {
-                const categoryData = categoryActivityData[category.id];
-                const actualTime = categoryData?.weeklyTime || 0;
-                return (
-                  <EnhancedCategoryCard
-                    key={category.id}
-                    category={category}
-                    actualTime={actualTime}
-                    subcategoryTimes={categoryData?.subcategoryTimes}
-                  />
-                );
-              })
-            )}
+          {/* Analytics Summary */}
+          <AnalyticsSummary />
+
+          {/* Global Overview and Category Cards Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Global Overview Chart - takes 1 column on large screens */}
+            <div className="lg:col-span-1">
+              <GlobalOverviewChart 
+                categories={parentCategories}
+                categoryActivityData={categoryActivityData}
+              />
+            </div>
+
+            {/* Enhanced Category Cards - takes 3 columns on large screens */}
+            <div className="lg:col-span-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {parentCategories.map(category => {
+                  const categoryData = categoryActivityData[category.id];
+                  const actualTime = categoryData?.weeklyTime || 0;
+                  return (
+                    <EnhancedCategoryCard
+                      key={category.id}
+                      category={category}
+                      actualTime={actualTime}
+                      subcategoryTimes={categoryData?.subcategoryTimes}
+                    />
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Business Rules Insights - New Phase 2 Feature */}
-      <BusinessRulesInsights />
+          {/* Business Rules Insights - New Phase 2 Feature */}
+          <BusinessRulesInsights />
 
-      {/* Analytics Charts - Hidden on mobile */}
-      <div className="hidden md:block">
-        <ChartErrorBoundary>
-          <LazyWeeklyTrendChart />
-        </ChartErrorBoundary>
-      </div>
+          {/* Analytics Charts - Hidden on mobile */}
+          <div className="hidden md:block">
+            <ChartErrorBoundary>
+              <LazyWeeklyTrendChart />
+            </ChartErrorBoundary>
+          </div>
 
-      {/* Activity History Table - Responsive */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Recent Activities</h2>
-        <ActivityHistoryTable />
-      </div>
+          {/* Activity History Table - Responsive */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Recent Activities</h2>
+            <ActivityHistoryTable />
+          </div>
+        </>
+      )}
     </div>
   );
 });
