@@ -9,7 +9,8 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { AppErrorBoundary } from "@/components/error/AppErrorBoundary";
 import { RouteErrorBoundary } from "@/components/error/RouteErrorBoundary";
-import { Suspense, lazy } from "react";
+import { DevPanel } from "@/components/debug/DevPanel";
+import { Suspense, lazy, useEffect } from "react";
 
 // Lazy load page components to reduce initial bundle size
 const Index = lazy(() => import("./pages/Index"));
@@ -48,6 +49,12 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  useEffect(() => {
+    console.log('🚀 App initialized');
+    console.log('📍 Environment:', import.meta.env.MODE);
+    console.log('🔗 Supabase URL:', import.meta.env.VITE_SUPABASE_URL ? '✅ Configured' : '❌ Missing');
+  }, []);
+
   return (
     <AppErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -55,6 +62,7 @@ function App() {
           <TimerProvider>
             <TooltipProvider>
               <Toaster />
+              <DevPanel />
               <BrowserRouter>
                 <Suspense fallback={<PageLoader />}>
                   <Routes>

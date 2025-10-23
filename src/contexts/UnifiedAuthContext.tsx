@@ -33,6 +33,15 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   useEffect(() => {
     let isMounted = true;
+    console.log('🔐 UnifiedAuthProvider initializing...');
+
+    // Set up a timeout to detect if auth check is hanging
+    const authTimeout = setTimeout(() => {
+      if (isMounted && loading) {
+        console.error('⚠️ Auth check timeout - forcing loading to false');
+        setLoading(false);
+      }
+    }, 8000);
 
     // Set up auth state listener FIRST
     const {
@@ -40,9 +49,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (!isMounted) return;
       
-      if (isDevelopment()) {
-        console.log('Auth state change:', event, session?.user?.email);
-      }
+      console.log('🔄 Auth state change:', event, session?.user?.email || 'No user');
       
       setSession(session);
       setUser(session?.user ?? null);
@@ -61,10 +68,10 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (!isMounted) return;
       
+      console.log('🔍 Session check result:', session ? '✅ Session exists' : '❌ No session');
+      
       if (error) {
-        if (isDevelopment()) {
-          console.error('Error getting session:', error);
-        }
+        console.error('❌ Error getting session:', error);
         securityLogger.logAuthEvent(undefined, 'login.failure', false, {
           error: error.message 
         }).catch(console.error);
@@ -73,17 +80,18 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      clearTimeout(authTimeout);
     }).catch((error) => {
       if (!isMounted) return;
-      if (isDevelopment()) {
-        console.error('Failed to get session:', error);
-      }
+      console.error('❌ Failed to get session:', error);
       setLoading(false);
+      clearTimeout(authTimeout);
     });
 
     return () => {
       isMounted = false;
       subscription.unsubscribe();
+      clearTimeout(authTimeout);
     };
   }, []);
 

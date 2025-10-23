@@ -33,7 +33,9 @@ export class AppErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('App Error Boundary caught an error:', error, errorInfo);
+    console.error('🔴 App Error Boundary caught an error:', error);
+    console.error('📍 Error stack:', error.stack);
+    console.error('⚙️ Component stack:', errorInfo.componentStack);
     this.setState({
       error,
       errorInfo
@@ -59,12 +61,22 @@ export class AppErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <Alert variant="destructive" className="max-w-md">
+        <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+          <Alert variant="destructive" className="max-w-lg">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Something went wrong</AlertTitle>
             <AlertDescription className="mt-2">
-              <p className="mb-4">The application encountered an unexpected error.</p>
+              <p className="mb-2">The application encountered an unexpected error.</p>
+              {this.state.error && (
+                <details className="mb-4 text-xs">
+                  <summary className="cursor-pointer font-semibold mb-1">Error Details</summary>
+                  <pre className="bg-muted p-2 rounded overflow-auto max-h-32 text-[10px]">
+                    {this.state.error.message}
+                    {'\n\n'}
+                    {this.state.error.stack}
+                  </pre>
+                </details>
+              )}
               <div className="flex gap-2">
                 <Button
                   variant="outline"
