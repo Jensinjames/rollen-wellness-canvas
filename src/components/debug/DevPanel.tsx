@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/UnifiedAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useLocation } from 'react-router-dom';
-import { isDevelopment } from '@/utils/environment';
+import { shouldShowDebugInfo, getEnvironment } from '@/utils/environment';
 
 export const DevPanel = () => {
   const { user, session, loading } = useAuth();
@@ -44,8 +44,8 @@ export const DevPanel = () => {
     checkStorage();
   }, []);
 
-  // Only show in development
-  if (!isDevelopment()) return null;
+  // Show in development and preview environments
+  if (!shouldShowDebugInfo()) return null;
 
   return (
     <div className="fixed bottom-4 right-4 bg-card border border-border rounded-lg p-4 shadow-lg max-w-sm z-50 text-xs">
@@ -105,9 +105,20 @@ export const DevPanel = () => {
         <div>
           <span className="font-semibold text-muted-foreground">Env:</span>{' '}
           <span className="text-foreground">
-            {window.location.hostname.includes('lovable') ? '🔵 Preview' : '🟢 Local'}
+            {getEnvironment() === 'development' ? '🟢 Local' : 
+             getEnvironment() === 'preview' ? '🔵 Preview' : '🔴 Production'}
           </span>
         </div>
+        
+        <button
+          onClick={() => {
+            localStorage.setItem('DEBUG_MODE_ENABLED', 'true');
+            window.location.reload();
+          }}
+          className="text-xs bg-yellow-500/10 text-yellow-500 px-2 py-1 rounded hover:bg-yellow-500/20 w-full"
+        >
+          Enable Emergency Debug
+        </button>
       </div>
     </div>
   );

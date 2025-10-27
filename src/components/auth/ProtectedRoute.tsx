@@ -2,7 +2,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/UnifiedAuthContext';
-import { isDevelopment } from '@/utils/environment';
+import { shouldShowDebugInfo, safeConsoleWarn, safeConsoleError } from '@/utils/environment';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
@@ -16,12 +16,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   React.useEffect(() => {
     const timer = window.setTimeout(() => {
       if (loading) {
-        if (isDevelopment()) {
-          console.warn('⚠️ Authentication check taking longer than expected');
-        }
+        safeConsoleWarn('⚠️ Authentication check taking longer than expected (5+ seconds)');
         setShowTimeout(true);
       }
-    }, 10000);
+    }, 5000);
 
     return () => window.clearTimeout(timer);
   }, [loading]);
@@ -32,14 +30,27 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <p className="text-sm text-muted-foreground">Loading authentication...</p>
         {showTimeout && (
-          <div className="text-xs text-destructive max-w-md text-center">
-            <p>This is taking longer than expected.</p>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="mt-2 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
-            >
-              Reload Page
-            </button>
+          <div className="text-xs text-destructive max-w-md text-center space-y-2">
+            <p className="font-semibold">Authentication is taking longer than expected.</p>
+            <p className="text-muted-foreground">This might be a connection issue or browser storage problem.</p>
+            <div className="flex gap-2 justify-center mt-3">
+              <button 
+                onClick={() => window.location.reload()} 
+                className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 text-xs"
+              >
+                Reload Page
+              </button>
+              <button 
+                onClick={() => {
+                  localStorage.clear();
+                  sessionStorage.clear();
+                  window.location.reload();
+                }} 
+                className="px-4 py-2 bg-destructive text-destructive-foreground rounded hover:bg-destructive/90 text-xs"
+              >
+                Clear Data & Reload
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -53,9 +64,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   try {
     return <>{children}</>;
   } catch (error) {
-    if (isDevelopment()) {
-      console.error('ProtectedRoute render error:', error);
-    }
+    safeConsoleError('ProtectedRoute render error:', error);
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { validateEmail, validatePassword } from '@/validation';
 import { securityLogger } from '@/utils/enhancedSecurityLogger';
 import { secureSessionManager } from '@/utils/secureSessionManager';
-import { isDevelopment } from '@/utils/environment';
+import { shouldShowDebugInfo, safeConsoleLog, safeConsoleError, safeConsoleWarn } from '@/utils/environment';
 
 interface AuthContextType {
   user: User | null;
@@ -33,19 +33,17 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   useEffect(() => {
     let isMounted = true;
-    if (isDevelopment()) {
-      console.log('🔐 UnifiedAuthProvider initializing...');
+    if (shouldShowDebugInfo()) {
+      safeConsoleLog('🔐 UnifiedAuthProvider initializing...');
     }
 
     // Set up a timeout to detect if auth check is hanging
     const authTimeout = setTimeout(() => {
       if (isMounted && loading) {
-        if (isDevelopment()) {
-          console.error('⚠️ Auth check timeout - forcing loading to false');
-        }
+        safeConsoleError('⚠️ Auth check timeout after 5 seconds - forcing loading to false');
         setLoading(false);
       }
-    }, 8000);
+    }, 5000);
 
     // Set up auth state listener FIRST
     const {
@@ -53,8 +51,8 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (!isMounted) return;
       
-      if (isDevelopment()) {
-        console.log('🔄 Auth state change:', event, session?.user?.email || 'No user');
+      if (shouldShowDebugInfo()) {
+        safeConsoleLog('🔄 Auth state change:', { event, user: session?.user?.email || 'No user' });
       }
       
       setSession(session);
@@ -66,7 +64,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       } else if (event === 'SIGNED_IN' && session?.user) {
         securityLogger.logAuthEvent(session.user.id, 'login.success', true, { 
           email_domain: session.user.email?.split('@')[1] 
-        }).catch(console.error);
+        }).catch((err) => safeConsoleError('Security log error:', err));
       }
     });
 
@@ -74,19 +72,15 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (!isMounted) return;
       
-      if (isDevelopment()) {
-        console.log('🔍 Session check result:', session ? '✅ Session exists' : '❌ No session');
+      if (shouldShowDebugInfo()) {
+        safeConsoleLog('🔍 Session check result:', session ? '✅ Session exists' : '❌ No session');
       }
       
       if (error) {
-        if (isDevelopment()) {
-          console.error('❌ Error getting session:', error);
-        }
+        safeConsoleError('❌ Error getting session:', error);
         securityLogger.logAuthEvent(undefined, 'login.failure', false, {
           error: error.message 
-        }).catch(err => {
-          if (isDevelopment()) console.error(err);
-        });
+        }).catch(err => safeConsoleError('Security log error:', err));
       }
       
       setSession(session);
@@ -95,9 +89,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       clearTimeout(authTimeout);
     }).catch((error) => {
       if (!isMounted) return;
-      if (isDevelopment()) {
-        console.error('❌ Failed to get session:', error);
-      }
+      safeConsoleError('❌ Failed to get session:', error);
       setLoading(false);
       clearTimeout(authTimeout);
     });
@@ -175,8 +167,8 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const signIn = async (email: string, password: string) => {
-    if (isDevelopment()) {
-      console.log('Attempting sign in for:', email);
+    if (shouldShowDebugInfo()) {
+      safeConsoleLog('Attempting sign in for:', email);
     }
     
     // Validate email input
@@ -196,9 +188,7 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       });
 
       if (error) {
-        if (isDevelopment()) {
-          console.error('Sign in error:', error);
-        }
+        safeConsoleError('Sign in error:', error);
         
         // Provide more specific error messages
         let userFriendlyMessage = error.message;
@@ -220,15 +210,13 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
         return { error: enhancedError };
       }
 
-      if (isDevelopment()) {
-        console.log('Sign in successful for:', email);
+      if (shouldShowDebugInfo()) {
+        safeConsoleLog('Sign in successful for:', email);
       }
       return { error: null };
       
     } catch (error: any) {
-      if (isDevelopment()) {
-        console.error('Unexpected sign in error:', error);
-      }
+      safeConsoleError('Unexpected sign in error:', error);
       const enhancedError = new Error('An unexpected error occurred. Please try again.');
       return { error: enhancedError };
     }
