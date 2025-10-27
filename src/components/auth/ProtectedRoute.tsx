@@ -2,6 +2,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/UnifiedAuthContext';
+import { isDevelopment } from '@/utils/environment';
 import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
@@ -15,7 +16,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   React.useEffect(() => {
     const timer = window.setTimeout(() => {
       if (loading) {
-        console.warn('⚠️ Authentication check taking longer than expected');
+        if (isDevelopment()) {
+          console.warn('⚠️ Authentication check taking longer than expected');
+        }
         setShowTimeout(true);
       }
     }, 10000);
@@ -50,7 +53,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   try {
     return <>{children}</>;
   } catch (error) {
-    console.error('ProtectedRoute render error:', error);
+    if (isDevelopment()) {
+      console.error('ProtectedRoute render error:', error);
+    }
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

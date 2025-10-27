@@ -2,6 +2,7 @@ import React, { Component, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, RefreshCw } from 'lucide-react';
+import { isDevelopment } from '@/utils/environment';
 
 interface Props {
   children: ReactNode;
@@ -33,9 +34,11 @@ export class AppErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('🔴 App Error Boundary caught an error:', error);
-    console.error('📍 Error stack:', error.stack);
-    console.error('⚙️ Component stack:', errorInfo.componentStack);
+    if (isDevelopment()) {
+      console.error('🔴 App Error Boundary caught an error:', error);
+      console.error('📍 Error stack:', error.stack);
+      console.error('⚙️ Component stack:', errorInfo.componentStack);
+    }
     this.setState({
       error,
       errorInfo

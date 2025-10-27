@@ -10,6 +10,7 @@ import { AuthGuard } from "@/components/auth/AuthGuard";
 import { AppErrorBoundary } from "@/components/error/AppErrorBoundary";
 import { RouteErrorBoundary } from "@/components/error/RouteErrorBoundary";
 import { DevPanel } from "@/components/debug/DevPanel";
+import { isDevelopment } from "@/utils/environment";
 import { Suspense, lazy, useEffect } from "react";
 
 // Lazy load page components to reduce initial bundle size
@@ -50,9 +51,11 @@ const queryClient = new QueryClient({
 
 function App() {
   useEffect(() => {
-    console.log('🚀 App initialized');
-    console.log('📍 Environment:', import.meta.env.MODE);
-    console.log('🔗 Supabase URL:', import.meta.env.VITE_SUPABASE_URL ? '✅ Configured' : '❌ Missing');
+    if (isDevelopment()) {
+      console.log('🚀 App initialized');
+      console.log('📍 Environment:', import.meta.env.MODE);
+      console.log('🔗 Supabase URL:', import.meta.env.VITE_SUPABASE_URL ? '✅ Configured' : '❌ Missing');
+    }
   }, []);
 
   return (

@@ -33,12 +33,16 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   useEffect(() => {
     let isMounted = true;
-    console.log('🔐 UnifiedAuthProvider initializing...');
+    if (isDevelopment()) {
+      console.log('🔐 UnifiedAuthProvider initializing...');
+    }
 
     // Set up a timeout to detect if auth check is hanging
     const authTimeout = setTimeout(() => {
       if (isMounted && loading) {
-        console.error('⚠️ Auth check timeout - forcing loading to false');
+        if (isDevelopment()) {
+          console.error('⚠️ Auth check timeout - forcing loading to false');
+        }
         setLoading(false);
       }
     }, 8000);
@@ -49,7 +53,9 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (!isMounted) return;
       
-      console.log('🔄 Auth state change:', event, session?.user?.email || 'No user');
+      if (isDevelopment()) {
+        console.log('🔄 Auth state change:', event, session?.user?.email || 'No user');
+      }
       
       setSession(session);
       setUser(session?.user ?? null);
@@ -68,13 +74,19 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (!isMounted) return;
       
-      console.log('🔍 Session check result:', session ? '✅ Session exists' : '❌ No session');
+      if (isDevelopment()) {
+        console.log('🔍 Session check result:', session ? '✅ Session exists' : '❌ No session');
+      }
       
       if (error) {
-        console.error('❌ Error getting session:', error);
+        if (isDevelopment()) {
+          console.error('❌ Error getting session:', error);
+        }
         securityLogger.logAuthEvent(undefined, 'login.failure', false, {
           error: error.message 
-        }).catch(console.error);
+        }).catch(err => {
+          if (isDevelopment()) console.error(err);
+        });
       }
       
       setSession(session);
@@ -83,7 +95,9 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       clearTimeout(authTimeout);
     }).catch((error) => {
       if (!isMounted) return;
-      console.error('❌ Failed to get session:', error);
+      if (isDevelopment()) {
+        console.error('❌ Failed to get session:', error);
+      }
       setLoading(false);
       clearTimeout(authTimeout);
     });
