@@ -37,14 +37,6 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       safeConsoleLog('🔐 UnifiedAuthProvider initializing...');
     }
 
-    // Set up a timeout to detect if auth check is hanging
-    const authTimeout = setTimeout(() => {
-      if (isMounted && loading) {
-        safeConsoleError('⚠️ Auth check timeout after 5 seconds - forcing loading to false');
-        setLoading(false);
-      }
-    }, 5000);
-
     // Set up auth state listener FIRST
     const {
       data: { subscription },
@@ -62,9 +54,10 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (event === 'SIGNED_OUT') {
         clearAuthState();
       } else if (event === 'SIGNED_IN' && session?.user) {
+        // Fire-and-forget security logging (non-blocking)
         securityLogger.logAuthEvent(session.user.id, 'login.success', true, { 
           email_domain: session.user.email?.split('@')[1] 
-        }).catch((err) => safeConsoleError('Security log error:', err));
+        }).catch(() => {}); // Silent catch to prevent unhandled rejections
       }
     });
 
@@ -78,26 +71,24 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       
       if (error) {
         safeConsoleError('❌ Error getting session:', error);
+        // Fire-and-forget security logging (non-blocking)
         securityLogger.logAuthEvent(undefined, 'login.failure', false, {
           error: error.message 
-        }).catch(err => safeConsoleError('Security log error:', err));
+        }).catch(() => {}); // Silent catch
       }
       
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      clearTimeout(authTimeout);
     }).catch((error) => {
       if (!isMounted) return;
       safeConsoleError('❌ Failed to get session:', error);
       setLoading(false);
-      clearTimeout(authTimeout);
     });
 
     return () => {
       isMounted = false;
       subscription.unsubscribe();
-      clearTimeout(authTimeout);
     };
   }, []);
 
@@ -126,19 +117,21 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const emailValidation = validateEmail(email);
     if (!emailValidation.isValid) {
       const error = new Error(emailValidation.error);
-      await securityLogger.logAuthEvent(undefined, 'signup', false, { 
+      // Fire-and-forget logging (non-blocking)
+      securityLogger.logAuthEvent(undefined, 'signup', false, { 
         error: emailValidation.error, 
         email_domain: email.split('@')[1] 
-      });
+      }).catch(() => {});
       return { error };
     }
 
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.isValid) {
       const error = new Error(passwordValidation.error);
-      await securityLogger.logAuthEvent(undefined, 'signup', false, { 
+      // Fire-and-forget logging (non-blocking)
+      securityLogger.logAuthEvent(undefined, 'signup', false, { 
         error: passwordValidation.error 
-      });
+      }).catch(() => {});
       return { error };
     }
 
@@ -152,15 +145,16 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
     });
 
+    // Fire-and-forget logging (non-blocking)
     if (error) {
-      await securityLogger.logAuthEvent(undefined, 'signup', false, { 
+      securityLogger.logAuthEvent(undefined, 'signup', false, { 
         error: error.message, 
         email_domain: email.split('@')[1] 
-      });
+      }).catch(() => {});
     } else {
-      await securityLogger.logAuthEvent(undefined, 'signup', true, { 
+      securityLogger.logAuthEvent(undefined, 'signup', true, { 
         email_domain: email.split('@')[1] 
-      });
+      }).catch(() => {});
     }
 
     return { error };
@@ -175,9 +169,10 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const emailValidation = validateEmail(email);
     if (!emailValidation.isValid) {
       const error = new Error(emailValidation.error);
-      await securityLogger.logAuthEvent(undefined, 'login.failure', false, { 
+      // Fire-and-forget logging (non-blocking)
+      securityLogger.logAuthEvent(undefined, 'login.failure', false, { 
         error: emailValidation.error 
-      });
+      }).catch(() => {});
       return { error };
     }
 
@@ -202,10 +197,11 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
         
         const enhancedError = new Error(userFriendlyMessage);
         
-        await securityLogger.logAuthEvent(undefined, 'login.failure', false, { 
+        // Fire-and-forget logging (non-blocking)
+        securityLogger.logAuthEvent(undefined, 'login.failure', false, { 
           error: error.message, 
           email_domain: email.split('@')[1] 
-        });
+        }).catch(() => {});
         
         return { error: enhancedError };
       }
@@ -227,9 +223,10 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const emailValidation = validateEmail(email);
     if (!emailValidation.isValid) {
       const error = new Error(emailValidation.error);
-      await securityLogger.logAuthEvent(undefined, 'password_reset', false, { 
+      // Fire-and-forget logging (non-blocking)
+      securityLogger.logAuthEvent(undefined, 'password_reset', false, { 
         error: emailValidation.error 
-      });
+      }).catch(() => {});
       return { error };
     }
 
@@ -239,15 +236,16 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       redirectTo: redirectUrl
     });
 
+    // Fire-and-forget logging (non-blocking)
     if (error) {
-      await securityLogger.logAuthEvent(undefined, 'password_reset', false, { 
+      securityLogger.logAuthEvent(undefined, 'password_reset', false, { 
         error: error.message, 
         email_domain: email.split('@')[1] 
-      });
+      }).catch(() => {});
     } else {
-      await securityLogger.logAuthEvent(undefined, 'password_reset', true, { 
+      securityLogger.logAuthEvent(undefined, 'password_reset', true, { 
         email_domain: email.split('@')[1] 
-      });
+      }).catch(() => {});
     }
 
     return { error };
@@ -259,9 +257,10 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.isValid) {
       const error = new Error(passwordValidation.error);
-      await securityLogger.logAuthEvent(user?.id, 'password_update', false, { 
+      // Fire-and-forget logging (non-blocking)
+      securityLogger.logAuthEvent(user?.id, 'password_update', false, { 
         error: passwordValidation.error 
-      });
+      }).catch(() => {});
       return { error };
     }
 
@@ -269,21 +268,22 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       password: password
     });
 
+    // Fire-and-forget logging (non-blocking)
     if (error) {
-      await securityLogger.logAuthEvent(user?.id, 'password_update', false, { 
+      securityLogger.logAuthEvent(user?.id, 'password_update', false, { 
         error: error.message 
-      });
+      }).catch(() => {});
     } else {
-      await securityLogger.logAuthEvent(user?.id, 'password_update', true, {});
+      securityLogger.logAuthEvent(user?.id, 'password_update', true, {}).catch(() => {});
     }
 
     return { error };
   };
 
   const signOut = async () => {
-    
     try {
-      await securityLogger.logAuthEvent(user?.id, 'logout', true, {});
+      // Fire-and-forget logging (non-blocking)
+      securityLogger.logAuthEvent(user?.id, 'logout', true, {}).catch(() => {});
       clearAuthState();
       
       const timeoutPromise = new Promise((_, reject) => 
