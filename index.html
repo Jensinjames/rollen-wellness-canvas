@@ -49,15 +49,26 @@
       <button onclick="location.reload()" style="margin-left:16px;padding:8px 16px;background:#fff;color:#000;border:none;border-radius:4px;cursor:pointer;">Reload</button>
     </div>
     <script>
+      // Environment detection for security-conscious error handling
+      const isDevelopment = window.location.hostname === 'localhost' || 
+                           window.location.hostname.includes('lovable') ||
+                           window.location.hostname.includes('127.0.0.1');
+      
       // Emergency error handler - catches all uncaught errors
       window.addEventListener('error', function(e) {
         const errorDiv = document.getElementById('emergency-error');
         const errorMsg = document.getElementById('error-message');
         if (errorDiv && errorMsg) {
-          errorMsg.textContent = e.message || 'Unknown error occurred';
+          // Show detailed errors in dev/preview, generic in production
+          errorMsg.textContent = isDevelopment 
+            ? (e.message || 'Unknown error occurred')
+            : 'Application error occurred. Please refresh the page.';
           errorDiv.style.display = 'block';
         }
-        console.error('Emergency error caught:', e);
+        // Only log full errors in development
+        if (isDevelopment) {
+          console.error('Emergency error caught:', e);
+        }
       });
       
       // Module loading error handler
@@ -65,17 +76,28 @@
         const errorDiv = document.getElementById('emergency-error');
         const errorMsg = document.getElementById('error-message');
         if (errorDiv && errorMsg) {
-          errorMsg.textContent = 'Module failed to load: ' + (e.reason?.message || 'Unknown module error');
+          // Show detailed errors in dev/preview, generic in production
+          errorMsg.textContent = isDevelopment
+            ? ('Module failed to load: ' + (e.reason?.message || 'Unknown module error'))
+            : 'Application error occurred. Please refresh the page.';
           errorDiv.style.display = 'block';
         }
-        console.error('Unhandled promise rejection:', e);
+        // Only log full errors in development
+        if (isDevelopment) {
+          console.error('Unhandled promise rejection:', e);
+        }
       });
     </script>
     <script type="module" src="/src/main.tsx" crossorigin onerror="
+      const isDev = window.location.hostname === 'localhost' || 
+                    window.location.hostname.includes('lovable') ||
+                    window.location.hostname.includes('127.0.0.1');
       const errorDiv = document.getElementById('emergency-error');
       const errorMsg = document.getElementById('error-message');
       if (errorDiv && errorMsg) {
-        errorMsg.textContent = 'Failed to load main application module';
+        errorMsg.textContent = isDev 
+          ? 'Failed to load main application module'
+          : 'Application error occurred. Please refresh the page.';
         errorDiv.style.display = 'block';
       }
     "></script>
