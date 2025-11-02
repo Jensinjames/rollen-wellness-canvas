@@ -8,7 +8,7 @@ export interface Category {
   sort_order: number;
   parent_id?: string;
   level: number;
-  path?: string[]; // Make path optional since it's not in the database
+  path: string[];
   goal_type: 'time' | 'boolean' | 'both';
   is_boolean_goal: boolean;
   boolean_goal_label?: string;

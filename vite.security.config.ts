@@ -1,32 +1,30 @@
 
-import type { ServerOptions } from 'vite';
+import { defineConfig } from 'vite';
+import { SECURITY_CONFIG } from './src/utils/securityConfig';
 
-export const securityConfig = {
+// Convert CSP object to string
+const cspString = Object.entries(SECURITY_CONFIG.CONTENT_SECURITY_POLICY)
+  .map(([directive, sources]) => `${directive} ${sources.join(' ')}`)
+  .join('; ');
+
+export const securityConfig = defineConfig({
   server: {
     headers: {
+      // Content Security Policy
+      'Content-Security-Policy': cspString,
+      
       // Security headers
       'X-Frame-Options': 'DENY',
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
-      'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+      'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
       
-      // Ensure proper MIME types for JavaScript modules
-      'Content-Type': 'application/javascript; charset=utf-8',
+      // HSTS (only for HTTPS)
+      'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+      
+      // Remove server information
+      'X-Powered-By': '',
+      'Server': '',
     },
-    cors: {
-      origin: false,
-      credentials: false,
-    },
-    // Configure proper MIME type handling
-    middlewareMode: false,
-  } satisfies Partial<ServerOptions>,
-  
-  // MIME type configuration
-  mimeTypes: {
-    '.js': 'application/javascript',
-    '.mjs': 'application/javascript',
-    '.jsx': 'application/javascript',
-    '.ts': 'application/javascript',
-    '.tsx': 'application/javascript',
   },
-};
+});

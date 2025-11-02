@@ -28,10 +28,12 @@ export const useActivitiesByDate = (filters: ActivityFilters) => {
         }
       }
 
-      // Subcategory filter - skip for now as subcategory_id doesn't exist
-      // if (filters.subcategoryIds && filters.subcategoryIds.length > 0) {
-      //   // Filter by subcategory via category relationship
-      // }
+      // Subcategory filter
+      if (filters.subcategoryIds && filters.subcategoryIds.length > 0) {
+        if (!filters.subcategoryIds.includes(activity.subcategory_id)) {
+          return false;
+        }
+      }
 
       return true;
     });

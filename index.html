@@ -1,36 +1,11 @@
-
 <!DOCTYPE html>
-<html lang="en" xml:lang="en">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>rollen-wellness-canvas</title>
     <meta name="description" content="Lovable Generated Project" />
     <meta name="author" content="Lovable" />
-
-    <!-- Preconnect to Supabase for faster loading -->
-    <link rel="preconnect" href="https://supabase.com" />
-    <link rel="dns-prefetch" href="https://supabase.com" />
-    
-    <!-- Preconnect to common CDNs -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    
-    <!-- Preload critical fonts to reduce LCP render delay -->
-    <link rel="preload" href="https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2" as="font" type="font/woff2" crossorigin />
-    
-    <!-- Non-blocking CSS loading to prevent render blocking -->
-    <link rel="preload" href="/src/index.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-    <noscript><link rel="stylesheet" href="/src/index.css" /></noscript>
-    <style>
-      /* Critical CSS for initial render - prevents FOUC while CSS loads */
-      *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#fff;color:#000}#root{min-height:100vh}
-    </style>
-
-    <!-- Preload critical resources to reduce dependency chain -->
-    <link rel="modulepreload" href="/src/main.tsx" />
-    <link rel="modulepreload" href="/src/App.tsx" />
-    <link rel="modulepreload" href="/src/pages/Index.tsx" fetchpriority="high" />
 
     <meta property="og:title" content="rollen-wellness-canvas" />
     <meta property="og:description" content="Lovable Generated Project" />
@@ -44,62 +19,6 @@
 
   <body>
     <div id="root"></div>
-    <div id="emergency-error" style="display:none;position:fixed;top:0;left:0;right:0;background:#dc2626;color:#fff;padding:16px;z-index:999999;font-family:monospace;font-size:14px;">
-      <strong>Application Error:</strong> <span id="error-message"></span>
-      <button onclick="location.reload()" style="margin-left:16px;padding:8px 16px;background:#fff;color:#000;border:none;border-radius:4px;cursor:pointer;">Reload</button>
-    </div>
-    <script>
-      // Environment detection for security-conscious error handling
-      const isDevelopment = window.location.hostname === 'localhost' || 
-                           window.location.hostname.includes('lovable') ||
-                           window.location.hostname.includes('127.0.0.1');
-      
-      // Emergency error handler - catches all uncaught errors
-      window.addEventListener('error', function(e) {
-        const errorDiv = document.getElementById('emergency-error');
-        const errorMsg = document.getElementById('error-message');
-        if (errorDiv && errorMsg) {
-          // Show detailed errors in dev/preview, generic in production
-          errorMsg.textContent = isDevelopment 
-            ? (e.message || 'Unknown error occurred')
-            : 'Application error occurred. Please refresh the page.';
-          errorDiv.style.display = 'block';
-        }
-        // Only log full errors in development
-        if (isDevelopment) {
-          console.error('Emergency error caught:', e);
-        }
-      });
-      
-      // Module loading error handler
-      window.addEventListener('unhandledrejection', function(e) {
-        const errorDiv = document.getElementById('emergency-error');
-        const errorMsg = document.getElementById('error-message');
-        if (errorDiv && errorMsg) {
-          // Show detailed errors in dev/preview, generic in production
-          errorMsg.textContent = isDevelopment
-            ? ('Module failed to load: ' + (e.reason?.message || 'Unknown module error'))
-            : 'Application error occurred. Please refresh the page.';
-          errorDiv.style.display = 'block';
-        }
-        // Only log full errors in development
-        if (isDevelopment) {
-          console.error('Unhandled promise rejection:', e);
-        }
-      });
-    </script>
-    <script type="module" src="/src/main.tsx" crossorigin onerror="
-      const isDev = window.location.hostname === 'localhost' || 
-                    window.location.hostname.includes('lovable') ||
-                    window.location.hostname.includes('127.0.0.1');
-      const errorDiv = document.getElementById('emergency-error');
-      const errorMsg = document.getElementById('error-message');
-      if (errorDiv && errorMsg) {
-        errorMsg.textContent = isDev 
-          ? 'Failed to load main application module'
-          : 'Application error occurred. Please refresh the page.';
-        errorDiv.style.display = 'block';
-      }
-    "></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

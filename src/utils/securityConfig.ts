@@ -1,11 +1,11 @@
 
 export const SECURITY_CONFIG = {
-  // Password requirements - Fixed inconsistency
+  // Password requirements
   PASSWORD_MIN_LENGTH: 8,
   PASSWORD_REQUIRE_UPPERCASE: true,
   PASSWORD_REQUIRE_LOWERCASE: true,
   PASSWORD_REQUIRE_NUMBERS: true,
-  PASSWORD_REQUIRE_SPECIAL: true, // Changed from false to true for better security
+  PASSWORD_REQUIRE_SPECIAL: false,
   
   // Rate limiting
   LOGIN_ATTEMPTS_MAX: 5,
@@ -28,7 +28,7 @@ export const SECURITY_CONFIG = {
   }
 } as const;
 
-// Enhanced password validation function with consistent requirements
+// Password validation function
 export const validatePasswordStrength = (password: string): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
   
@@ -49,7 +49,7 @@ export const validatePasswordStrength = (password: string): { isValid: boolean; 
   }
   
   if (SECURITY_CONFIG.PASSWORD_REQUIRE_SPECIAL && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-    errors.push('Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)');
+    errors.push('Password must contain at least one special character');
   }
   
   return {

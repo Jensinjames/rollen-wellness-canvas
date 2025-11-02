@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { validateHexColor } from '@/validation';
+import { validateHexColor } from '@/utils/validation';
 
 interface ColorPickerProps {
   value: string;

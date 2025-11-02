@@ -6,32 +6,13 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { UnifiedAuthProvider } from "@/contexts/UnifiedAuthContext";
 import { TimerProvider } from "@/contexts/TimerContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { AuthGuard } from "@/components/auth/AuthGuard";
-import { AppErrorBoundary } from "@/components/error/AppErrorBoundary";
-import { RouteErrorBoundary } from "@/components/error/RouteErrorBoundary";
-import { DevPanel } from "@/components/debug/DevPanel";
-import { shouldShowDebugInfo, getEnvironment, safeConsoleLog } from "@/utils/environment";
-import { Suspense, lazy, useEffect } from "react";
-
-// Lazy load page components to reduce initial bundle size
-const Index = lazy(() => import("./pages/Index"));
-const Categories = lazy(() => import("./pages/Categories"));
-const Analytics = lazy(() => import("./pages/Analytics"));
-const Calendar = lazy(() => import("./pages/Calendar"));
-const Settings = lazy(() => import("./pages/Settings"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-
-// Loading fallback component
-const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-  </div>
-);
-
-// Priority loading for critical pages to improve LCP
-const IndexWithPriority = lazy(() => 
-  import("./pages/Index").then(module => ({ default: module.default }))
-);
+import { SecureAuthForm } from "@/components/auth/SecureAuthForm";
+import Index from "./pages/Index";
+import Categories from "./pages/Categories";
+import Analytics from "./pages/Analytics";
+import Calendar from "./pages/Calendar";
+import Settings from "./pages/Settings";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,101 +31,63 @@ const queryClient = new QueryClient({
 });
 
 function App() {
-  useEffect(() => {
-    if (shouldShowDebugInfo()) {
-      safeConsoleLog('🚀 App initialized');
-      safeConsoleLog('📍 Environment:', getEnvironment());
-      safeConsoleLog('🔗 Supabase URL:', import.meta.env.VITE_SUPABASE_URL ? '✅ Configured' : '❌ Missing');
-    }
-  }, []);
-
   return (
-    <AppErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <UnifiedAuthProvider>
-          <TimerProvider>
-            <TooltipProvider>
-              <Toaster />
-              <DevPanel />
-              <BrowserRouter>
-                <Suspense fallback={<PageLoader />}>
-                  <Routes>
-                    <Route 
-                      path="/auth" 
-                      element={
-                        <RouteErrorBoundary>
-                          <AuthGuard />
-                        </RouteErrorBoundary>
-                      } 
-                    />
-                    <Route
-                      path="/"
-                      element={
-                        <RouteErrorBoundary>
-                          <ProtectedRoute>
-                            <IndexWithPriority />
-                          </ProtectedRoute>
-                        </RouteErrorBoundary>
-                      }
-                    />
-                    <Route
-                      path="/categories"
-                      element={
-                        <RouteErrorBoundary>
-                          <ProtectedRoute>
-                            <Categories />
-                          </ProtectedRoute>
-                        </RouteErrorBoundary>
-                      }
-                    />
-                    <Route
-                      path="/analytics"
-                      element={
-                        <RouteErrorBoundary>
-                          <ProtectedRoute>
-                            <Analytics />
-                          </ProtectedRoute>
-                        </RouteErrorBoundary>
-                      }
-                    />
-                    <Route
-                      path="/calendar"
-                      element={
-                        <RouteErrorBoundary>
-                          <ProtectedRoute>
-                            <Calendar />
-                          </ProtectedRoute>
-                        </RouteErrorBoundary>
-                      }
-                    />
-                    <Route
-                      path="/settings"
-                      element={
-                        <RouteErrorBoundary>
-                          <ProtectedRoute>
-                            <Settings />
-                          </ProtectedRoute>
-                        </RouteErrorBoundary>
-                      }
-                    />
-                    <Route 
-                      path="*" 
-                      element={
-                        <RouteErrorBoundary>
-                          <NotFound />
-                        </RouteErrorBoundary>
-                      } 
-                    />
-                  </Routes>
-                </Suspense>
-              </BrowserRouter>
-            </TooltipProvider>
-          </TimerProvider>
-        </UnifiedAuthProvider>
-      </QueryClientProvider>
-    </AppErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <UnifiedAuthProvider>
+        <TimerProvider>
+          <TooltipProvider>
+            <Toaster />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/auth" element={<SecureAuthForm />} />
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute>
+                      <Index />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/categories"
+                  element={
+                    <ProtectedRoute>
+                      <Categories />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/analytics"
+                  element={
+                    <ProtectedRoute>
+                      <Analytics />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/calendar"
+                  element={
+                    <ProtectedRoute>
+                      <Calendar />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <Settings />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </TimerProvider>
+      </UnifiedAuthProvider>
+    </QueryClientProvider>
   );
 }
 
-// Force rebuild to fix connection issues
 export default App;

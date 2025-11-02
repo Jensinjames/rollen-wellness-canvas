@@ -1,7 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/UnifiedAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 export interface HabitLog {
@@ -55,10 +55,7 @@ export const useCreateHabitLog = () => {
       const { data, error } = await supabase
         .from('habit_logs')
         .insert([{
-          habit_id: habitLogData.habit_id,
-          log_date: habitLogData.log_date,
-          value: habitLogData.actual_value || (habitLogData.completed ? 1 : 0),
-          notes: habitLogData.notes,
+          ...habitLogData,
           user_id: user.id,
         }])
         .select()

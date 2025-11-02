@@ -1,13 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Category, useParentCategories, useAllCategories, useUpdateCategory, useCreateCategory } from '@/hooks/categories';
-import { createDefaultCategoryFormData, prepareCategorySubmissionData, isCategoryFormReady, logCategoryOperation, getCategoryOperationContext } from '@/services/category';
+import { Category, useParentCategories, useAllCategories } from '@/hooks/categories';
+import { validateCategoryData, logCategoryOperation } from './CategoryValidation';
 import { CategoryFormHeader } from './CategoryFormHeader';
 import { CategoryFormValidation } from './CategoryFormValidation';
 import { CategoryFormContent } from './CategoryFormContent';
 import { CategoryFormActions } from './CategoryFormActions';
-import { LiveRegion } from '@/components/accessibility/LiveRegion';
 
 interface CategoryFormProps {
   isOpen: boolean;
@@ -28,90 +27,98 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
 }) => {
   const { data: parentCategories } = useParentCategories();
   const { data: allCategories } = useAllCategories();
-  const updateCategoryMutation = useUpdateCategory();
-  const createCategoryMutation = useCreateCategory();
   
   const isAddingSubcategory = !!forceParent;
   const isEditing = !!category;
+  
+  const getDefaultColor = () => {
+    if (isEditing && category?.color) return category.color;
+    if (isAddingSubcategory && forceParent?.color) return forceParent.color;
+    return '#10B981';
+  };
 
-  const [formData, setFormData] = useState(
-    createDefaultCategoryFormData(category, forceParent)
-  );
+  const [formData, setFormData] = useState({
+    name: '',
+    color: '#10B981',
+    description: '',
+    is_active: true,
+    sort_order: 0,
+    parent_id: 'none',
+    level: 0,
+    goal_type: 'time' as 'time' | 'boolean' | 'both',
+    is_boolean_goal: false,
+    boolean_goal_label: '',
+    daily_time_goal_minutes: undefined as number | undefined,
+    weekly_time_goal_minutes: undefined as number | undefined,
+  });
 
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  const [submitError, setSubmitError] = useState<string>('');
-
-  // Get loading state from the appropriate mutation
-  const isLoading = isEditing ? updateCategoryMutation.isPending : createCategoryMutation.isPending;
 
   useEffect(() => {
     if (isOpen) {
-      setFormData(createDefaultCategoryFormData(category, forceParent));
+      const defaultParentId = forceParent?.id || (isAddingSubcategory ? '' : 'none');
+      
+      setFormData({
+        name: category?.name || '',
+        color: getDefaultColor(),
+        description: category?.description || '',
+        is_active: category?.is_active ?? true,
+        sort_order: category?.sort_order || 0,
+        parent_id: category?.parent_id || defaultParentId,
+        level: forceParent ? 1 : (category?.level || 0),
+        goal_type: category?.goal_type || 'time',
+        is_boolean_goal: category?.is_boolean_goal || false,
+        boolean_goal_label: category?.boolean_goal_label || '',
+        daily_time_goal_minutes: category?.daily_time_goal_minutes,
+        weekly_time_goal_minutes: category?.weekly_time_goal_minutes,
+      });
       setValidationErrors([]);
-      setSubmitError('');
     }
-  }, [isOpen, category, forceParent]);
+  }, [isOpen, category, forceParent, isAddingSubcategory]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    setValidationErrors([]);
-    setSubmitError('');
+    if (!formData.name.trim()) return;
+    
+    const isSubcategory = isAddingSubcategory || formData.parent_id !== 'none';
+    
+    const submissionData = {
+      ...formData,
+      level: isSubcategory ? 1 : 0,
+      parent_id: isSubcategory ? (formData.parent_id === 'none' ? forceParent?.id : formData.parent_id) : undefined,
+    };
 
-    // Use service to prepare submission data
-    const result = prepareCategorySubmissionData(
-      formData,
-      forceParent,
+    // Pass the current category's ID to exclude it from duplicate checks during updates
+    const validation = validateCategoryData(
+      submissionData, 
+      isSubcategory, 
       allCategories || [],
-      category?.id
+      category?.id || null
     );
-
-    if (!result.success) {
-      setValidationErrors(result.errors || [result.error || 'Validation failed']);
+    
+    if (!validation.isValid) {
+      setValidationErrors(validation.errors);
       return;
     }
 
-    try {
-      // Log the operation
-      const isSubcategory = isAddingSubcategory || formData.parent_id !== 'none';
-      logCategoryOperation(
-        category ? 'update' : 'create', 
-        result.data,
-        getCategoryOperationContext(isSubcategory)
-      );
+    logCategoryOperation(
+      category ? 'update' : 'create', 
+      submissionData, 
+      isSubcategory ? 'subcategory' : 'top-level category'
+    );
 
-      if (isEditing && category) {
-        await updateCategoryMutation.mutateAsync({
-          id: category.id,
-          ...result.data,
-        });
-      } else {
-        await createCategoryMutation.mutateAsync(result.data);
-      }
-
-      handleClose();
-    } catch (error: any) {
-      console.error('Error submitting category:', error);
-      setSubmitError(error.message || 'An unexpected error occurred');
-    }
+    onSubmit(submissionData);
   };
 
   const handleClose = () => {
     setValidationErrors([]);
-    setSubmitError('');
     onClose();
   };
 
-  // Get current error message for live region
-  const currentErrorMessage = submitError || (validationErrors.length > 0 ? validationErrors.join('. ') : '');
-
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent 
-        className="sm:max-w-lg max-h-[90vh] overflow-y-auto"
-        aria-labelledby="category-form-title"
-        aria-describedby="category-form-description"
-      >
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <CategoryFormHeader
           title={title}
           category={category}
@@ -119,24 +126,6 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
         />
 
         <CategoryFormValidation validationErrors={validationErrors} />
-
-        {/* Live region for error announcements */}
-        <LiveRegion 
-          message={currentErrorMessage}
-          politeness="assertive"
-        />
-
-        {/* Submit error display */}
-        {submitError && (
-          <div 
-            id="submit-error"
-            className="p-3 text-sm text-red-800 bg-red-50 border border-red-200 rounded-md"
-            role="alert"
-            aria-live="polite"
-          >
-            {submitError}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <CategoryFormContent
@@ -153,7 +142,6 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
             category={category}
             forceParent={forceParent}
             validationErrors={validationErrors}
-            isLoading={isLoading}
             onClose={handleClose}
           />
         </form>

@@ -1,139 +1,135 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export type SecurityEventType = 
-  | 'security.validation_error'
+  | 'auth.login.success'
+  | 'auth.login.failure'
+  | 'auth.login.rate_limited'
+  | 'auth.logout'
+  | 'auth.signup'
+  | 'auth.password_reset'
+  | 'auth.session_expired'
   | 'security.suspicious_activity'
   | 'security.password_policy_violation'
-  | 'validation.input_rejected'
-  | 'session.timeout_warning'
-  | 'session.force_logout'
-  | 'session.fingerprint_mismatch'
-  | string;
+  | 'security.account_locked'
+  | 'data.unauthorized_access_attempt'
+  | 'data.bulk_operation'
+  | 'activity.create'
+  | 'activity.update'
+  | 'activity.delete'
+  | 'validation.input_rejected';
 
-interface SecurityEvent {
-  event_type: string;
-  user_id: string;
-  timestamp: string;
-  details: Record<string, any>;
+interface SecurityLogDetails {
   ip_address?: string;
   user_agent?: string;
-}
-
-interface BrowserInfo {
-  user_agent: string;
-  ip_address: string;
-  screen_resolution: string;
-  timezone: string;
+  event_details?: Record<string, any>;
+  risk_level?: 'low' | 'medium' | 'high' | 'critical';
+  session_id?: string;
 }
 
 class EnhancedSecurityLogger {
-  private async getBrowserInfo(): Promise<BrowserInfo> {
+  private getBrowserInfo(): Pick<SecurityLogDetails, 'user_agent' | 'ip_address'> {
+    if (typeof window === 'undefined') return {};
+    
     return {
-      user_agent: navigator.userAgent,
-      ip_address: 'client', // IP captured server-side
-      screen_resolution: `${window.screen.width}x${window.screen.height}`,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      user_agent: navigator.userAgent?.slice(0, 500) || 'Unknown',
+      // Note: Real IP would come from server headers
+      ip_address: 'client-detected',
     };
   }
 
   async logSecurityEvent(
-    eventType: string,
-    userId?: string,
-    details: Record<string, any> = {}
+    eventType: SecurityEventType,
+    details: SecurityLogDetails = {},
+    userId?: string
   ): Promise<void> {
     try {
-      const browserInfo = await this.getBrowserInfo();
-
-      const logEntry: SecurityEvent = {
+      const browserInfo = this.getBrowserInfo();
+      const logEntry = {
         event_type: eventType,
-        user_id: userId || 'anonymous',
-        timestamp: new Date().toISOString(),
+        user_id: userId,
         details: {
-          ...details,
-          browser_info: browserInfo,
+          ...details.event_details,
+          risk_level: details.risk_level || 'low',
+          session_id: details.session_id,
           timestamp: new Date().toISOString(),
         },
         ip_address: details.ip_address || browserInfo.ip_address,
         user_agent: details.user_agent || browserInfo.user_agent,
       };
 
-      // Log to server-side database for tamper-proof audit trail
-      try {
-        const { error } = await supabase.rpc('log_security_event', {
-          p_event_type: eventType,
-          p_event_details: logEntry.details,
-          p_ip_address: logEntry.ip_address,
-          p_user_agent: logEntry.user_agent,
-        });
+      // Use the database function for secure logging
+      const { error } = await supabase.rpc('log_security_event', {
+        event_type: eventType,
+        user_id: userId,
+        details: logEntry.details,
+      });
 
-        if (error) {
-          console.error('[Security Logger] Server logging failed:', error);
-          // Fall back to localStorage if server logging fails
-          this.storeLocally(logEntry);
-        }
-      } catch (error) {
-        console.error('[Security Logger] Server logging error:', error);
-        // Fall back to localStorage if server logging fails
-        this.storeLocally(logEntry);
+      if (error && process.env.NODE_ENV === 'development') {
+        console.error('Security logging failed:', error);
       }
 
       // Also log to console in development
       if (process.env.NODE_ENV === 'development') {
-        console.log('[Security Audit]', logEntry);
+        console.log('Security Event:', logEntry);
       }
+
     } catch (error) {
+      // Silent fail - security logging should never break the app
       if (process.env.NODE_ENV === 'development') {
-        console.error('[Security Logger] Error:', error);
+        console.error('Security logging error:', error);
       }
     }
   }
 
-  private storeLocally(logEntry: SecurityEvent): void {
-    try {
-      const existingLogs = JSON.parse(localStorage.getItem('security_audit_logs') || '[]');
-      existingLogs.push(logEntry);
-      // Keep only last 100 logs
-      if (existingLogs.length > 100) {
-        existingLogs.shift();
-      }
-      localStorage.setItem('security_audit_logs', JSON.stringify(existingLogs));
-    } catch (e) {
-      // localStorage might be full or disabled
+  async logAuthEvent(
+    eventType: Extract<SecurityEventType, `auth.${string}`>,
+    userId?: string,
+    additionalDetails?: Record<string, any>
+  ): Promise<void> {
+    await this.logSecurityEvent(eventType, {
+      event_details: additionalDetails,
+      risk_level: eventType.includes('failure') || eventType.includes('rate_limited') ? 'medium' : 'low',
+    }, userId);
+  }
+
+  async logResourceEvent(
+    eventType: Extract<SecurityEventType, `activity.${string}`>,
+    userId: string,
+    resourceId: string,
+    additionalDetails?: Record<string, any>
+  ): Promise<void> {
+    await this.logSecurityEvent(eventType, {
+      event_details: {
+        resource_id: resourceId,
+        ...additionalDetails,
+      },
+      risk_level: 'low',
+    }, userId);
+  }
+
+  async logSuspiciousActivity(
+    reason: string,
+    userId?: string,
+    riskLevel: SecurityLogDetails['risk_level'] = 'high'
+  ): Promise<void> {
+    await this.logSecurityEvent('security.suspicious_activity', {
+      event_details: { reason },
+      risk_level: riskLevel,
+    }, userId);
+  }
+
+  async logDataAccessAttempt(
+    resource: string,
+    userId?: string,
+    authorized: boolean = true
+  ): Promise<void> {
+    if (!authorized) {
+      await this.logSecurityEvent('data.unauthorized_access_attempt', {
+        event_details: { resource },
+        risk_level: 'high',
+      }, userId);
     }
-  }
-
-  async logAuthEvent(userId: string | undefined, action: string, success: boolean, details?: Record<string, any>): Promise<void> {
-    await this.logSecurityEvent('auth.' + action, userId, {
-      success,
-      ...details,
-    });
-  }
-
-  async logResourceEvent(action: string, userId: string, resourceId: string, details?: Record<string, any>): Promise<void> {
-    await this.logSecurityEvent(action, userId, {
-      resource_id: resourceId,
-      ...details,
-    });
-  }
-
-  async logAccessControl(userId: string, resource: string, action: string, allowed: boolean): Promise<void> {
-    await this.logSecurityEvent('access_control', userId, {
-      resource,
-      action,
-      allowed,
-    });
-  }
-
-  getClientLogs(): SecurityEvent[] {
-    try {
-      return JSON.parse(localStorage.getItem('security_audit_logs') || '[]');
-    } catch {
-      return [];
-    }
-  }
-
-  clearClientLogs(): void {
-    localStorage.removeItem('security_audit_logs');
   }
 }
 

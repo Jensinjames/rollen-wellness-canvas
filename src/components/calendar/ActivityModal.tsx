@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import {
@@ -10,16 +11,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useActivities, useCreateActivity } from "@/hooks/useActivities";
-import { Activity } from "@/types/activity";
+import { useActivities, useCreateActivity, Activity } from "@/hooks/useActivities";
 import { useCategories } from "@/hooks/categories";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
-import { validateTextInput, validateNumber } from "@/validation";
+import { validateTextInput, validateNumber } from "@/utils/validation";
 import { logResourceEvent } from "@/utils/auditLog";
-import { useAuth } from "@/contexts/UnifiedAuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ActivityModalProps {
   isOpen: boolean;
@@ -72,13 +72,10 @@ export function ActivityModal({
   useEffect(() => {
     if (isOpen) {
       if (isEditing && activity) {
-        // Activity no longer has 'name' or 'subcategory_id' - derive from category
-        const subcategory = activity.subcategory || activity.category;
-        const parentId = subcategory?.parent_id || "";
         setFormData({
-          name: subcategory?.name || "Activity",
-          categoryId: parentId,
-          subcategoryId: activity.category_id, // category_id IS the subcategory
+          name: activity.name,
+          categoryId: activity.category_id,
+          subcategoryId: activity.subcategory_id,
           duration: activity.duration_minutes.toString(),
           notes: activity.notes || "",
         });
@@ -222,19 +219,22 @@ export function ActivityModal({
       updateActivityMutation.mutate({
         id: activity.id,
         updates: {
-          category_id: formData.subcategoryId, // Use subcategoryId as category_id
+          name: nameValidation.sanitized,
+          category_id: formData.categoryId,
+          subcategory_id: formData.subcategoryId,
           duration_minutes: duration,
           notes: notesValidation.sanitized || null,
         }
       });
     } else {
-      // For new activities, only send the actual fields
       createActivity.mutate({
-        category_id: formData.subcategoryId, // Use subcategoryId as category_id
+        name: nameValidation.sanitized,
+        category_id: formData.categoryId,
+        subcategory_id: formData.subcategoryId,
         date_time: selectedDate.toISOString(),
         duration_minutes: duration,
         notes: notesValidation.sanitized || null,
-      } as any);
+      });
     }
   };
 
@@ -254,10 +254,7 @@ export function ActivityModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent 
-        className="sm:max-w-md"
-        aria-describedby="activity-modal-description"
-      >
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? 'Edit Activity' : 'Add Activity'}
@@ -268,9 +265,6 @@ export function ActivityModal({
             )}
           </DialogTitle>
         </DialogHeader>
-        <div id="activity-modal-description" className="sr-only">
-          {isEditing ? 'Edit an existing activity entry' : 'Create a new activity entry'} for the selected date.
-        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

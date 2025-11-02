@@ -2,7 +2,6 @@
 import { Card } from "@/components/ui/card";
 import { ProfileAvatar } from "./profile/ProfileAvatar";
 import { ProfileForm } from "./profile/ProfileForm";
-import { PasswordChangeForm } from "./profile/PasswordChangeForm";
 import { useProfileData } from "./profile/useProfileData";
 
 export const ProfileSettings = () => {
@@ -45,8 +44,6 @@ export const ProfileSettings = () => {
           />
         </div>
       </Card>
-
-      <PasswordChangeForm />
     </div>
   );
 };

@@ -18,14 +18,14 @@ export const useSecurityMonitoring = () => {
         event.type === 'data_access' ? 'data.unauthorized_access_attempt' :
         event.type === 'bulk_operation' ? 'data.bulk_operation' :
         'security.suspicious_activity',
-        user?.id,
         {
           event_details: {
             resource: event.resource,
             ...event.details,
           },
           risk_level: event.type === 'bulk_operation' ? 'medium' : 'low',
-        }
+        },
+        user?.id
       );
     } catch (error) {
       // Silent fail

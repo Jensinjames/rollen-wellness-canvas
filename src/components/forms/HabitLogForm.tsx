@@ -114,7 +114,15 @@ export function HabitLogForm({ onSuccess }: HabitLogFormProps) {
                 <SelectContent>
                   {activeHabits.map((habit) => (
                     <SelectItem key={habit.id} value={habit.id}>
-                      {habit.name}
+                      <div className="flex items-center gap-2">
+                        {habit.color && (
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: habit.color }}
+                          />
+                        )}
+                        {habit.name}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>

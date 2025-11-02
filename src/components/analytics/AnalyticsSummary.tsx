@@ -1,11 +1,10 @@
-
-import { memo, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, Target, TrendingUp, Calendar } from "lucide-react";
 import { useActivities } from "@/hooks/useActivities";
 import { useCategories } from "@/hooks/categories";
+import { useMemo } from "react";
 
-const AnalyticsSummary = memo(() => {
+export function AnalyticsSummary() {
   const { data: activities } = useActivities();
   const { data: categories } = useCategories();
 
@@ -15,8 +14,7 @@ const AnalyticsSummary = memo(() => {
         totalTimeThisWeek: 0,
         goalCompletionRate: 0,
         activeStreaks: 0,
-        categoriesTracked: 0,
-        isEmpty: true
+        categoriesTracked: 0
       };
     }
 
@@ -55,18 +53,15 @@ const AnalyticsSummary = memo(() => {
       ? (completedGoals / categoriesWithGoals.length) * 100 
       : 0;
 
-    const isEmpty = flatCategories.length === 0 && weekActivities.length === 0;
-
     return {
       totalTimeThisWeek: Math.round(totalTimeThisWeek / 60 * 10) / 10, // Convert to hours
       goalCompletionRate: Math.round(goalCompletionRate),
       activeStreaks: 3, // Placeholder - would need streak calculation logic
-      categoriesTracked: flatCategories.length,
-      isEmpty
+      categoriesTracked: flatCategories.length
     };
   }, [activities, categories]);
 
-  const summaryCards = useMemo(() => [
+  const summaryCards = [
     {
       title: "Total Time This Week",
       value: `${analytics.totalTimeThisWeek}h`,
@@ -99,15 +94,12 @@ const AnalyticsSummary = memo(() => {
       color: "text-orange-600",
       bgColor: "bg-orange-100"
     }
-  ], [analytics]);
+  ];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {summaryCards.map((card, index) => (
-        <Card 
-          key={index} 
-          className={`hover:shadow-md transition-shadow ${analytics.isEmpty ? 'opacity-60' : ''}`}
-        >
+        <Card key={index} className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               {card.title}
@@ -118,19 +110,10 @@ const AnalyticsSummary = memo(() => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{card.value}</div>
-            <p className="text-xs text-muted-foreground">
-              {analytics.isEmpty && index === 0 
-                ? "Start logging to see stats" 
-                : card.subtitle
-              }
-            </p>
+            <p className="text-xs text-muted-foreground">{card.subtitle}</p>
           </CardContent>
         </Card>
       ))}
     </div>
   );
-});
-
-AnalyticsSummary.displayName = 'AnalyticsSummary';
-
-export { AnalyticsSummary };
+}

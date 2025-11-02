@@ -1,183 +1,62 @@
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/UnifiedAuthContext';
-import { processSignIn, processSignUp, processPasswordReset, processPasswordUpdate } from '@/services/auth';
-import { useAuthForm } from '@/hooks/useAuthForm';
-import { SignInForm } from './forms/SignInForm';
-import { SignUpForm } from './forms/SignUpForm';
-import { ForgotPasswordForm } from './forms/ForgotPasswordForm';
-import { ResetPasswordForm } from './forms/ResetPasswordForm';
-import { AuthDebugPanel } from './AuthDebugPanel';
-import { AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export const AuthForm = () => {
-  const { signIn, signUp, resetPassword, updatePassword } = useAuth();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'forgot' | 'reset'>('signin');
-  
-  const {
-    isLoading,
-    error,
-    message,
-    passwordErrors,
-    setLoading,
-    setError,
-    setMessage,
-    setPasswordErrors,
-    clearMessages
-  } = useAuthForm();
+  const { signIn, signUp } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
-  // Check for password reset token in URL
-  useEffect(() => {
-    const accessToken = searchParams.get('access_token');
-    const refreshToken = searchParams.get('refresh_token');
-    const type = searchParams.get('type');
-    
-    if (accessToken && refreshToken && type === 'recovery') {
-      setAuthMode('reset');
-      clearMessages();
-    }
-  }, [searchParams, clearMessages]);
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>, isSignUp: boolean) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+    setMessage(null);
 
-  const handleSignIn = async (email: string, password: string) => {
-    setLoading(true);
-    clearMessages();
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
 
-    console.log('AuthForm: Starting sign in process for:', email);
-
-    const result = await processSignIn(
-      { email, password },
-      signIn
-    );
-
-    console.log('AuthForm: Sign in result:', result);
-
-    if (result.success) {
-      console.log('AuthForm: Sign in successful, navigating to home');
-      navigate('/', { replace: true });
-    } else {
-      console.error('AuthForm: Sign in failed:', result.error);
-      setError(result.error || 'Sign in failed');
-    }
-
-    setLoading(false);
-  };
-
-  const handleSignUp = async (email: string, password: string) => {
-    setLoading(true);
-    clearMessages();
-
-    const result = await processSignUp(
-      { email, password },
-      signUp
-    );
-
-    if (result.success) {
-      setMessage('Check your email for the confirmation link!');
-    } else {
-      setError(result.error || 'Sign up failed');
-      if (result.errors) {
-        setPasswordErrors(result.errors);
-      }
-    }
-
-    setLoading(false);
-  };
-
-  const handleForgotPassword = async (email: string) => {
-    setLoading(true);
-    clearMessages();
-
-    const result = await processPasswordReset(
-      { email },
-      resetPassword
-    );
-
-    if (result.success) {
-      setMessage('Check your email for the password reset link!');
-    } else {
-      setError(result.error || 'Password reset failed');
-    }
-
-    setLoading(false);
-  };
-
-
-  const handleResetPassword = async (password: string) => {
-    setLoading(true);
-    clearMessages();
-
-    if (!updatePassword) {
-      setError('Password update functionality is not available');
-      setLoading(false);
+    if (!email || !password) {
+      setError('Please fill in all fields');
+      setIsLoading(false);
       return;
     }
 
-    const result = await processPasswordUpdate(
-      { password },
-      updatePassword
-    );
-
-    if (result.success) {
-      setMessage('Password updated successfully! You can now sign in with your new password.');
-      // Redirect to home after successful password reset
-      setTimeout(() => {
-        navigate('/', { replace: true });
-      }, 2000);
-    } else {
-      setError(result.error || 'Password update failed');
-      if (result.errors) {
-        setPasswordErrors(result.errors);
-      }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      setIsLoading(false);
+      return;
     }
 
-    setLoading(false);
+    try {
+      const { error } = isSignUp 
+        ? await signUp(email, password)
+        : await signIn(email, password);
+
+      if (error) {
+        setError(error.message);
+      } else if (isSignUp) {
+        setMessage('Check your email for the confirmation link!');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
   };
-
-  const handleShowForgotPassword = () => {
-    setAuthMode('forgot');
-    clearMessages();
-  };
-
-  const handleBackToSignIn = () => {
-    setAuthMode('signin');
-    clearMessages();
-  };
-
-  if (authMode === 'forgot') {
-    return (
-      <ForgotPasswordForm
-        onSubmit={handleForgotPassword}
-        onBack={handleBackToSignIn}
-        isLoading={isLoading}
-        error={error}
-        message={message}
-      />
-    );
-  }
-
-  if (authMode === 'reset') {
-    return (
-      <ResetPasswordForm
-        onSubmit={handleResetPassword}
-        isLoading={isLoading}
-        error={error}
-        message={message}
-        passwordErrors={passwordErrors}
-      />
-    );
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
-      <div className="w-full max-w-6xl flex gap-8">
-        <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
             <span className="text-3xl">🎯</span>
@@ -196,50 +75,82 @@ export const AuthForm = () => {
             </TabsList>
             
             <TabsContent value="signin">
-              <SignInForm
-                onSubmit={handleSignIn}
-                onForgotPassword={handleShowForgotPassword}
-                isLoading={isLoading}
-              />
+              <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signin-email">Email</Label>
+                  <Input
+                    id="signin-email"
+                    name="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signin-password">Password</Label>
+                  <Input
+                    id="signin-password"
+                    name="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Sign In
+                </Button>
+              </form>
             </TabsContent>
             
             <TabsContent value="signup">
-              <SignUpForm
-                onSubmit={handleSignUp}
-                isLoading={isLoading}
-                passwordErrors={passwordErrors}
-              />
+              <form onSubmit={(e) => handleSubmit(e, true)} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signup-email">Email</Label>
+                  <Input
+                    id="signup-email"
+                    name="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-password">Password</Label>
+                  <Input
+                    id="signup-password"
+                    name="password"
+                    type="password"
+                    placeholder="Create a password (min 6 characters)"
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Sign Up
+                </Button>
+              </form>
             </TabsContent>
           </Tabs>
-
+          
           {error && (
             <Alert variant="destructive" className="mt-4">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                <div className="space-y-1">
-                  <div className="font-medium">Sign In Error</div>
-                  <div className="text-sm">{error}</div>
-                  {error.includes('Invalid email or password') && (
-                    <div className="text-xs mt-2 text-muted-foreground">
-                      Don't have an account? Switch to the Sign Up tab.
-                    </div>
-                  )}
-                </div>
-              </AlertDescription>
+              <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
           
           {message && (
             <Alert className="mt-4">
-              <AlertDescription>
-                <div className="font-medium text-sm">{message}</div>
-              </AlertDescription>
+              <AlertDescription>{message}</AlertDescription>
             </Alert>
           )}
-          <AuthDebugPanel />
         </CardContent>
       </Card>
-      </div>
     </div>
   );
 };

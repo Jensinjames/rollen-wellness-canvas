@@ -7,15 +7,17 @@ import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { useCategories } from "@/hooks/categories";
 import { useCreateActivity } from "@/hooks/useActivities";
-import { useAuth } from "@/contexts/UnifiedAuthContext";
+import { validateNumber } from "@/utils/validation";
+import { logResourceEvent } from "@/utils/auditLog";
+import { useAuth } from "@/contexts/AuthContext";
+import { format } from "date-fns";
 import { BooleanGoalCheckbox } from "./BooleanGoalCheckbox";
 import { CategorySelector } from "./activity/CategorySelector";
 import { DateTimeInput } from "./activity/DateTimeInput";
 import { DurationInput } from "./activity/DurationInput";
 import { NotesInput } from "./activity/NotesInput";
 import { GoalValidationAlert } from "./activity/GoalValidationAlert";
-import { ActivityService } from "@/services";
-import type { ActivityFormData } from "@/services";
+import { ActivityFormData, validateActivityForm } from "./activity/ActivityFormValidation";
 
 const activitySchema = z.object({
   category_id: z.string().min(1, "Parent category is required"),
@@ -37,19 +39,26 @@ export function RefactoredActivityEntryForm({ onSuccess, preselectedCategoryId }
   const createActivity = useCreateActivity();
   const [loading, setLoading] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState(preselectedCategoryId || "");
-  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [colorValidationError, setColorValidationError] = useState("");
 
   const form = useForm<ActivityFormData>({
     resolver: zodResolver(activitySchema),
-    defaultValues: ActivityService.createDefaultFormData(preselectedCategoryId),
+    defaultValues: {
+      category_id: preselectedCategoryId || "",
+      subcategory_id: "",
+      date_time: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+      duration_minutes: 30,
+      is_completed: false,
+      notes: "",
+    },
   });
 
-  // Get category relationships using service
-  const { parentCategories, selectedParentCategory, availableSubcategories } = 
-    ActivityService.getCategoryRelationships(categories, selectedCategoryId);
-
-  // Check if categories exist
-  const hasCategories = parentCategories.length > 0;
+  // Get available parent categories (level 0)
+  const parentCategories = categories?.filter(cat => cat.level === 0 && cat.is_active) || [];
+  
+  // Get subcategories for selected parent
+  const selectedParentCategory = parentCategories.find(cat => cat.id === selectedCategoryId);
+  const availableSubcategories = selectedParentCategory?.children?.filter(sub => sub.is_active) || [];
 
   // Get selected subcategory to determine goal type
   const selectedSubcategoryId = form.watch("subcategory_id");
@@ -62,33 +71,50 @@ export function RefactoredActivityEntryForm({ onSuccess, preselectedCategoryId }
 
   const onSubmit = async (data: ActivityFormData) => {
     setLoading(true);
-    setValidationErrors([]);
-
     try {
-      // Use service to prepare submission data
-      const result = ActivityService.prepareSubmissionData(
-        data, 
-        goalType, 
-        parentCategories, 
-        availableSubcategories
-      );
+      // Validate using the extracted validation function
+      const validation = validateActivityForm(data, goalType, parentCategories, availableSubcategories);
+      if (!validation.isValid) {
+        setColorValidationError(validation.error || "");
+        setLoading(false);
+        return;
+      }
+      setColorValidationError("");
 
-      if (!result.success) {
-        setValidationErrors(result.errors || [result.error || 'Validation failed']);
+      // Validate duration
+      const durationValidation = validateNumber(data.duration_minutes, { 
+        min: 0, 
+        max: 1440, 
+        integer: true, 
+        required: goalType === 'time' 
+      });
+      if (!durationValidation.isValid) {
+        form.setError("duration_minutes", { message: durationValidation.error });
         setLoading(false);
         return;
       }
 
-      // Submit the activity - result.data already has correct shape with user_id, start_time, end_time
-      await createActivity.mutateAsync(result.data! as any);
+      await createActivity.mutateAsync({
+        category_id: data.category_id,
+        subcategory_id: data.subcategory_id,
+        name: `${selectedParentCategory?.name} - ${availableSubcategories.find(sub => sub.id === data.subcategory_id)?.name}`,
+        date_time: new Date(data.date_time).toISOString(),
+        duration_minutes: goalType === 'boolean' && !data.duration_minutes ? 0 : (durationValidation.value || 0),
+        is_completed: data.is_completed || false,
+        notes: data.notes || undefined,
+      });
 
       // Log the activity creation
-      ActivityService.logActivityCreation(user?.id || '', result.data!, goalType);
+      logResourceEvent('activity.create', user?.id || '', data.category_id, {
+        subcategory_id: data.subcategory_id,
+        duration_minutes: durationValidation.value || 0,
+        is_completed: data.is_completed,
+        goal_type: goalType,
+      });
 
       onSuccess();
     } catch (error) {
       console.error("Error creating activity:", error);
-      setValidationErrors(['An unexpected error occurred while creating the activity']);
     } finally {
       setLoading(false);
     }
@@ -98,19 +124,21 @@ export function RefactoredActivityEntryForm({ onSuccess, preselectedCategoryId }
     setSelectedCategoryId(categoryId);
     form.setValue("category_id", categoryId);
     form.setValue("subcategory_id", ""); // Reset subcategory when parent changes
-    setValidationErrors([]);
+    setColorValidationError("");
   };
 
   const handleSubcategoryChange = (subcategoryId: string) => {
     form.setValue("subcategory_id", subcategoryId);
-    
-    // Apply goal type defaults using service
-    const updates = ActivityService.getGoalTypeDefaults(goalType, form.getValues());
-    Object.entries(updates).forEach(([key, value]) => {
-      form.setValue(key as keyof ActivityFormData, value);
-    });
-    
-    setValidationErrors([]);
+    // Reset form values when goal type changes
+    if (goalType === 'boolean') {
+      form.setValue("duration_minutes", 0);
+    } else if (goalType === 'time') {
+      form.setValue("is_completed", false);
+      if (form.getValues("duration_minutes") === 0) {
+        form.setValue("duration_minutes", 30);
+      }
+    }
+    setColorValidationError("");
   };
 
   const handleQuickDurationSelect = (minutes: number) => {
@@ -118,34 +146,17 @@ export function RefactoredActivityEntryForm({ onSuccess, preselectedCategoryId }
   };
 
   const isFormValid = () => {
-    return ActivityService.isFormReady(
-      form.getValues(), 
-      goalType, 
-      parentCategories, 
-      availableSubcategories, 
-      loading
-    );
+    const validation = validateActivityForm(form.getValues(), goalType, parentCategories, availableSubcategories);
+    return !loading && selectedCategoryId && availableSubcategories.length > 0 && validation.isValid;
   };
 
   const getBooleanGoalLabel = () => {
-    return ActivityService.getBooleanGoalLabel(selectedSubcategory);
+    return selectedSubcategory?.boolean_goal_label || "Mark as Complete";
   };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {/* No Categories Warning */}
-        {!hasCategories && (
-          <div className="p-4 border border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-900 rounded-lg">
-            <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium">
-              You need to create categories before logging activities.
-            </p>
-            <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-              Click "Manage Categories" in the header to get started.
-            </p>
-          </div>
-        )}
-
         {/* Desktop: Two-column grid, Mobile: Single column */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <DateTimeInput control={form.control} />
@@ -181,7 +192,7 @@ export function RefactoredActivityEntryForm({ onSuccess, preselectedCategoryId }
           goalType={goalType}
           durationMinutes={durationMinutes}
           isCompleted={isCompleted}
-          colorValidationError={validationErrors.join('. ')}
+          colorValidationError={colorValidationError}
         />
 
         {/* Notes - Full width */}
@@ -190,7 +201,7 @@ export function RefactoredActivityEntryForm({ onSuccess, preselectedCategoryId }
         <div className="flex justify-end gap-2 pt-4">
           <Button 
             type="submit" 
-            disabled={!hasCategories || !isFormValid()}
+            disabled={!isFormValid()}
             className="bg-blue-500 hover:bg-blue-600"
           >
             {loading ? "Logging Time..." : "Log Time"}

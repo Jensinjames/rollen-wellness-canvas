@@ -3,8 +3,15 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Clock, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
-import { ActivityUpdateNotification } from '@/types/activity';
 
+interface ActivityUpdateNotification {
+  id: string;
+  categoryName: string;
+  subcategoryName: string;
+  duration: number;
+  timestamp: string;
+  color: string;
+}
 
 interface AnimatedDashboardUpdatesProps {
   onNewActivity?: (activity: ActivityUpdateNotification) => void;

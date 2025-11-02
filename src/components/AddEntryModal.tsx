@@ -44,19 +44,13 @@ export function AddEntryModal({ open, onOpenChange, preselectedCategoryId }: Add
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent 
-          className="max-w-2xl max-h-[90vh] overflow-y-auto"
-          aria-describedby="activity-form-description"
-        >
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Plus className="h-5 w-5" />
               Log Time & Activities
             </DialogTitle>
           </DialogHeader>
-          <div id="activity-form-description" className="sr-only">
-            Use this form to log your activities and track your time across different categories.
-          </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-3">

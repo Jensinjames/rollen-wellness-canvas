@@ -1,13 +1,43 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/UnifiedAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Activity } from '@/types/activity';
 
-// Re-export for backward compatibility
-export type { Activity };
-
+export interface Activity {
+  id: string;
+  category_id: string;
+  subcategory_id: string;
+  name: string;
+  date_time: string;
+  duration_minutes: number;
+  is_completed?: boolean;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  categories?: {
+    id: string;
+    name: string;
+    color: string;
+    level: number;
+    path: string[];
+    parent_id?: string;
+    parent?: {
+      id: string;
+      name: string;
+      color: string;
+    };
+  };
+  subcategories?: {
+    id: string;
+    name: string;
+    color: string;
+    level: number;
+    parent_id: string;
+    goal_type?: string;
+    boolean_goal_label?: string;
+  };
+}
 
 export const useActivities = () => {
   const { user } = useAuth();
@@ -21,40 +51,58 @@ export const useActivities = () => {
       const { data: activities, error: activitiesError } = await supabase
         .from('activities')
         .select('*')
-        .order('start_time', { ascending: false });
+        .order('date_time', { ascending: false });
 
       if (activitiesError) throw activitiesError;
       if (!activities) return [];
 
-      // Get all unique category IDs
+      // Get all unique category and subcategory IDs
       const categoryIds = [...new Set(activities.map(a => a.category_id))];
+      const subcategoryIds = [...new Set(activities.map(a => a.subcategory_id).filter(Boolean))];
 
       // Fetch categories
       const { data: categories, error: categoriesError } = await supabase
         .from('categories')
         .select('*')
-        .in('id', categoryIds);
+        .in('id', [...categoryIds, ...subcategoryIds]);
 
       if (categoriesError) throw categoriesError;
 
-      // Create lookup map
+      // Create lookup maps
       const categoryMap = new Map(categories?.map(cat => [cat.id, cat]) || []);
 
       // Transform activities with category data
       return activities.map(activity => {
         const category = categoryMap.get(activity.category_id);
-        const parent = category?.parent_id ? categoryMap.get(category.parent_id) : undefined;
+        const subcategory = categoryMap.get(activity.subcategory_id);
+        
+        // Get parent category for subcategory if it exists
+        const parent = subcategory?.parent_id ? categoryMap.get(subcategory.parent_id) : undefined;
 
         return {
           ...activity,
-          category: category ? {
+          categories: category ? {
             id: category.id,
             name: category.name,
             color: category.color,
             level: category.level,
+            path: category.path || [],
             parent_id: category.parent_id,
+            parent: parent ? {
+              id: parent.id,
+              name: parent.name,
+              color: parent.color,
+            } : undefined,
           } : undefined,
-          subcategory: category?.level === 1 ? category : undefined,
+          subcategories: subcategory ? {
+            id: subcategory.id,
+            name: subcategory.name,
+            color: subcategory.color,
+            level: subcategory.level,
+            parent_id: subcategory.parent_id,
+            goal_type: subcategory.goal_type,
+            boolean_goal_label: subcategory.boolean_goal_label,
+          } : undefined,
         };
       });
     },
@@ -82,28 +130,43 @@ export const useCreateActivity = () => {
 
       if (activityError) throw activityError;
 
-      // Fetch category data
-      const { data: categories, error: categoriesError} = await supabase
+      // Fetch category and subcategory data
+      const { data: categories, error: categoriesError } = await supabase
         .from('categories')
         .select('*')
-        .in('id', [activity.category_id]);
+        .in('id', [activity.category_id, activity.subcategory_id].filter(Boolean));
 
       if (categoriesError) throw categoriesError;
 
       const categoryMap = new Map(categories?.map(cat => [cat.id, cat]) || []);
       const category = categoryMap.get(activity.category_id);
-      const parent = category?.parent_id ? categoryMap.get(category.parent_id) : undefined;
+      const subcategory = categoryMap.get(activity.subcategory_id);
+      const parent = subcategory?.parent_id ? categoryMap.get(subcategory.parent_id) : undefined;
 
       return {
         ...activity,
-        category: category ? {
+        categories: category ? {
           id: category.id,
           name: category.name,
           color: category.color,
           level: category.level,
+          path: category.path || [],
           parent_id: category.parent_id,
+          parent: parent ? {
+            id: parent.id,
+            name: parent.name,
+            color: parent.color,
+          } : undefined,
         } : undefined,
-        subcategory: category?.level === 1 ? category : undefined,
+        subcategories: subcategory ? {
+          id: subcategory.id,
+          name: subcategory.name,
+          color: subcategory.color,
+          level: subcategory.level,
+          parent_id: subcategory.parent_id,
+          goal_type: subcategory.goal_type,
+          boolean_goal_label: subcategory.boolean_goal_label,
+        } : undefined,
       };
     },
     onSuccess: (data) => {
@@ -111,15 +174,16 @@ export const useCreateActivity = () => {
       queryClient.invalidateQueries({ queryKey: ['category-activity-data'] });
       
       // Trigger animated update notification
-      if (data.category) {
+      if (data.categories && data.subcategories) {
         const updateEvent = new CustomEvent('activityLogged', {
           detail: {
             id: data.id,
-            categoryName: data.category.parent_id && parent ? parent.name : data.category.name,
-            subcategoryName: data.subcategory?.name || data.category.name,
+            categoryName: data.categories.name,
+            subcategoryName: data.subcategories.name,
             duration: data.duration_minutes,
+            isCompleted: data.is_completed,
             timestamp: data.date_time,
-            color: data.category.color,
+            color: data.subcategories.color,
           }
         });
         window.dispatchEvent(updateEvent);
