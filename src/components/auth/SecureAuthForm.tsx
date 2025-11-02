@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Eye, EyeOff, Shield } from 'lucide-react';
 import { validatePasswordStrength } from '@/utils/securityConfig';
-import { rateLimiter } from '@/utils/rateLimiter';
 import { securityLogger } from '@/utils/enhancedSecurityLogger';
 
 export const SecureAuthForm = () => {
@@ -35,18 +34,31 @@ export const SecureAuthForm = () => {
     setLoading(true);
 
     try {
-      // Check rate limiting
+      // Check rate limiting via database function
       const identifier = email || 'anonymous';
-      const rateCheck = rateLimiter.checkRateLimit(identifier, 5, 60000);
-      
-      if (!rateCheck.allowed) {
-        const resetTime = rateCheck.resetTime ? new Date(rateCheck.resetTime).toLocaleTimeString() : 'soon';
-        toast.error(`Too many attempts. Please try again at ${resetTime}`);
-        await securityLogger.logAuthEvent('auth.login.rate_limited', undefined, { 
-          email, 
-          remaining_attempts: rateCheck.remainingAttempts 
+      const { data: rateLimitData, error: rateLimitError } = await supabase
+        .rpc('check_rate_limit', {
+          identifier: identifier,
+          max_requests: 5,
+          window_seconds: 60
         });
-        return;
+
+      if (rateLimitError) {
+        console.error('Rate limit check error:', rateLimitError);
+        // Continue with auth attempt if rate limit check fails (fail open for availability)
+      } else if (rateLimitData) {
+        const result = rateLimitData as { allowed: boolean; remaining: number; reset_at?: number };
+        if (!result.allowed) {
+          const resetTime = result.reset_at 
+            ? new Date(result.reset_at * 1000).toLocaleTimeString()
+            : 'soon';
+          toast.error(`Too many attempts. Account locked until ${resetTime}`);
+          await securityLogger.logAuthEvent('auth.login.rate_limited', undefined, { 
+            email, 
+            remaining_attempts: 0
+          });
+          return;
+        }
       }
 
       if (!email || !password) {
@@ -87,16 +99,12 @@ export const SecureAuthForm = () => {
       }
 
       if (result.error) {
-        rateLimiter.recordFailedAttempt(identifier);
         await securityLogger.logAuthEvent('auth.login.failure', undefined, {
           email,
           error: result.error.message,
-          remaining_attempts: rateCheck.remainingAttempts - 1,
         });
         toast.error(result.error.message);
       } else {
-        rateLimiter.recordSuccessfulAttempt(identifier);
-        
         if (isLogin) {
           await securityLogger.logAuthEvent('auth.login.success', result.data.user?.id, { email });
           toast.success('Welcome back!');
@@ -107,7 +115,6 @@ export const SecureAuthForm = () => {
       }
     } catch (error) {
       console.error('Authentication error:', error);
-      rateLimiter.recordFailedAttempt(email || 'anonymous');
       await securityLogger.logAuthEvent('auth.login.failure', undefined, {
         email,
         error: error instanceof Error ? error.message : 'Unknown error',
