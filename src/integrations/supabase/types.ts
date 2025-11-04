@@ -7,49 +7,58 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.5"
+  }
   public: {
     Tables: {
       activities: {
         Row: {
           category_id: string
-          created_at: string | null
-          date_time: string
+          created_at: string
+          date_time: string | null
           duration_minutes: number
+          end_time: string
           id: string
-          is_completed: boolean | null
-          name: string
           notes: string | null
-          subcategory_id: string | null
-          updated_at: string | null
+          start_time: string
+          updated_at: string
           user_id: string
         }
         Insert: {
           category_id: string
-          created_at?: string | null
-          date_time: string
+          created_at?: string
+          date_time?: string | null
           duration_minutes: number
+          end_time: string
           id?: string
-          is_completed?: boolean | null
-          name: string
           notes?: string | null
-          subcategory_id?: string | null
-          updated_at?: string | null
+          start_time: string
+          updated_at?: string
           user_id: string
         }
         Update: {
           category_id?: string
-          created_at?: string | null
-          date_time?: string
+          created_at?: string
+          date_time?: string | null
           duration_minutes?: number
+          end_time?: string
           id?: string
-          is_completed?: boolean | null
-          name?: string
           notes?: string | null
-          subcategory_id?: string | null
-          updated_at?: string | null
+          start_time?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "activities_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "activity_streaks"
+            referencedColumns: ["category_id"]
+          },
           {
             foreignKeyName: "activities_category_id_fkey"
             columns: ["category_id"]
@@ -58,11 +67,18 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_activities_subcategory"
-            columns: ["subcategory_id"]
+            foreignKeyName: "activities_category_id_fkey"
+            columns: ["category_id"]
             isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
+            referencedRelation: "category_totals"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "activities_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "goal_deficiencies"
+            referencedColumns: ["category_id"]
           },
         ]
       }
@@ -70,57 +86,54 @@ export type Database = {
         Row: {
           boolean_goal_label: string | null
           color: string
-          created_at: string | null
+          created_at: string
           daily_time_goal_minutes: number | null
           description: string | null
           goal_type: string
           id: string
-          is_active: boolean | null
+          is_active: boolean
           is_boolean_goal: boolean
           level: number
-          name: string | null
+          name: string
           parent_id: string | null
-          path: string[] | null
-          sort_order: number | null
-          updated_at: string | null
+          sort_order: number
+          updated_at: string
           user_id: string
           weekly_time_goal_minutes: number | null
         }
         Insert: {
           boolean_goal_label?: string | null
           color?: string
-          created_at?: string | null
+          created_at?: string
           daily_time_goal_minutes?: number | null
           description?: string | null
           goal_type?: string
           id?: string
-          is_active?: boolean | null
+          is_active?: boolean
           is_boolean_goal?: boolean
           level?: number
-          name?: string | null
+          name: string
           parent_id?: string | null
-          path?: string[] | null
-          sort_order?: number | null
-          updated_at?: string | null
+          sort_order?: number
+          updated_at?: string
           user_id: string
           weekly_time_goal_minutes?: number | null
         }
         Update: {
           boolean_goal_label?: string | null
           color?: string
-          created_at?: string | null
+          created_at?: string
           daily_time_goal_minutes?: number | null
           description?: string | null
           goal_type?: string
           id?: string
-          is_active?: boolean | null
+          is_active?: boolean
           is_boolean_goal?: boolean
           level?: number
-          name?: string | null
+          name?: string
           parent_id?: string | null
-          path?: string[] | null
-          sort_order?: number | null
-          updated_at?: string | null
+          sort_order?: number
+          updated_at?: string
           user_id?: string
           weekly_time_goal_minutes?: number | null
         }
@@ -129,77 +142,86 @@ export type Database = {
             foreignKeyName: "categories_parent_id_fkey"
             columns: ["parent_id"]
             isOneToOne: false
+            referencedRelation: "activity_streaks"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
             referencedRelation: "categories"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "category_totals"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "goal_deficiencies"
+            referencedColumns: ["category_id"]
           },
         ]
       }
       daily_scores: {
         Row: {
           created_at: string
-          daily_score_percentage: number | null
-          health_balance_percentage: number | null
           id: string
-          motivation_level_percentage: number | null
+          notes: string | null
+          overall_score: number
           score_date: string
-          sleep_score_percentage: number | null
-          updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
-          daily_score_percentage?: number | null
-          health_balance_percentage?: number | null
           id?: string
-          motivation_level_percentage?: number | null
+          notes?: string | null
+          overall_score: number
           score_date: string
-          sleep_score_percentage?: number | null
-          updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
-          daily_score_percentage?: number | null
-          health_balance_percentage?: number | null
           id?: string
-          motivation_level_percentage?: number | null
+          notes?: string | null
+          overall_score?: number
           score_date?: string
-          sleep_score_percentage?: number | null
-          updated_at?: string
           user_id?: string
         }
         Relationships: []
       }
       habit_logs: {
         Row: {
-          actual_value: number | null
-          completed: boolean | null
-          created_at: string | null
+          created_at: string
           habit_id: string
           id: string
           log_date: string
           notes: string | null
           user_id: string
+          value: number
         }
         Insert: {
-          actual_value?: number | null
-          completed?: boolean | null
-          created_at?: string | null
+          created_at?: string
           habit_id: string
           id?: string
           log_date: string
           notes?: string | null
           user_id: string
+          value: number
         }
         Update: {
-          actual_value?: number | null
-          completed?: boolean | null
-          created_at?: string | null
+          created_at?: string
           habit_id?: string
           id?: string
           log_date?: string
           notes?: string | null
           user_id?: string
+          value?: number
         }
         Relationships: [
           {
@@ -213,163 +235,143 @@ export type Database = {
       }
       habits: {
         Row: {
-          category_id: string | null
-          color: string | null
-          created_at: string | null
-          frequency_days: number[] | null
-          frequency_type: Database["public"]["Enums"]["frequency_type"] | null
+          created_at: string
+          description: string | null
           id: string
-          is_active: boolean | null
+          is_active: boolean
           name: string
           target_unit: string | null
           target_value: number | null
-          updated_at: string | null
+          updated_at: string
           user_id: string
         }
         Insert: {
-          category_id?: string | null
-          color?: string | null
-          created_at?: string | null
-          frequency_days?: number[] | null
-          frequency_type?: Database["public"]["Enums"]["frequency_type"] | null
+          created_at?: string
+          description?: string | null
           id?: string
-          is_active?: boolean | null
+          is_active?: boolean
           name: string
           target_unit?: string | null
           target_value?: number | null
-          updated_at?: string | null
+          updated_at?: string
           user_id: string
         }
         Update: {
-          category_id?: string | null
-          color?: string | null
-          created_at?: string | null
-          frequency_days?: number[] | null
-          frequency_type?: Database["public"]["Enums"]["frequency_type"] | null
+          created_at?: string
+          description?: string | null
           id?: string
-          is_active?: boolean | null
+          is_active?: boolean
           name?: string
           target_unit?: string | null
           target_value?: number | null
-          updated_at?: string | null
+          updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "habits_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       profiles: {
         Row: {
           avatar_url: string | null
-          created_at: string | null
-          display_name: string
+          created_at: string
+          display_name: string | null
           id: string
-          preferences: Json | null
           sleep_preferences: Json | null
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
           avatar_url?: string | null
-          created_at?: string | null
-          display_name?: string
+          created_at?: string
+          display_name?: string | null
           id: string
-          preferences?: Json | null
           sleep_preferences?: Json | null
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
           avatar_url?: string | null
-          created_at?: string | null
-          display_name?: string
+          created_at?: string
+          display_name?: string | null
           id?: string
-          preferences?: Json | null
           sleep_preferences?: Json | null
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
-      security_audit_log: {
+      security_audit_logs: {
         Row: {
           created_at: string
-          details: Json | null
+          event_details: Json | null
           event_type: string
           id: string
           ip_address: string | null
           user_agent: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string
-          details?: Json | null
+          event_details?: Json | null
           event_type: string
           id?: string
           ip_address?: string | null
           user_agent?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string
-          details?: Json | null
+          event_details?: Json | null
           event_type?: string
           id?: string
           ip_address?: string | null
           user_agent?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      sleep_entries: {
-        Row: {
-          bedtime: string | null
-          created_at: string
-          id: string
-          notes: string | null
-          sleep_date: string
-          sleep_duration_minutes: number
-          sleep_quality: number | null
-          updated_at: string
-          user_id: string
-          wake_time: string | null
-        }
-        Insert: {
-          bedtime?: string | null
-          created_at?: string
-          id?: string
-          notes?: string | null
-          sleep_date: string
-          sleep_duration_minutes: number
-          sleep_quality?: number | null
-          updated_at?: string
-          user_id: string
-          wake_time?: string | null
-        }
-        Update: {
-          bedtime?: string | null
-          created_at?: string
-          id?: string
-          notes?: string | null
-          sleep_date?: string
-          sleep_duration_minutes?: number
-          sleep_quality?: number | null
-          updated_at?: string
           user_id?: string
-          wake_time?: string | null
         }
         Relationships: []
       }
     }
     Views: {
-      [_ in never]: never
+      activity_streaks: {
+        Row: {
+          category_id: string | null
+          category_name: string | null
+          color: string | null
+          streak_end: string | null
+          streak_length: number | null
+          streak_start: string | null
+          total_streak_minutes: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      category_totals: {
+        Row: {
+          category_id: string | null
+          category_name: string | null
+          color: string | null
+          daily_time_goal_minutes: number | null
+          total_minutes_today: number | null
+          total_minutes_week: number | null
+          user_id: string | null
+          weekly_time_goal_minutes: number | null
+        }
+        Relationships: []
+      }
+      goal_deficiencies: {
+        Row: {
+          category_id: string | null
+          category_name: string | null
+          color: string | null
+          daily_deficiency: number | null
+          deficiency_date: string | null
+          is_daily_behind: boolean | null
+          is_weekly_behind: boolean | null
+          user_id: string | null
+          weekly_deficiency: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       cascade_delete_category: {
-        Args: { category_id_param: string; user_id_param: string }
+        Args: { category_id: string }
         Returns: undefined
       }
       check_rate_limit: {
@@ -380,26 +382,23 @@ export type Database = {
         }
         Returns: Json
       }
-      detect_suspicious_patterns: {
-        Args: { user_id_param: string }
-        Returns: boolean
-      }
-      is_owner: {
-        Args: { resource_user_id: string }
-        Returns: boolean
-      }
+      is_owner: { Args: { resource_user_id: string }; Returns: boolean }
       log_security_event: {
-        Args: { event_type: string; user_id?: string; details?: Json }
-        Returns: undefined
+        Args: {
+          p_event_details?: Json
+          p_event_type: string
+          p_ip_address?: string
+          p_user_agent?: string
+        }
+        Returns: string
       }
       seed_default_categories: {
-        Args: { user_id_param: string }
+        Args: { p_user_id: string }
         Returns: undefined
       }
     }
     Enums: {
-      app_role: "admin" | "user"
-      frequency_type: "daily" | "weekly" | "custom"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -407,21 +406,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -439,14 +442,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -462,14 +467,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -485,14 +492,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -500,23 +509,22 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
   public: {
-    Enums: {
-      app_role: ["admin", "user"],
-      frequency_type: ["daily", "weekly", "custom"],
-    },
+    Enums: {},
   },
 } as const

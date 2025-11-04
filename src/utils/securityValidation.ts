@@ -14,7 +14,7 @@ export interface SecurityValidationResult {
   securityRisk?: 'low' | 'medium' | 'high';
 }
 
-// XSS prevention patterns
+// XSS prevention patterns - Focus on actual script injection threats
 const XSS_PATTERNS = [
   /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
   /javascript:/gi,
@@ -26,12 +26,10 @@ const XSS_PATTERNS = [
   /<meta\b[^>]*>/gi,
 ];
 
-// SQL injection patterns
-const SQL_INJECTION_PATTERNS = [
-  /('|(\\')|(;)|(\\;)|(select)|(insert)|(update)|(delete)|(drop)|(create)|(alter)|(exec)|(execute)|(union)|(script))/gi,
-  /-{2,}/g, // SQL comments
-  /\/\*[\s\S]*?\*\//g, // Multi-line comments
-];
+// Note: SQL injection patterns removed - Supabase uses parameterized queries
+// which prevents SQL injection. These patterns were blocking legitimate content
+// like "Please select your preference" or "Create a new category"
+const SQL_INJECTION_PATTERNS: RegExp[] = [];
 
 // Enhanced input sanitization
 export const advancedSanitizeInput = (input: string): SecurityValidationResult => {
@@ -53,23 +51,15 @@ export const advancedSanitizeInput = (input: string): SecurityValidationResult =
     }
   }
 
-  // Check for SQL injection patterns
-  for (const pattern of SQL_INJECTION_PATTERNS) {
-    if (pattern.test(sanitized)) {
-      return {
-        isValid: false,
-        error: 'Input contains potentially dangerous SQL patterns',
-        securityRisk: 'high'
-      };
-    }
-  }
+  // SQL injection check removed - Supabase client uses parameterized queries
+  // No need to block legitimate content containing words like "select", "create", etc.
 
-  // Remove potentially dangerous characters
+  // Remove only dangerous characters that could enable XSS
   sanitized = sanitized
-    .replace(/[<>]/g, '') // Remove angle brackets
+    .replace(/[<>]/g, '') // Remove angle brackets (prevent HTML injection)
     .replace(/javascript:/gi, '') // Remove javascript protocols
-    .replace(/on\w+=/gi, '') // Remove event handlers
-    .replace(/['"]/g, ''); // Remove quotes to prevent injection
+    .replace(/on\w+=/gi, ''); // Remove event handlers
+    // Note: Quotes not removed - React JSX escapes output automatically
 
   // Check for excessive length (potential DoS)
   if (sanitized.length > 2000) {
@@ -181,18 +171,7 @@ export const secureValidateNumber = (
     return { isValid: true, value: null };
   }
 
-  // Convert to string for security check
-  const stringInput = String(input);
-  
-  // Check for injection patterns in number input
-  if (SQL_INJECTION_PATTERNS.some(pattern => pattern.test(stringInput))) {
-    return {
-      isValid: false,
-      value: null,
-      error: 'Invalid number format',
-      securityRisk: 'high'
-    };
-  }
+  // No SQL injection check needed - numbers are type-validated below
 
   const num = typeof input === 'string' ? parseFloat(input) : input;
 
