@@ -127,12 +127,15 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     try {
       const finalElapsedMinutes = Math.max(1, Math.round(elapsedTime / 60)); // Minimum 1 minute
+      const now = currentSession.startTime;
+      const endTime = new Date(now.getTime() + finalElapsedMinutes * 60000);
       
       await createActivity.mutateAsync({
-        name: `${currentSession.categoryName} - ${currentSession.subcategoryName}`,
+        user_id: '',
         category_id: currentSession.categoryId,
-        subcategory_id: currentSession.subcategoryId,
-        date_time: currentSession.startTime.toISOString(),
+        start_time: now.toISOString(),
+        end_time: endTime.toISOString(),
+        date_time: now.toISOString(),
         duration_minutes: finalElapsedMinutes,
         notes: currentSession.notes || undefined,
       });

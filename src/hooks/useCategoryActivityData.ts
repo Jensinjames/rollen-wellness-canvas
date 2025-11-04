@@ -38,16 +38,22 @@ export const useCategoryActivityData = () => {
       };
     });
 
-    // Process activities with new category/subcategory structure
+    // Process activities - categories can be parent or child level
     activities.forEach(activity => {
-      if (!activity.category_id || !activity.subcategory_id) {
-        console.warn('Activity missing required category or subcategory:', activity);
+      if (!activity.category_id) {
         return;
       }
 
       const activityDate = new Date(activity.date_time);
       const duration = activity.duration_minutes;
-      const parentId = activity.category_id;
+      
+      // Find the category for this activity
+      const category = categories.find(c => c.id === activity.category_id);
+      if (!category) return;
+      
+      // Determine parent category ID
+      const parentId = category.level === 0 ? category.id : category.parent_id;
+      if (!parentId) return;
 
       // Ensure parent category data exists
       if (!data[parentId]) {
@@ -63,9 +69,11 @@ export const useCategoryActivityData = () => {
       // Add to parent category totals
       data[parentId].totalTime += duration;
       
-      // Track subcategory time
-      data[parentId].subcategoryTimes[activity.subcategory_id] = 
-        (data[parentId].subcategoryTimes[activity.subcategory_id] || 0) + duration;
+      // Track subcategory time if this is a child category
+      if (category.level === 1) {
+        data[parentId].subcategoryTimes[activity.category_id] = 
+          (data[parentId].subcategoryTimes[activity.category_id] || 0) + duration;
+      }
 
       // Add daily time
       if (activityDate >= startOfToday && activityDate <= endOfToday) {

@@ -73,9 +73,9 @@ export function ActivityModal({
     if (isOpen) {
       if (isEditing && activity) {
         setFormData({
-          name: activity.name,
+          name: activity.categories?.name || '',
           categoryId: activity.category_id,
-          subcategoryId: activity.subcategory_id,
+          subcategoryId: '',
           duration: activity.duration_minutes.toString(),
           notes: activity.notes || "",
         });
@@ -219,18 +219,20 @@ export function ActivityModal({
       updateActivityMutation.mutate({
         id: activity.id,
         updates: {
-          name: nameValidation.sanitized,
           category_id: formData.categoryId,
-          subcategory_id: formData.subcategoryId,
           duration_minutes: duration,
           notes: notesValidation.sanitized || null,
         }
       });
     } else {
+      const now = selectedDate;
+      const endTime = new Date(now.getTime() + duration * 60000);
+      
       createActivity.mutate({
-        name: nameValidation.sanitized,
+        user_id: '',
         category_id: formData.categoryId,
-        subcategory_id: formData.subcategoryId,
+        start_time: now.toISOString(),
+        end_time: endTime.toISOString(),
         date_time: selectedDate.toISOString(),
         duration_minutes: duration,
         notes: notesValidation.sanitized || null,

@@ -29,7 +29,7 @@ export function ActivityHistoryTable() {
 
       return {
         id: activity.id,
-        activity: activity.name,
+        activity: category?.name || 'Activity',
         category: category?.name || 'Unknown',
         date: date.toLocaleDateString(),
         value: activity.duration_minutes >= 60 

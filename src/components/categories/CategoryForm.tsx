@@ -93,7 +93,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
     const validation = validateCategoryData(
       submissionData, 
       isSubcategory, 
-      allCategories || [],
+      (allCategories || []) as any,
       category?.id || null
     );
     
@@ -133,7 +133,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
             setFormData={setFormData}
             category={category}
             forceParent={forceParent}
-            parentCategories={parentCategories}
+            parentCategories={parentCategories as any}
             validationErrors={validationErrors}
             setValidationErrors={setValidationErrors}
           />

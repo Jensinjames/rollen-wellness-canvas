@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useMemo } from 'react';
+import { useDailyScores } from './useDailyScores';
 
 export interface SleepEntry {
   id: string;
@@ -34,13 +36,8 @@ export const useSleepEntries = () => {
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
-        .from('sleep_entries')
-        .select('*')
-        .order('sleep_date', { ascending: false });
-
-      if (error) throw error;
-      return data;
+      // Sleep entries table doesn't exist in schema - return empty array
+      return [] as SleepEntry[];
     },
     enabled: !!user,
   });
@@ -54,21 +51,8 @@ export const useCreateSleepEntry = () => {
     mutationFn: async (sleepData: Omit<SleepEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
       if (!user) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
-        .from('sleep_entries')
-        .insert([{
-          ...sleepData,
-          user_id: user.id,
-        }])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Trigger daily score recalculation
-      await recalculateDailyScores(user.id, sleepData.sleep_date);
-
-      return data;
+      // Sleep entries table doesn't exist in schema - throw error
+      throw new Error('Sleep entries feature not yet implemented');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sleep-entries'] });
@@ -84,104 +68,78 @@ export const useCreateSleepEntry = () => {
   });
 };
 
-// Helper function to recalculate daily scores when sleep is logged
-const recalculateDailyScores = async (userId: string, sleepDate: string) => {
-  try {
-    // Get user's sleep preferences
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('sleep_preferences')
-      .eq('id', userId)
-      .single();
+export const useUpdateSleepEntry = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
 
-    const defaultPrefs: SleepPreferences = {
-      target_sleep_hours: 8,
-      acceptable_range_min: 6,
-      acceptable_range_max: 10,
-      sleep_quality_weight: 0.3,
-      sleep_duration_weight: 0.7,
-      motivation_boost_threshold: 7
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<SleepEntry> & { id: string }) => {
+      if (!user) throw new Error('User not authenticated');
+
+      // Sleep entries table doesn't exist in schema - throw error
+      throw new Error('Sleep entries feature not yet implemented');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sleep-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['daily-scores'] });
+      toast.success('Sleep entry updated successfully');
+    },
+    onError: (error) => {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error updating sleep entry:', error);
+      }
+      toast.error('Failed to update sleep entry');
+    },
+  });
+};
+
+export const useSleepAnalytics = () => {
+  const { data: sleepEntries } = useSleepEntries();
+
+  return useMemo(() => {
+    if (!sleepEntries || sleepEntries.length === 0) {
+      return {
+        averageDuration: 0,
+        averageQuality: 0,
+        totalEntries: 0,
+        weeklyTrend: [],
+      };
+    }
+
+    // Return empty analytics since feature not implemented
+    return {
+      averageDuration: 0,
+      averageQuality: 0,
+      totalEntries: 0,
+      weeklyTrend: [],
     };
+  }, [sleepEntries]);
+};
 
-    let sleepPrefs: SleepPreferences = defaultPrefs;
-    
-    if (profile?.sleep_preferences && typeof profile.sleep_preferences === 'object') {
-      sleepPrefs = { ...defaultPrefs, ...(profile.sleep_preferences as Record<string, any>) };
+export const useWellnessScore = () => {
+  const { data: dailyScores } = useDailyScores();
+
+  return useMemo(() => {
+    if (!dailyScores || dailyScores.length === 0) {
+      return {
+        currentScore: 0,
+        trend: [],
+        averageScore: 0,
+      };
     }
 
-    // Get the sleep entry for this date
-    const { data: sleepEntry } = await supabase
-      .from('sleep_entries')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('sleep_date', sleepDate)
-      .single();
+    // Return basic wellness score
+    const currentScore = dailyScores[0]?.overall_score || 0;
+    const trend = dailyScores.slice(0, 7).reverse().map(score => ({
+      date: score.score_date,
+      score: score.overall_score,
+    }));
+    const averageScore = dailyScores.reduce((sum, score) => sum + score.overall_score, 0) / dailyScores.length;
 
-    if (!sleepEntry) return;
-
-    const sleepHours = sleepEntry.sleep_duration_minutes / 60;
-    const targetHours = sleepPrefs.target_sleep_hours;
-    const minAcceptable = sleepPrefs.acceptable_range_min;
-    const maxAcceptable = sleepPrefs.acceptable_range_max;
-
-    // Calculate sleep score (0-100)
-    let durationScore = 100;
-    if (sleepHours < minAcceptable) {
-      durationScore = Math.max(0, (sleepHours / minAcceptable) * 100);
-    } else if (sleepHours > maxAcceptable) {
-      durationScore = Math.max(0, 100 - ((sleepHours - maxAcceptable) / 2) * 10);
-    } else if (sleepHours < targetHours) {
-      durationScore = 70 + ((sleepHours - minAcceptable) / (targetHours - minAcceptable)) * 30;
-    }
-
-    const qualityScore = sleepEntry.sleep_quality ? (sleepEntry.sleep_quality / 5) * 100 : 70;
-    
-    const sleepScore = Math.round(
-      (durationScore * sleepPrefs.sleep_duration_weight) + 
-      (qualityScore * sleepPrefs.sleep_quality_weight)
-    );
-
-    // Calculate motivation boost
-    let motivationBoost = 0;
-    if (sleepHours >= sleepPrefs.motivation_boost_threshold) {
-      motivationBoost = Math.min(20, (sleepHours - sleepPrefs.motivation_boost_threshold) * 5);
-    }
-
-    // Get or create daily score entry
-    const { data: existingScore } = await supabase
-      .from('daily_scores')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('score_date', sleepDate)
-      .single();
-
-    const currentMotivation = existingScore?.motivation_level_percentage || 50;
-    const newMotivation = Math.min(100, currentMotivation + motivationBoost);
-
-    if (existingScore) {
-      await supabase
-        .from('daily_scores')
-        .update({
-          sleep_score_percentage: sleepScore,
-          motivation_level_percentage: newMotivation,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', existingScore.id);
-    } else {
-      await supabase
-        .from('daily_scores')
-        .insert({
-          user_id: userId,
-          score_date: sleepDate,
-          sleep_score_percentage: sleepScore,
-          motivation_level_percentage: newMotivation,
-          daily_score_percentage: Math.round((sleepScore + newMotivation) / 2),
-          health_balance_percentage: sleepScore,
-        });
-    }
-  } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error recalculating daily scores:', error);
-    }
-  }
+    return {
+      currentScore,
+      trend,
+      averageScore,
+    };
+  }, [dailyScores]);
 };

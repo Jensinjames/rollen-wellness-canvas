@@ -11,7 +11,7 @@ export const useCreateCategory = () => {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (categoryData: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'path' | 'children'>) => {
+    mutationFn: async (categoryData: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'children'>) => {
       if (!user) throw new Error('User not authenticated');
 
       // Validate category data
@@ -93,8 +93,7 @@ export const useDeleteCategory = () => {
 
       // Use the cascade delete function to properly remove category and related data
       const { error } = await supabase.rpc('cascade_delete_category', {
-        category_id_param: id,
-        user_id_param: user.id
+        category_id: id
       });
 
       if (error) throw error;
@@ -120,7 +119,7 @@ export const useSeedDefaultCategories = () => {
       if (!user) throw new Error('User not authenticated');
 
       const { error } = await supabase.rpc('seed_default_categories', {
-        user_id_param: user.id
+        p_user_id: user.id
       });
 
       if (error) throw error;

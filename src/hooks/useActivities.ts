@@ -6,12 +6,12 @@ import { toast } from 'sonner';
 
 export interface Activity {
   id: string;
+  user_id: string;
   category_id: string;
-  subcategory_id: string;
-  name: string;
+  start_time: string;
+  end_time: string;
   date_time: string;
   duration_minutes: number;
-  is_completed?: boolean;
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -20,7 +20,6 @@ export interface Activity {
     name: string;
     color: string;
     level: number;
-    path: string[];
     parent_id?: string;
     parent?: {
       id: string;
@@ -56,15 +55,14 @@ export const useActivities = () => {
       if (activitiesError) throw activitiesError;
       if (!activities) return [];
 
-      // Get all unique category and subcategory IDs
+      // Get all unique category IDs
       const categoryIds = [...new Set(activities.map(a => a.category_id))];
-      const subcategoryIds = [...new Set(activities.map(a => a.subcategory_id).filter(Boolean))];
 
       // Fetch categories
       const { data: categories, error: categoriesError } = await supabase
         .from('categories')
         .select('*')
-        .in('id', [...categoryIds, ...subcategoryIds]);
+        .in('id', categoryIds);
 
       if (categoriesError) throw categoriesError;
 
@@ -74,10 +72,9 @@ export const useActivities = () => {
       // Transform activities with category data
       return activities.map(activity => {
         const category = categoryMap.get(activity.category_id);
-        const subcategory = categoryMap.get(activity.subcategory_id);
         
-        // Get parent category for subcategory if it exists
-        const parent = subcategory?.parent_id ? categoryMap.get(subcategory.parent_id) : undefined;
+        // Get parent category if this is a subcategory
+        const parent = category?.parent_id ? categoryMap.get(category.parent_id) : undefined;
 
         return {
           ...activity,
@@ -86,22 +83,12 @@ export const useActivities = () => {
             name: category.name,
             color: category.color,
             level: category.level,
-            path: category.path || [],
             parent_id: category.parent_id,
             parent: parent ? {
               id: parent.id,
               name: parent.name,
               color: parent.color,
             } : undefined,
-          } : undefined,
-          subcategories: subcategory ? {
-            id: subcategory.id,
-            name: subcategory.name,
-            color: subcategory.color,
-            level: subcategory.level,
-            parent_id: subcategory.parent_id,
-            goal_type: subcategory.goal_type,
-            boolean_goal_label: subcategory.boolean_goal_label,
           } : undefined,
         };
       });
@@ -115,33 +102,37 @@ export const useCreateActivity = () => {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (activityData: Omit<Activity, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (activityData: Omit<Activity, 'id' | 'created_at' | 'updated_at' | 'categories' | 'subcategories'>) => {
       if (!user) throw new Error('User not authenticated');
 
       // Create the activity
       const { data: activity, error: activityError } = await supabase
         .from('activities')
         .insert([{
-          ...activityData,
           user_id: user.id,
+          category_id: activityData.category_id,
+          start_time: activityData.start_time,
+          end_time: activityData.end_time,
+          date_time: activityData.date_time,
+          duration_minutes: activityData.duration_minutes,
+          notes: activityData.notes,
         }])
         .select()
         .single();
 
       if (activityError) throw activityError;
 
-      // Fetch category and subcategory data
+      // Fetch category data
       const { data: categories, error: categoriesError } = await supabase
         .from('categories')
         .select('*')
-        .in('id', [activity.category_id, activity.subcategory_id].filter(Boolean));
+        .in('id', [activity.category_id]);
 
       if (categoriesError) throw categoriesError;
 
       const categoryMap = new Map(categories?.map(cat => [cat.id, cat]) || []);
       const category = categoryMap.get(activity.category_id);
-      const subcategory = categoryMap.get(activity.subcategory_id);
-      const parent = subcategory?.parent_id ? categoryMap.get(subcategory.parent_id) : undefined;
+      const parent = category?.parent_id ? categoryMap.get(category.parent_id) : undefined;
 
       return {
         ...activity,
@@ -150,22 +141,12 @@ export const useCreateActivity = () => {
           name: category.name,
           color: category.color,
           level: category.level,
-          path: category.path || [],
           parent_id: category.parent_id,
           parent: parent ? {
             id: parent.id,
             name: parent.name,
             color: parent.color,
           } : undefined,
-        } : undefined,
-        subcategories: subcategory ? {
-          id: subcategory.id,
-          name: subcategory.name,
-          color: subcategory.color,
-          level: subcategory.level,
-          parent_id: subcategory.parent_id,
-          goal_type: subcategory.goal_type,
-          boolean_goal_label: subcategory.boolean_goal_label,
         } : undefined,
       };
     },
@@ -174,16 +155,14 @@ export const useCreateActivity = () => {
       queryClient.invalidateQueries({ queryKey: ['category-activity-data'] });
       
       // Trigger animated update notification
-      if (data.categories && data.subcategories) {
+      if (data.categories) {
         const updateEvent = new CustomEvent('activityLogged', {
           detail: {
             id: data.id,
             categoryName: data.categories.name,
-            subcategoryName: data.subcategories.name,
             duration: data.duration_minutes,
-            isCompleted: data.is_completed,
             timestamp: data.date_time,
-            color: data.subcategories.color,
+            color: data.categories.color,
           }
         });
         window.dispatchEvent(updateEvent);

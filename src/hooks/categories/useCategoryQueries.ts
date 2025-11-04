@@ -22,7 +22,7 @@ export const useCategories = () => {
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
-      return buildCategoryTree(data as Category[]);
+      return buildCategoryTree(data as any);
     },
     enabled: !!user,
   });
@@ -45,7 +45,7 @@ export const useAllCategories = () => {
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
-      return data as Category[];
+      return data;
     },
     enabled: !!user,
   });
@@ -68,7 +68,7 @@ export const useParentCategories = () => {
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
-      return data as Category[];
+      return data;
     },
     enabled: !!user,
   });

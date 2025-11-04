@@ -8,7 +8,6 @@ export interface Category {
   sort_order: number;
   parent_id?: string;
   level: number;
-  path: string[];
   goal_type: 'time' | 'boolean' | 'both';
   is_boolean_goal: boolean;
   boolean_goal_label?: string;

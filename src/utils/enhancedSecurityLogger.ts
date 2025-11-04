@@ -60,9 +60,10 @@ class EnhancedSecurityLogger {
 
       // Use the database function for secure logging
       const { error } = await supabase.rpc('log_security_event', {
-        event_type: eventType,
-        user_id: userId,
-        details: logEntry.details,
+        p_event_type: eventType,
+        p_event_details: logEntry.details,
+        p_ip_address: logEntry.ip_address,
+        p_user_agent: logEntry.user_agent,
       });
 
       if (error && process.env.NODE_ENV === 'development') {

@@ -94,13 +94,16 @@ export function RefactoredActivityEntryForm({ onSuccess, preselectedCategoryId }
         return;
       }
 
+      const now = new Date(data.date_time);
+      const endTime = new Date(now.getTime() + (durationValidation.value || 0) * 60000);
+
       await createActivity.mutateAsync({
+        user_id: '',
         category_id: data.category_id,
-        subcategory_id: data.subcategory_id,
-        name: `${selectedParentCategory?.name} - ${availableSubcategories.find(sub => sub.id === data.subcategory_id)?.name}`,
-        date_time: new Date(data.date_time).toISOString(),
+        start_time: now.toISOString(),
+        end_time: endTime.toISOString(),
+        date_time: now.toISOString(),
         duration_minutes: goalType === 'boolean' && !data.duration_minutes ? 0 : (durationValidation.value || 0),
-        is_completed: data.is_completed || false,
         notes: data.notes || undefined,
       });
 
