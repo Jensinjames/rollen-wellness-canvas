@@ -296,6 +296,36 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_attempts: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          id: string
+          identifier: string
+          locked_until: string | null
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          attempt_count?: number
+          created_at?: string
+          id?: string
+          identifier: string
+          locked_until?: string | null
+          updated_at?: string
+          window_start?: string
+        }
+        Update: {
+          attempt_count?: number
+          created_at?: string
+          id?: string
+          identifier?: string
+          locked_until?: string | null
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       security_audit_logs: {
         Row: {
           created_at: string
