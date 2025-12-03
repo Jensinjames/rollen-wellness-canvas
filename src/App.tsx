@@ -38,7 +38,8 @@ function App() {
           <TooltipProvider>
             <Toaster />
             <BrowserRouter>
-              <Routes>
+              <main className="min-h-screen">
+                <Routes>
                 <Route path="/auth" element={<SecureAuthForm />} />
                 <Route
                   path="/"
@@ -81,7 +82,8 @@ function App() {
                   }
                 />
                 <Route path="*" element={<NotFound />} />
-              </Routes>
+                </Routes>
+              </main>
             </BrowserRouter>
           </TooltipProvider>
         </TimerProvider>
