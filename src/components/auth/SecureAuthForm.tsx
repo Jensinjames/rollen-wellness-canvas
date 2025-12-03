@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Eye, EyeOff, Shield } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { validatePasswordStrength } from '@/utils/securityConfig';
 import { securityLogger } from '@/utils/enhancedSecurityLogger';
 
@@ -184,6 +184,16 @@ export const SecureAuthForm = () => {
                       <li key={index}>{error}</li>
                     ))}
                   </ul>
+                </div>
+              )}
+
+              {isLogin && (
+                <div className="text-right">
+                  <Link to="/forgot-password">
+                    <Button variant="link" type="button" className="px-0 h-auto text-sm text-muted-foreground">
+                      Forgot password?
+                    </Button>
+                  </Link>
                 </div>
               )}
             </div>
