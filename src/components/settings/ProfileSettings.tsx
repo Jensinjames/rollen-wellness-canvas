@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { ProfileAvatar } from "./profile/ProfileAvatar";
 import { ProfileForm } from "./profile/ProfileForm";
@@ -11,6 +10,7 @@ export const ProfileSettings = () => {
     loading,
     formErrors,
     updateProfile,
+    uploadAvatar,
     user
   } = useProfileData();
 
@@ -32,6 +32,8 @@ export const ProfileSettings = () => {
           <ProfileAvatar 
             avatarUrl={profile.avatar_url}
             displayName={displayName}
+            onUpload={uploadAvatar}
+            loading={loading}
           />
 
           <ProfileForm
