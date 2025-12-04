@@ -1,10 +1,8 @@
-
 import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/UnifiedAuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { validateTextInput } from "@/utils/validation";
-import { logResourceEvent } from "@/utils/auditLog";
 
 interface FormErrors {
   display_name?: string;
@@ -17,7 +15,6 @@ interface Profile {
 
 export const useProfileData = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [profile, setProfile] = useState<Profile>({
@@ -37,9 +34,9 @@ export const useProfileData = () => {
         .from("profiles")
         .select("display_name, avatar_url")
         .eq("id", user?.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== "PGRST116") {
+      if (error) {
         throw error;
       }
 
@@ -51,11 +48,7 @@ export const useProfileData = () => {
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load profile information",
-        variant: "destructive",
-      });
+      toast.error("Failed to load profile information");
     }
   };
 
@@ -63,7 +56,6 @@ export const useProfileData = () => {
     const errors: FormErrors = {};
     const displayName = profile.display_name || "";
 
-    // Validate display name
     const nameValidation = validateTextInput(displayName, {
       required: false,
       minLength: 0,
@@ -79,13 +71,64 @@ export const useProfileData = () => {
     return Object.keys(errors).length === 0;
   };
 
+  const uploadAvatar = async (file: File) => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      // Validate file
+      if (!file.type.startsWith('image/')) {
+        throw new Error('Please upload an image file');
+      }
+      if (file.size > 1024 * 1024) {
+        throw new Error('File size must be less than 1MB');
+      }
+
+      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `${user.id}/avatar.${fileExt}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { 
+          upsert: true,
+          contentType: file.type
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Add cache buster to force refresh
+      const avatarUrl = `${publicUrl}?t=${Date.now()}`;
+
+      // Update profile with new avatar URL
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .upsert({
+          id: user.id,
+          avatar_url: avatarUrl,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (updateError) throw updateError;
+
+      setProfile(prev => ({ ...prev, avatar_url: avatarUrl }));
+      toast.success("Avatar updated successfully");
+    } catch (error: any) {
+      console.error("Error uploading avatar:", error);
+      toast.error(error.message || "Failed to upload avatar");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const updateProfile = async () => {
     if (!validateForm()) {
-      toast({
-        title: "Validation Error",
-        description: "Please correct the errors before saving",
-        variant: "destructive",
-      });
+      toast.error("Please correct the errors before saving");
       return;
     }
 
@@ -93,7 +136,6 @@ export const useProfileData = () => {
     try {
       const displayName = profile.display_name || "";
       
-      // Sanitize input
       const nameValidation = validateTextInput(displayName, { maxLength: 50 });
       
       if (!nameValidation.isValid) {
@@ -111,27 +153,11 @@ export const useProfileData = () => {
 
       if (error) throw error;
 
-      // Log the profile update
-      if (user) {
-        logResourceEvent('profile.update', user.id, user.id, {
-          display_name_changed: nameValidation.sanitized !== displayName
-        });
-      }
-
-      // Update local state with sanitized value
       setProfile(prev => ({ ...prev, display_name: nameValidation.sanitized }));
-
-      toast({
-        title: "Success",
-        description: "Profile updated successfully",
-      });
+      toast.success("Profile updated successfully");
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update profile",
-        variant: "destructive",
-      });
+      toast.error("Failed to update profile");
     } finally {
       setLoading(false);
     }
@@ -143,6 +169,7 @@ export const useProfileData = () => {
     loading,
     formErrors,
     updateProfile,
+    uploadAvatar,
     user
   };
 };

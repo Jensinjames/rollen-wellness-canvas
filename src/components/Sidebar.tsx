@@ -1,5 +1,5 @@
 
-import { Home, Calendar, Settings, BarChart3, Target } from "lucide-react";
+import { Home, Calendar, Settings, BarChart3, Target, User } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter } from "@/components/ui/sidebar";
 import { UserProfile } from "@/components/UserProfile";
@@ -24,6 +24,11 @@ const navigationItems = [
     title: "Calendar",
     url: "/calendar",
     icon: Calendar,
+  },
+  {
+    title: "Profile",
+    url: "/profile",
+    icon: User,
   },
   {
     title: "Settings",
