@@ -1,10 +1,6 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { AnalyticsSummary } from "@/components/analytics/AnalyticsSummary";
-import { WeeklyTrendChart } from "@/components/analytics/WeeklyTrendChart";
-import { GoalCompletionChart } from "@/components/analytics/GoalCompletionChart";
-import { TimeDistributionChart } from "@/components/analytics/TimeDistributionChart";
-import { ActivityHistoryTable } from "@/components/ActivityHistoryTable";
 import { Plus } from "lucide-react";
 import { RefactoredActivityEntryForm } from "@/components/forms/RefactoredActivityEntryForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -13,6 +9,18 @@ import { useActivityTimezoneData } from "@/hooks/useActivityTimezoneData";
 import { useCategories } from "@/hooks/categories";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/Sidebar";
+import { LazyComponent } from "@/hooks/useLazyComponent";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy load heavy chart components
+const WeeklyTrendChart = lazy(() => import("@/components/analytics/WeeklyTrendChart").then(m => ({ default: m.WeeklyTrendChart })));
+const GoalCompletionChart = lazy(() => import("@/components/analytics/GoalCompletionChart").then(m => ({ default: m.GoalCompletionChart })));
+const TimeDistributionChart = lazy(() => import("@/components/analytics/TimeDistributionChart").then(m => ({ default: m.TimeDistributionChart })));
+const ActivityHistoryTable = lazy(() => import("@/components/ActivityHistoryTable").then(m => ({ default: m.ActivityHistoryTable })));
+
+const ChartSkeleton = () => (
+  <Skeleton className="h-80 w-full rounded-lg" />
+);
 
 export default function IndexPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -62,17 +70,31 @@ export default function IndexPage() {
               })}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <GoalCompletionChart />
-              <TimeDistributionChart />
-            </div>
+            <LazyComponent fallback={<div className="grid grid-cols-1 lg:grid-cols-2 gap-6"><ChartSkeleton /><ChartSkeleton /></div>}>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Suspense fallback={<ChartSkeleton />}>
+                  <GoalCompletionChart />
+                </Suspense>
+                <Suspense fallback={<ChartSkeleton />}>
+                  <TimeDistributionChart />
+                </Suspense>
+              </div>
+            </LazyComponent>
 
-            <WeeklyTrendChart />
-            <ActivityHistoryTable />
+            <LazyComponent fallback={<ChartSkeleton />}>
+              <Suspense fallback={<ChartSkeleton />}>
+                <WeeklyTrendChart />
+              </Suspense>
+            </LazyComponent>
+
+            <LazyComponent fallback={<Skeleton className="h-96 w-full rounded-lg" />}>
+              <Suspense fallback={<Skeleton className="h-96 w-full rounded-lg" />}>
+                <ActivityHistoryTable />
+              </Suspense>
+            </LazyComponent>
           </div>
         </main>
       </div>
     </SidebarProvider>
   );
 }
-
