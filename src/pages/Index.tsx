@@ -11,6 +11,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/Sidebar";
 import { LazyComponent } from "@/hooks/useLazyComponent";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 
 // Lazy load heavy chart components
 const WeeklyTrendChart = lazy(() => import("@/components/analytics/WeeklyTrendChart").then(m => ({ default: m.WeeklyTrendChart })));
