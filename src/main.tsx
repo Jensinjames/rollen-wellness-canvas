@@ -4,6 +4,10 @@ import './index.css'
 import { AuthProvider } from './contexts/AuthContext'
 import { envValidation } from '@/integrations/supabase/clientWrapper'
 import { EnvErrorDisplay } from '@/components/debug/EnvErrorDisplay'
+import { registerServiceWorker } from '@/utils/serviceWorker'
+
+// Register service worker for caching
+registerServiceWorker();
 
 const rootElement = document.getElementById("root")!;
 

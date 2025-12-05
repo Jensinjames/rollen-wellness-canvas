@@ -8,6 +8,7 @@ import { TimerProvider } from "@/contexts/TimerContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { SecureAuthForm } from "@/components/auth/SecureAuthForm";
 import { PageLoader } from "@/components/ui/PageLoader";
+import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton";
 
 // Lazy load pages for code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -54,7 +55,9 @@ function App() {
                       path="/"
                       element={
                         <ProtectedRoute>
-                          <Index />
+                          <Suspense fallback={<DashboardSkeleton />}>
+                            <Index />
+                          </Suspense>
                         </ProtectedRoute>
                       }
                     />
