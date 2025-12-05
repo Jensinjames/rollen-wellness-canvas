@@ -40,7 +40,7 @@ export const ProfileAvatar = ({
   return (
     <div className="flex items-center gap-6">
       <Avatar className="h-20 w-20">
-        <AvatarImage src={avatarUrl} />
+        <AvatarImage src={avatarUrl} loading="lazy" />
         <AvatarFallback className="text-lg bg-primary/10">
           {displayName ? displayName.charAt(0).toUpperCase() : <User className="h-8 w-8" />}
         </AvatarFallback>
