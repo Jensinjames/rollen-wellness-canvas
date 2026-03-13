@@ -1,17 +1,8 @@
 // Service Worker for caching static assets
-const CACHE_NAME = 'wellness-tracker-v1';
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-];
+const CACHE_NAME = 'wellness-tracker-v2';
 
-// Install event - cache static assets
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
-    })
-  );
+// Install event - no pre-caching to avoid stale HTML
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
@@ -29,7 +20,7 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - network-only for navigation, stale-while-revalidate for assets
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -47,7 +38,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first for static assets (JS, CSS, images, fonts)
+  // Network-only for HTML/navigation - never serve stale HTML
+  if (request.mode === 'navigate' || request.destination === 'document') {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // Stale-while-revalidate for static assets (JS, CSS, images, fonts)
   if (request.destination === 'script' || 
       request.destination === 'style' || 
       request.destination === 'image' ||
@@ -55,22 +52,7 @@ self.addEventListener('fetch', (event) => {
       url.pathname.startsWith('/assets/')) {
     event.respondWith(
       caches.match(request).then((cachedResponse) => {
-        if (cachedResponse) {
-          // Return cached response and update cache in background
-          event.waitUntil(
-            fetch(request).then((networkResponse) => {
-              if (networkResponse.ok) {
-                caches.open(CACHE_NAME).then((cache) => {
-                  cache.put(request, networkResponse);
-                });
-              }
-            }).catch(() => {})
-          );
-          return cachedResponse;
-        }
-        
-        // Not in cache, fetch from network and cache
-        return fetch(request).then((networkResponse) => {
+        const fetchPromise = fetch(request).then((networkResponse) => {
           if (networkResponse.ok) {
             const responseClone = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => {
@@ -78,24 +60,10 @@ self.addEventListener('fetch', (event) => {
             });
           }
           return networkResponse;
-        });
-      })
-    );
-    return;
-  }
+        }).catch(() => cachedResponse);
 
-  // Network-first for HTML/navigation
-  if (request.mode === 'navigate' || request.destination === 'document') {
-    event.respondWith(
-      fetch(request)
-        .then((networkResponse) => {
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseClone);
-          });
-          return networkResponse;
-        })
-        .catch(() => caches.match(request))
+        return cachedResponse || fetchPromise;
+      })
     );
   }
 });
