@@ -9,10 +9,15 @@ export interface HabitLog {
   habit_id: string;
   user_id: string;
   log_date: string;
-  completed?: boolean;
-  actual_value?: number;
-  notes?: string;
+  value: number;
+  notes?: string | null;
   created_at: string;
+  habits?: {
+    id: string;
+    name: string;
+    target_value: number | null;
+    target_unit: string | null;
+  } | null;
 }
 
 export const useHabitLogs = () => {
@@ -30,7 +35,6 @@ export const useHabitLogs = () => {
           habits (
             id,
             name,
-            color,
             target_value,
             target_unit
           )
@@ -38,7 +42,7 @@ export const useHabitLogs = () => {
         .order('log_date', { ascending: false });
 
       if (error) throw error;
-      return data;
+      return data as HabitLog[];
     },
     enabled: !!user,
   });
@@ -49,16 +53,13 @@ export const useCreateHabitLog = () => {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (habitLogData: Omit<HabitLog, 'id' | 'user_id' | 'created_at'>) => {
+    mutationFn: async (logData: { habit_id: string; log_date: string; value: number; notes?: string }) => {
       if (!user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
         .from('habit_logs')
         .insert([{
-          habit_id: habitLogData.habit_id,
-          log_date: habitLogData.log_date,
-          value: habitLogData.actual_value || 1,
-          notes: habitLogData.notes,
+          ...logData,
           user_id: user.id,
         }])
         .select()
@@ -69,13 +70,31 @@ export const useCreateHabitLog = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
-      toast.success('Habit logged successfully');
+      toast.success('Habit logged');
     },
-    onError: (error) => {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error creating habit log:', error);
-      }
+    onError: () => {
       toast.error('Failed to log habit');
+    },
+  });
+};
+
+export const useDeleteHabitLog = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('habit_logs')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
+    },
+    onError: () => {
+      toast.error('Failed to remove habit log');
     },
   });
 };
