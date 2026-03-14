@@ -49,10 +49,11 @@ export function HabitFormDialog({ open, onOpenChange, habit }: HabitFormDialogPr
   const onSubmit = async (data: HabitFormData) => {
     setLoading(true);
     try {
+      const payload = { name: data.name, description: data.description, target_value: data.target_value, target_unit: data.target_unit, is_active: data.is_active };
       if (isEditing) {
-        await updateHabit.mutateAsync({ id: habit.id, name: data.name, ...data });
+        await updateHabit.mutateAsync({ id: habit.id, ...payload });
       } else {
-        await createHabit.mutateAsync(data);
+        await createHabit.mutateAsync(payload);
       }
       onOpenChange(false);
       form.reset();
