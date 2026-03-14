@@ -50,7 +50,7 @@ export function HabitFormDialog({ open, onOpenChange, habit }: HabitFormDialogPr
     setLoading(true);
     try {
       if (isEditing) {
-        await updateHabit.mutateAsync({ id: habit.id, ...data });
+        await updateHabit.mutateAsync({ id: habit.id, name: data.name, ...data });
       } else {
         await createHabit.mutateAsync(data);
       }

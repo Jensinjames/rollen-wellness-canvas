@@ -16,6 +16,11 @@ const navigationItems = [
     icon: Target,
   },
   {
+    title: "Habits",
+    url: "/habits",
+    icon: CheckSquare,
+  },
+  {
     title: "Analytics",
     url: "/analytics", 
     icon: BarChart3,

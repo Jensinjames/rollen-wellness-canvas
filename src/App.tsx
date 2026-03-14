@@ -95,6 +95,14 @@ function App() {
                       }
                     />
                     <Route
+                      path="/habits"
+                      element={
+                        <ProtectedRoute>
+                          <Habits />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
                       path="/profile"
                       element={
                         <ProtectedRoute>
