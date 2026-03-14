@@ -70,7 +70,7 @@ export const useUpdateHabit = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; name?: string; description?: string | null; target_value?: number | null; target_unit?: string | null; is_active?: boolean }) => {
+    mutationFn: async ({ id, ...updates }: { id: string } & Partial<{ name: string; description: string | null; target_value: number | null; target_unit: string | null; is_active: boolean }>) => {
       const { data, error } = await supabase
         .from('habits')
         .update(updates)
