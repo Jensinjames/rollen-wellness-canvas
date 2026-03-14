@@ -7,20 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { useCreateHabitLog } from "@/hooks/useHabitLogs";
 import { useHabits } from "@/hooks/useHabits";
-import { validateNumber, validateNotes } from "@/utils/validation";
-import { securityLogger } from "@/utils/enhancedSecurityLogger";
-import { useAuth } from "@/contexts/UnifiedAuthContext";
 import { format } from "date-fns";
 
 const habitLogSchema = z.object({
   habit_id: z.string().min(1, "Habit is required"),
   log_date: z.string().min(1, "Date is required"),
-  completed: z.boolean(),
-  actual_value: z.coerce.number().optional(),
-  notes: z.string().optional(),
+  value: z.coerce.number().min(0, "Value must be 0 or greater"),
+  notes: z.string().max(1000).optional(),
 });
 
 type HabitLogFormData = z.infer<typeof habitLogSchema>;
@@ -30,7 +25,6 @@ interface HabitLogFormProps {
 }
 
 export function HabitLogForm({ onSuccess }: HabitLogFormProps) {
-  const { user } = useAuth();
   const { data: habits } = useHabits();
   const createHabitLog = useCreateHabitLog();
   const [loading, setLoading] = useState(false);
@@ -40,8 +34,7 @@ export function HabitLogForm({ onSuccess }: HabitLogFormProps) {
     defaultValues: {
       habit_id: "",
       log_date: format(new Date(), "yyyy-MM-dd"),
-      completed: false,
-      actual_value: 1,
+      value: 1,
       notes: "",
     },
   });
@@ -52,40 +45,12 @@ export function HabitLogForm({ onSuccess }: HabitLogFormProps) {
   const onSubmit = async (data: HabitLogFormData) => {
     setLoading(true);
     try {
-      // Validate inputs using our unified validation system
-      const valueValidation = validateNumber(data.actual_value || 0, { 
-        min: 0, 
-        max: 10000, 
-        required: false 
-      });
-      if (!valueValidation.isValid) {
-        form.setError("actual_value", { message: valueValidation.error });
-        setLoading(false);
-        return;
-      }
-
-      const notesValidation = validateNotes(data.notes || "");
-      if (!notesValidation.isValid) {
-        form.setError("notes", { message: notesValidation.error });
-        setLoading(false);
-        return;
-      }
-
       await createHabitLog.mutateAsync({
         habit_id: data.habit_id,
         log_date: data.log_date,
-        completed: data.completed,
-        actual_value: valueValidation.value || undefined,
-        notes: notesValidation.sanitized || undefined,
+        value: data.value,
+        notes: data.notes || undefined,
       });
-
-      // Log the habit log creation
-      await securityLogger.logResourceEvent('activity.create', user?.id || '', data.habit_id, {
-        habit_name: selectedHabit?.name,
-        completed: data.completed,
-        actual_value: valueValidation.value,
-      });
-
       onSuccess();
     } catch (error) {
       console.error("Error creating habit log:", error);
@@ -140,48 +105,25 @@ export function HabitLogForm({ onSuccess }: HabitLogFormProps) {
 
         <FormField
           control={form.control}
-          name="completed"
+          name="value"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-              <div className="space-y-0.5">
-                <FormLabel className="text-base">Completed</FormLabel>
-                <div className="text-sm text-muted-foreground">
-                  Mark this habit as completed for the day
-                </div>
-              </div>
+            <FormItem>
+              <FormLabel>
+                Value {selectedHabit?.target_unit ? `(${selectedHabit.target_unit})` : ""}
+              </FormLabel>
               <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  placeholder={selectedHabit?.target_value ? `Target: ${selectedHabit.target_value}` : "1"}
+                  {...field}
                 />
               </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />
-
-        {selectedHabit?.target_value && (
-          <FormField
-            control={form.control}
-            name="actual_value"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  Actual Value ({selectedHabit.target_unit})
-                </FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    min="0" 
-                    step="0.1"
-                    placeholder={`Target: ${selectedHabit.target_value} ${selectedHabit.target_unit}`}
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
 
         <FormField
           control={form.control}
@@ -190,7 +132,7 @@ export function HabitLogForm({ onSuccess }: HabitLogFormProps) {
             <FormItem>
               <FormLabel>Notes (Optional)</FormLabel>
               <FormControl>
-                <Textarea 
+                <Textarea
                   placeholder="Add any additional notes..."
                   className="resize-none"
                   rows={3}
@@ -203,12 +145,8 @@ export function HabitLogForm({ onSuccess }: HabitLogFormProps) {
         />
 
         <div className="flex justify-end gap-2 pt-4">
-          <Button 
-            type="submit" 
-            disabled={loading}
-            className="bg-green-500 hover:bg-green-600"
-          >
-            {loading ? "Creating..." : "Log Habit"}
+          <Button type="submit" disabled={loading}>
+            {loading ? "Logging..." : "Log Habit"}
           </Button>
         </div>
       </form>
