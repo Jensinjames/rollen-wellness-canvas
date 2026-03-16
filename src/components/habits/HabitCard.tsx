@@ -11,6 +11,7 @@ interface HabitCardProps {
   habit: Habit;
   todayValue: number;
   currentStreak: number;
+  onEdit?: (habit: Habit) => void;
 }
 
 export function HabitCard({ habit, todayValue, currentStreak }: HabitCardProps) {
