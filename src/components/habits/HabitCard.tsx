@@ -14,7 +14,7 @@ interface HabitCardProps {
   onEdit?: (habit: Habit) => void;
 }
 
-export function HabitCard({ habit, todayValue, currentStreak }: HabitCardProps) {
+export function HabitCard({ habit, todayValue, currentStreak, onEdit }: HabitCardProps) {
   const createLog = useCreateHabitLog();
   const [logging, setLogging] = useState(false);
   const today = format(new Date(), "yyyy-MM-dd");
