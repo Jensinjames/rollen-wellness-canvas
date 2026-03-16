@@ -43,8 +43,10 @@ export function HabitCard({ habit, todayValue, currentStreak, onEdit }: HabitCar
         "p-4 transition-colors border-2",
         isComplete
           ? "border-primary/30 bg-primary/5"
-          : "border-transparent"
+          : "border-transparent",
+        onEdit && "cursor-pointer hover:shadow-md"
       )}
+      onClick={() => onEdit?.(habit)}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
