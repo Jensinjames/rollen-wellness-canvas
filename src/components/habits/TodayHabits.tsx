@@ -33,6 +33,7 @@ export function TodayHabits({ habits, logs, streaks, onEditHabit }: TodayHabitsP
                 habit={habit}
                 todayValue={todayValue}
                 currentStreak={streak?.currentStreak ?? 0}
+                onEdit={onEditHabit}
               />
             );
           })}

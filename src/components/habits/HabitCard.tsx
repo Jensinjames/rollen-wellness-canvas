@@ -117,7 +117,7 @@ export function HabitCard({ habit, todayValue, currentStreak, onEdit }: HabitCar
             variant={isComplete ? "secondary" : "default"}
             className="h-7 text-xs"
             disabled={logging || isComplete}
-            onClick={() => quickLog(1)}
+            onClick={(e) => { e.stopPropagation(); quickLog(1); }}
           >
             {isComplete ? "Done ✓" : "Complete"}
           </Button>

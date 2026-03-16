@@ -60,7 +60,7 @@ export default function Habits() {
             )}
           </main>
 
-          <HabitFormDialog open={formOpen} onOpenChange={setFormOpen} />
+          <HabitFormDialog open={formOpen} onOpenChange={(open) => { setFormOpen(open); if (!open) setEditingHabit(undefined); }} habit={editingHabit} />
         </div>
       </div>
     </SidebarProvider>
