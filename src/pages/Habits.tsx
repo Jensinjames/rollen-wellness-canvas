@@ -17,6 +17,7 @@ export default function Habits() {
   const { data: logs, isLoading: logsLoading } = useHabitLogs();
   const streaks = useHabitStreaks(habits ?? undefined);
   const [formOpen, setFormOpen] = useState(false);
+  const [editingHabit, setEditingHabit] = useState<import("@/hooks/useHabits").Habit | undefined>();
 
   const activeHabits = habits?.filter(h => h.is_active) ?? [];
   const isLoading = habitsLoading || logsLoading;
