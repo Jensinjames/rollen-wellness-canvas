@@ -97,7 +97,7 @@ export function HabitCard({ habit, todayValue, currentStreak, onEdit }: HabitCar
               variant="outline"
               className="h-7 w-7"
               disabled={logging || todayValue <= 0}
-              onClick={() => quickLog(-1)}
+              onClick={(e) => { e.stopPropagation(); quickLog(-1); }}
             >
               <Minus className="h-3 w-3" />
             </Button>
@@ -106,7 +106,7 @@ export function HabitCard({ habit, todayValue, currentStreak, onEdit }: HabitCar
               variant="outline"
               className="h-7 w-7"
               disabled={logging}
-              onClick={() => quickLog(1)}
+              onClick={(e) => { e.stopPropagation(); quickLog(1); }}
             >
               <Plus className="h-3 w-3" />
             </Button>
