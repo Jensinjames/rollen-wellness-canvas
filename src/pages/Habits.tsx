@@ -53,7 +53,7 @@ export default function Habits() {
               </div>
             ) : (
               <>
-                <TodayHabits habits={activeHabits} logs={logs ?? []} streaks={streaks} />
+                <TodayHabits habits={activeHabits} logs={logs ?? []} streaks={streaks} onEditHabit={(h) => { setEditingHabit(h); setFormOpen(true); }} />
                 <HabitStreakCalendar habits={activeHabits} streaks={streaks} />
                 <HabitProgressCharts habits={activeHabits} logs={logs ?? []} />
               </>
