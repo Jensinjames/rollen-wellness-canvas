@@ -9,9 +9,10 @@ interface TodayHabitsProps {
   habits: Habit[];
   logs: HabitLog[];
   streaks: Map<string, HabitStreak>;
+  onEditHabit?: (habit: Habit) => void;
 }
 
-export function TodayHabits({ habits, logs, streaks }: TodayHabitsProps) {
+export function TodayHabits({ habits, logs, streaks, onEditHabit }: TodayHabitsProps) {
   const today = format(new Date(), "yyyy-MM-dd");
   const todayLogs = logs.filter(l => l.log_date === today);
 
@@ -32,6 +33,7 @@ export function TodayHabits({ habits, logs, streaks }: TodayHabitsProps) {
                 habit={habit}
                 todayValue={todayValue}
                 currentStreak={streak?.currentStreak ?? 0}
+                onEdit={onEditHabit}
               />
             );
           })}

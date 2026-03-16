@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -45,6 +45,16 @@ export function HabitFormDialog({ open, onOpenChange, habit }: HabitFormDialogPr
       is_active: habit?.is_active ?? true,
     },
   });
+
+  useEffect(() => {
+    form.reset({
+      name: habit?.name ?? "",
+      description: habit?.description ?? "",
+      target_value: habit?.target_value ?? 1,
+      target_unit: habit?.target_unit ?? "",
+      is_active: habit?.is_active ?? true,
+    });
+  }, [habit, form]);
 
   const onSubmit = async (data: HabitFormData) => {
     setLoading(true);

@@ -17,6 +17,7 @@ export default function Habits() {
   const { data: logs, isLoading: logsLoading } = useHabitLogs();
   const streaks = useHabitStreaks(habits ?? undefined);
   const [formOpen, setFormOpen] = useState(false);
+  const [editingHabit, setEditingHabit] = useState<import("@/hooks/useHabits").Habit | undefined>();
 
   const activeHabits = habits?.filter(h => h.is_active) ?? [];
   const isLoading = habitsLoading || logsLoading;
@@ -52,14 +53,14 @@ export default function Habits() {
               </div>
             ) : (
               <>
-                <TodayHabits habits={activeHabits} logs={logs ?? []} streaks={streaks} />
+                <TodayHabits habits={activeHabits} logs={logs ?? []} streaks={streaks} onEditHabit={(h) => { setEditingHabit(h); setFormOpen(true); }} />
                 <HabitStreakCalendar habits={activeHabits} streaks={streaks} />
                 <HabitProgressCharts habits={activeHabits} logs={logs ?? []} />
               </>
             )}
           </main>
 
-          <HabitFormDialog open={formOpen} onOpenChange={setFormOpen} />
+          <HabitFormDialog open={formOpen} onOpenChange={(open) => { setFormOpen(open); if (!open) setEditingHabit(undefined); }} habit={editingHabit} />
         </div>
       </div>
     </SidebarProvider>

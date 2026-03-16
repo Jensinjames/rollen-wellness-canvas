@@ -11,9 +11,10 @@ interface HabitCardProps {
   habit: Habit;
   todayValue: number;
   currentStreak: number;
+  onEdit?: (habit: Habit) => void;
 }
 
-export function HabitCard({ habit, todayValue, currentStreak }: HabitCardProps) {
+export function HabitCard({ habit, todayValue, currentStreak, onEdit }: HabitCardProps) {
   const createLog = useCreateHabitLog();
   const [logging, setLogging] = useState(false);
   const today = format(new Date(), "yyyy-MM-dd");
@@ -42,8 +43,10 @@ export function HabitCard({ habit, todayValue, currentStreak }: HabitCardProps) 
         "p-4 transition-colors border-2",
         isComplete
           ? "border-primary/30 bg-primary/5"
-          : "border-transparent"
+          : "border-transparent",
+        onEdit && "cursor-pointer hover:shadow-md"
       )}
+      onClick={() => onEdit?.(habit)}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
@@ -94,7 +97,7 @@ export function HabitCard({ habit, todayValue, currentStreak }: HabitCardProps) 
               variant="outline"
               className="h-7 w-7"
               disabled={logging || todayValue <= 0}
-              onClick={() => quickLog(-1)}
+              onClick={(e) => { e.stopPropagation(); quickLog(-1); }}
             >
               <Minus className="h-3 w-3" />
             </Button>
@@ -103,7 +106,7 @@ export function HabitCard({ habit, todayValue, currentStreak }: HabitCardProps) 
               variant="outline"
               className="h-7 w-7"
               disabled={logging}
-              onClick={() => quickLog(1)}
+              onClick={(e) => { e.stopPropagation(); quickLog(1); }}
             >
               <Plus className="h-3 w-3" />
             </Button>
@@ -114,7 +117,7 @@ export function HabitCard({ habit, todayValue, currentStreak }: HabitCardProps) 
             variant={isComplete ? "secondary" : "default"}
             className="h-7 text-xs"
             disabled={logging || isComplete}
-            onClick={() => quickLog(1)}
+            onClick={(e) => { e.stopPropagation(); quickLog(1); }}
           >
             {isComplete ? "Done ✓" : "Complete"}
           </Button>
