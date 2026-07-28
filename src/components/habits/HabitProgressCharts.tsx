@@ -4,11 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from "recharts";
 import { Habit } from "@/hooks/useHabits";
 import { HabitLog } from "@/hooks/useHabitLogs";
+import { ChartTooltipCard, TooltipRow } from "@/components/charts/ChartTooltipCard";
 
 interface HabitProgressChartsProps {
   habits: Habit[];
   logs: HabitLog[];
 }
+
 
 export function HabitProgressCharts({ habits, logs }: HabitProgressChartsProps) {
   const completionData = useMemo(() => {
