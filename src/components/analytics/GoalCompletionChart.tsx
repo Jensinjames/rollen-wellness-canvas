@@ -5,6 +5,8 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts
 import { useActivities } from "@/hooks/useActivities";
 import { useCategories } from "@/hooks/categories";
 import { useMemo } from "react";
+import { ChartTooltipCard, TooltipRow, formatHours } from "@/components/charts/ChartTooltipCard";
+
 
 export function GoalCompletionChart() {
   const { data: activities } = useActivities();
