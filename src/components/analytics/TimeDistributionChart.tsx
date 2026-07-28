@@ -69,19 +69,31 @@ export function TimeDistributionChart() {
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
-      const data = payload[0];
-      const percentage = total > 0 ? Math.round((data.value / total) * 100) : 0;
+      const item = payload[0].payload;
+      const percentage = total > 0 ? Math.round((item.value / total) * 100) : 0;
       return (
-        <div className="bg-white dark:bg-gray-800 p-3 border rounded-lg shadow-lg">
-          <p className="font-medium">{data.name}</p>
-          <p className="text-sm">
-            {data.value}h ({percentage}% of total time)
-          </p>
-        </div>
+        <ChartTooltipCard title={item.name} color={item.color} subtitle="This week">
+          <TooltipRow label="Time logged" value={formatMinutes(item.minutes)} />
+          <TooltipRow label="Decimal hours" value={`${item.value}h`} />
+          <TooltipRow label="Share of total" value={`${percentage}%`} />
+          <TooltipRow label="Sessions" value={item.sessions} />
+          {item.breakdown?.length > 0 && (
+            <div className="mt-2 border-t border-border pt-1.5">
+              {item.breakdown.map((sub: any) => (
+                <TooltipRow
+                  key={sub.name}
+                  label={sub.name}
+                  value={formatMinutes(sub.minutes)}
+                />
+              ))}
+            </div>
+          )}
+        </ChartTooltipCard>
       );
     }
     return null;
   };
+
 
   const CustomLegend = ({ payload }: any) => {
     return (
