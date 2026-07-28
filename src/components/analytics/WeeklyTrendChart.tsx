@@ -81,6 +81,7 @@ export function WeeklyTrendChart() {
           <ChartContainer config={chartConfig} className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                 <XAxis 
                   dataKey="date" 
                   tick={{ fontSize: 12 }}
@@ -92,7 +93,36 @@ export function WeeklyTrendChart() {
                   tick={{ fontSize: 12 }}
                   label={{ value: 'Hours', angle: -90, position: 'insideLeft' }}
                 />
-                <ChartTooltip content={<ChartTooltipContent />} />
+                <ChartTooltip
+                  cursor={{ stroke: "hsl(var(--muted-foreground))", strokeDasharray: "3 3" }}
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload || !payload.length) return null;
+                    const row: any = payload[0].payload;
+                    const rows = [...payload]
+                      .filter((p: any) => (p.value ?? 0) > 0)
+                      .sort((a: any, b: any) => (b.value ?? 0) - (a.value ?? 0));
+                    return (
+                      <ChartTooltipCard title={label} subtitle="Time logged by category">
+                        {rows.length > 0 ? (
+                          rows.map((entry: any) => (
+                            <TooltipRow
+                              key={entry.dataKey}
+                              label={chartConfig[entry.dataKey]?.label ?? entry.dataKey}
+                              color={entry.stroke || entry.color}
+                              value={formatHours(entry.value)}
+                            />
+                          ))
+                        ) : (
+                          <p className="text-xs text-muted-foreground">No activity logged</p>
+                        )}
+                        <div className="mt-1.5 border-t border-border pt-1.5">
+                          <TooltipRow label="Total" value={formatHours(row.total)} emphasis />
+                        </div>
+                      </ChartTooltipCard>
+                    );
+                  }}
+                />
+
                 
                 {parentCategories.map((category, index) => (
                   <Line
