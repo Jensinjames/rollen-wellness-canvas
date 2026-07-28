@@ -34,14 +34,12 @@ export const SecureAuthForm = () => {
     setLoading(true);
 
     try {
-      // Check rate limiting via database function
+      // Check rate limiting via secure server-side edge function
       const identifier = email || 'anonymous';
-      const { data: rateLimitData, error: rateLimitError } = await supabase
-        .rpc('check_rate_limit', {
-          identifier: identifier,
-          max_requests: 5,
-          window_seconds: 60
-        });
+      const { data: rateLimitData, error: rateLimitError } = await supabase.functions.invoke(
+        'auth-rate-limit',
+        { body: { identifier } }
+      );
 
       if (rateLimitError) {
         console.error('Rate limit check error:', rateLimitError);
