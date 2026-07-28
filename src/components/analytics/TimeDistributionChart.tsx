@@ -35,13 +35,26 @@ export function TimeDistributionChart() {
         sum + activity.duration_minutes, 0
       );
 
+      const breakdown = (category.children || [])
+        .map(child => ({
+          name: child.name,
+          minutes: weekActivities
+            .filter(a => a.category_id === child.id)
+            .reduce((sum, a) => sum + a.duration_minutes, 0),
+        }))
+        .filter(sub => sub.minutes > 0)
+        .sort((a, b) => b.minutes - a.minutes);
+
       return {
         name: category.name,
         value: Math.round(totalTime / 60 * 10) / 10, // Convert to hours
         color: category.color,
-        minutes: totalTime
+        minutes: totalTime,
+        sessions: categoryActivities.length,
+        breakdown
       };
     }).filter(item => item.value > 0);
+
   }, [activities, categories]);
 
   const total = chartData.reduce((sum, item) => sum + item.value, 0);
