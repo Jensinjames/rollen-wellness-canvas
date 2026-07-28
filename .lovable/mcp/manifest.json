@@ -1,0 +1,176 @@
+{
+  "version": 1,
+  "sdk_version": "0.25.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://flgbjadjravxlwjpblrr.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "rollen-mcp",
+      "version": "0.1.0",
+      "title": "Rollen"
+    },
+    "tools": [
+      {
+        "name": "list_categories",
+        "title": "List categories",
+        "description": "List the signed-in user's tracking categories, including colors, goal types and daily/weekly time goals.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "include_inactive": {
+              "type": "boolean",
+              "description": "Include archived/inactive categories. Defaults to false."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_activities",
+        "title": "List logged activities",
+        "description": "List the signed-in user's logged time activities within an optional date range, newest first.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": "string",
+              "description": "ISO date/time lower bound, e.g. 2026-07-01."
+            },
+            "to": {
+              "type": "string",
+              "description": "ISO date/time upper bound, e.g. 2026-07-31."
+            },
+            "category_id": {
+              "type": "string",
+              "description": "Only return activities in this category."
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum rows to return (1-200, default 50)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "log_activity",
+        "title": "Log a time activity",
+        "description": "Log time spent on a category for the signed-in user. Duration is rounded to the nearest 15-minute increment.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "category_id": {
+              "type": "string",
+              "description": "Category id from list_categories."
+            },
+            "start_time": {
+              "type": "string",
+              "description": "ISO start date/time of the activity."
+            },
+            "duration_minutes": {
+              "type": "number",
+              "description": "Duration in minutes (1-1440). Rounded to 15-minute increments."
+            },
+            "notes": {
+              "type": "string",
+              "description": "Optional notes about the activity."
+            }
+          },
+          "required": [
+            "category_id",
+            "start_time",
+            "duration_minutes"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_habits",
+        "title": "List habits and recent logs",
+        "description": "List the signed-in user's habits with their targets, plus habit logs from the last N days.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "days": {
+              "type": "number",
+              "description": "How many days of logs to include (default 7, max 90)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "log_habit",
+        "title": "Log a habit value",
+        "description": "Record a habit value for a given day for the signed-in user. A habit counts as complete when the value reaches its target.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "habit_id": {
+              "type": "string",
+              "description": "Habit id from list_habits."
+            },
+            "value": {
+              "type": "number",
+              "description": "Recorded value for the day, e.g. glasses of water."
+            },
+            "log_date": {
+              "type": "string",
+              "description": "Date in YYYY-MM-DD. Defaults to today."
+            },
+            "notes": {
+              "type": "string",
+              "description": "Optional notes for this log."
+            }
+          },
+          "required": [
+            "habit_id",
+            "value"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
