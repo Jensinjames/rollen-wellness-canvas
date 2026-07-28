@@ -94,23 +94,38 @@ export const CompositeDonutChart: React.FC<CompositeDonutChartProps> = ({
     return { outerData, innerData };
   }, [category, actualTime, dailyGoal, weeklyGoal, subcategoryTimes, categoryColor]);
 
+  const goalTotal = dailyGoal || weeklyGoal || 60;
+
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length > 0) {
       const data = payload[0].payload;
-      const hours = Math.floor(data.value / 60);
-      const minutes = data.value % 60;
-      const timeStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-      
+      const shareOfLogged =
+        actualTime > 0 && data.isSubcategory
+          ? Math.round((data.value / actualTime) * 100)
+          : null;
+      const shareOfGoal = goalTotal > 0 ? Math.round((data.value / goalTotal) * 100) : 0;
+
       return (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3">
-          <p className="font-medium text-gray-900">{data.name}</p>
-          <p className="text-sm text-gray-600">{timeStr}</p>
-          {data.isGoal && <p className="text-xs text-gray-500">Remaining to reach goal</p>}
-        </div>
+        <ChartTooltipCard
+          title={data.name}
+          color={data.isGoal ? undefined : data.color}
+          subtitle={data.isGoal ? 'Remaining to reach goal' : undefined}
+        >
+          <TooltipRow label="Time" value={formatMinutes(data.value)} emphasis />
+          {shareOfLogged !== null && (
+            <TooltipRow label="Share of logged" value={`${shareOfLogged}%`} />
+          )}
+          <TooltipRow label="Share of goal" value={`${shareOfGoal}%`} />
+          <div className="mt-1.5 border-t border-border pt-1.5">
+            <TooltipRow label="Logged total" value={formatMinutes(actualTime)} />
+            <TooltipRow label="Goal" value={formatMinutes(goalTotal)} />
+          </div>
+        </ChartTooltipCard>
       );
     }
     return null;
   };
+
 
   return (
     <div className={`relative ${className}`}>
