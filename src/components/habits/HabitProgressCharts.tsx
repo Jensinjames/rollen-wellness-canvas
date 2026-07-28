@@ -102,9 +102,32 @@ export function HabitProgressCharts({ habits, logs }: HabitProgressChartsProps) 
               <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
               <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} unit="%" />
               <Tooltip
-                formatter={(value: number) => [`${value}%`, "Completion"]}
-                contentStyle={{ fontSize: 12 }}
+                cursor={{ fill: "hsl(var(--muted))", opacity: 0.3 }}
+                content={({ active, payload }: any) => {
+                  if (!active || !payload || !payload.length) return null;
+                  const row = payload[0].payload;
+                  return (
+                    <ChartTooltipCard
+                      title={row.label}
+                      subtitle={`${row.completed} of ${row.total} habits completed`}
+                    >
+                      <TooltipRow label="Completion rate" value={`${row.rate}%`} emphasis />
+                      {row.details?.length > 0 && (
+                        <div className="mt-1.5 border-t border-border pt-1.5">
+                          {row.details.map((d: any) => (
+                            <TooltipRow
+                              key={d.name}
+                              label={`${d.done ? "✓" : "○"} ${d.name}`}
+                              value={`${d.value}/${d.target}${d.unit ? ` ${d.unit}` : ""}`}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </ChartTooltipCard>
+                  );
+                }}
               />
+
               <Bar dataKey="rate" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
