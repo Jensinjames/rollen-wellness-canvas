@@ -5,6 +5,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
 import { useActivities } from "@/hooks/useActivities";
 import { useCategories } from "@/hooks/categories";
 import { useMemo } from "react";
+import { ChartTooltipCard, TooltipRow, formatMinutes } from "@/components/charts/ChartTooltipCard";
+
 
 export function TimeDistributionChart() {
   const { data: activities } = useActivities();
