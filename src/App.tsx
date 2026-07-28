@@ -21,6 +21,7 @@ const Habits = lazy(() => import("./pages/Habits"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const UpdatePassword = lazy(() => import("./pages/UpdatePassword"));
+const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,6 +53,7 @@ function App() {
                     <Route path="/auth" element={<SecureAuthForm />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/update-password" element={<UpdatePassword />} />
+                    <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
                     <Route
                       path="/"
                       element={
