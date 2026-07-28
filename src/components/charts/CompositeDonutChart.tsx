@@ -3,6 +3,8 @@ import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Category } from '@/hooks/categories';
 import { generateSubcategoryGradient } from '@/utils/categoryColors';
+import { ChartTooltipCard, TooltipRow, formatMinutes } from '@/components/charts/ChartTooltipCard';
+
 
 interface CompositeDonutChartProps {
   category: Category;
