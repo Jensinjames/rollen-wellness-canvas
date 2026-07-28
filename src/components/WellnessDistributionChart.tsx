@@ -84,13 +84,26 @@ export function WellnessDistributionChart() {
         sum + activity.duration_minutes, 0
       );
 
+      const breakdown = (category.children || [])
+        .map(child => ({
+          name: child.name,
+          minutes: weekActivities
+            .filter(a => a.category_id === child.id)
+            .reduce((sum, a) => sum + a.duration_minutes, 0),
+        }))
+        .filter(sub => sub.minutes > 0)
+        .sort((a, b) => b.minutes - a.minutes);
+
       return {
         name: category.name,
         value: Math.round(totalMinutes / 60 * 10) / 10,
         color: category.color,
-        minutes: totalMinutes
+        minutes: totalMinutes,
+        sessions: categoryActivities.length,
+        breakdown
       };
     }).filter(item => item.value > 0);
+
 
     const totalTime = categoryTimes.reduce((sum, item) => sum + item.value, 0);
 
