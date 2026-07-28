@@ -144,7 +144,33 @@ export function HabitProgressCharts({ habits, logs }: HabitProgressChartsProps) 
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
               <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} unit="%" />
-              <Tooltip contentStyle={{ fontSize: 12 }} />
+              <Tooltip
+                cursor={{ stroke: "hsl(var(--muted-foreground))", strokeDasharray: "3 3" }}
+                content={({ active, payload, label }: any) => {
+                  if (!active || !payload || !payload.length) return null;
+                  const raw = payload[0].payload?.raw ?? {};
+                  return (
+                    <ChartTooltipCard title={label} subtitle="Progress toward each target">
+                      {payload.map((entry: any) => {
+                        const detail = raw[entry.dataKey];
+                        return (
+                          <TooltipRow
+                            key={entry.dataKey}
+                            label={entry.dataKey}
+                            color={entry.stroke || entry.color}
+                            value={
+                              detail
+                                ? `${entry.value}% (${detail.value}/${detail.target}${detail.unit ? ` ${detail.unit}` : ""})`
+                                : `${entry.value}%`
+                            }
+                          />
+                        );
+                      })}
+                    </ChartTooltipCard>
+                  );
+                }}
+              />
+
               {habits.map((habit, i) => (
                 <Line
                   key={habit.id}
