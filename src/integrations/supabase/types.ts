@@ -412,7 +412,6 @@ export type Database = {
         }
         Returns: Json
       }
-      is_owner: { Args: { resource_user_id: string }; Returns: boolean }
       log_security_event: {
         Args: {
           p_event_details?: Json
