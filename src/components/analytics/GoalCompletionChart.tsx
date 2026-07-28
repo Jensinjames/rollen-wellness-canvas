@@ -5,6 +5,8 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts
 import { useActivities } from "@/hooks/useActivities";
 import { useCategories } from "@/hooks/categories";
 import { useMemo } from "react";
+import { ChartTooltipCard, TooltipRow, formatHours } from "@/components/charts/ChartTooltipCard";
+
 
 export function GoalCompletionChart() {
   const { data: activities } = useActivities();
@@ -43,8 +45,13 @@ export function GoalCompletionChart() {
           completion: Math.round(completionRate),
           actual: Math.round(totalTime / 60 * 10) / 10,
           goal: Math.round(goalTime / 60 * 10) / 10,
+          actualMinutes: totalTime,
+          goalMinutes: goalTime,
+          remainingMinutes: Math.max(0, goalTime - totalTime),
+          sessions: categoryActivities.length,
           color: category.color
         };
+
       })
       .sort((a, b) => b.completion - a.completion);
   }, [activities, categories]);
@@ -83,21 +90,35 @@ export function GoalCompletionChart() {
                   label={{ value: '% Complete', angle: -90, position: 'insideLeft' }}
                 />
                 <ChartTooltip 
+                  cursor={{ fill: "hsl(var(--muted))", opacity: 0.3 }}
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
-                      const data = payload[0].payload;
+                      const data: any = payload[0].payload;
                       return (
-                        <div className="bg-white dark:bg-gray-800 p-3 border rounded-lg shadow-lg">
-                          <p className="font-medium">{data.fullName}</p>
-                          <p className="text-sm">
-                            {data.completion}% complete ({data.actual}h / {data.goal}h)
-                          </p>
-                        </div>
+                        <ChartTooltipCard
+                          title={data.fullName}
+                          color={data.color}
+                          subtitle="Weekly goal progress"
+                        >
+                          <TooltipRow label="Completion" value={`${data.completion}%`} emphasis />
+                          <TooltipRow label="Logged" value={formatHours(data.actual)} />
+                          <TooltipRow label="Goal" value={formatHours(data.goal)} />
+                          <TooltipRow
+                            label="Remaining"
+                            value={
+                              data.remainingMinutes > 0
+                                ? formatHours(data.remainingMinutes / 60)
+                                : "Goal met"
+                            }
+                          />
+                          <TooltipRow label="Sessions" value={data.sessions} />
+                        </ChartTooltipCard>
                       );
                     }
                     return null;
                   }}
                 />
+
                 <Bar 
                   dataKey="completion" 
                   radius={[4, 4, 0, 0]}

@@ -3,21 +3,38 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recha
 import { useActivities } from "@/hooks/useActivities";
 import { useCategories } from "@/hooks/categories";
 import { useMemo } from "react";
+import { ChartTooltipCard, TooltipRow, formatMinutes } from "@/components/charts/ChartTooltipCard";
 
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
-    const data = payload[0];
+    const item = payload[0].payload;
     return (
-      <div className="bg-background p-3 border rounded-lg shadow-lg">
-        <p className="font-medium">{data.name}</p>
-        <p className="text-sm text-muted-foreground">
-          {data.value}h ({data.payload.percentage}% of total time)
-        </p>
-      </div>
+      <ChartTooltipCard
+        title={item.name}
+        color={item.color}
+        subtitle="Last 7 days"
+      >
+        <TooltipRow label="Time logged" value={formatMinutes(item.minutes)} />
+        <TooltipRow label="Decimal hours" value={`${item.value}h`} />
+        <TooltipRow label="Share of total" value={`${item.percentage}%`} />
+        <TooltipRow label="Sessions" value={item.sessions} />
+        {item.breakdown?.length > 0 && (
+          <div className="mt-2 border-t border-border pt-1.5">
+            {item.breakdown.map((sub: any) => (
+              <TooltipRow
+                key={sub.name}
+                label={sub.name}
+                value={formatMinutes(sub.minutes)}
+              />
+            ))}
+          </div>
+        )}
+      </ChartTooltipCard>
     );
   }
   return null;
 };
+
 
 const CustomLegend = ({ payload }: any) => {
   return (
@@ -67,13 +84,26 @@ export function WellnessDistributionChart() {
         sum + activity.duration_minutes, 0
       );
 
+      const breakdown = (category.children || [])
+        .map(child => ({
+          name: child.name,
+          minutes: weekActivities
+            .filter(a => a.category_id === child.id)
+            .reduce((sum, a) => sum + a.duration_minutes, 0),
+        }))
+        .filter(sub => sub.minutes > 0)
+        .sort((a, b) => b.minutes - a.minutes);
+
       return {
         name: category.name,
         value: Math.round(totalMinutes / 60 * 10) / 10,
         color: category.color,
-        minutes: totalMinutes
+        minutes: totalMinutes,
+        sessions: categoryActivities.length,
+        breakdown
       };
     }).filter(item => item.value > 0);
+
 
     const totalTime = categoryTimes.reduce((sum, item) => sum + item.value, 0);
 
