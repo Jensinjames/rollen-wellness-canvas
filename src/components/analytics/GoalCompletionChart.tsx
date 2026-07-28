@@ -45,8 +45,13 @@ export function GoalCompletionChart() {
           completion: Math.round(completionRate),
           actual: Math.round(totalTime / 60 * 10) / 10,
           goal: Math.round(goalTime / 60 * 10) / 10,
+          actualMinutes: totalTime,
+          goalMinutes: goalTime,
+          remainingMinutes: Math.max(0, goalTime - totalTime),
+          sessions: categoryActivities.length,
           color: category.color
         };
+
       })
       .sort((a, b) => b.completion - a.completion);
   }, [activities, categories]);
