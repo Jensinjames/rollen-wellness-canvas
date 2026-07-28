@@ -14,7 +14,14 @@ interface HabitProgressChartsProps {
 
 export function HabitProgressCharts({ habits, logs }: HabitProgressChartsProps) {
   const completionData = useMemo(() => {
-    const data: { date: string; label: string; rate: number }[] = [];
+    const data: {
+      date: string;
+      label: string;
+      rate: number;
+      completed: number;
+      total: number;
+      details: { name: string; value: number; target: number; unit: string; done: boolean }[];
+    }[] = [];
 
     for (let i = 29; i >= 0; i--) {
       const date = format(subDays(new Date(), i), "yyyy-MM-dd");
@@ -22,18 +29,30 @@ export function HabitProgressCharts({ habits, logs }: HabitProgressChartsProps) 
       const dayLogs = logs.filter(l => l.log_date === date);
 
       let completed = 0;
+      const details: { name: string; value: number; target: number; unit: string; done: boolean }[] = [];
       for (const habit of habits) {
         const target = habit.target_value ?? 1;
         const habitValue = dayLogs
           .filter(l => l.habit_id === habit.id)
           .reduce((sum, l) => sum + l.value, 0);
-        if (habitValue >= target) completed++;
+        const done = habitValue >= target;
+        if (done) completed++;
+        details.push({
+          name: habit.name,
+          value: habitValue,
+          target,
+          unit: habit.target_unit ?? "",
+          done,
+        });
       }
 
       data.push({
         date,
         label,
         rate: habits.length > 0 ? Math.round((completed / habits.length) * 100) : 0,
+        completed,
+        total: habits.length,
+        details,
       });
     }
     return data;
@@ -45,7 +64,7 @@ export function HabitProgressCharts({ habits, logs }: HabitProgressChartsProps) 
     for (let i = 29; i >= 0; i--) {
       const date = format(subDays(new Date(), i), "yyyy-MM-dd");
       const label = format(subDays(new Date(), i), "MMM d");
-      const row: Record<string, any> = { date, label };
+      const row: Record<string, any> = { date, label, raw: {} };
 
       for (const habit of habits) {
         const target = habit.target_value ?? 1;
@@ -53,12 +72,14 @@ export function HabitProgressCharts({ habits, logs }: HabitProgressChartsProps) 
           .filter(l => l.habit_id === habit.id && l.log_date === date)
           .reduce((sum, l) => sum + l.value, 0);
         row[habit.name] = target > 0 ? Math.round((value / target) * 100) : 0;
+        row.raw[habit.name] = { value, target, unit: habit.target_unit ?? "" };
       }
 
       data.push(row);
     }
     return data;
   }, [habits, logs]);
+
 
   const colors = [
     "hsl(var(--primary))",
