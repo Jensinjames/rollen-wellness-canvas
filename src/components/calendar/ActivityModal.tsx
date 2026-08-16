@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { validateTextInput, validateNumber } from "@/utils/validation";
 import { logResourceEvent } from "@/utils/auditLog";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/UnifiedAuthContext";
 
 interface ActivityModalProps {
   isOpen: boolean;
