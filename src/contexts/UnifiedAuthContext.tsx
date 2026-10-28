@@ -50,38 +50,45 @@ export const UnifiedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, [session, sessionWarningShown, user?.id]);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    let lastUserId: string | undefined;
 
-    // Listen for auth changes
+    // Listen for auth changes. The callback must stay synchronous: awaiting
+    // other Supabase calls here deadlocks the auth client and every
+    // getSession() call (leaving the app stuck on a spinner).
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (process.env.NODE_ENV === 'development') {
         console.log('Auth state changed:', event);
-      }
-
-      // Log auth events for audit
-      if (event === 'SIGNED_IN') {
-        await securityLogger.logAuthEvent('auth.login.success', session?.user?.id);
-      } else if (event === 'SIGNED_OUT') {
-        await securityLogger.logAuthEvent('auth.logout', user?.id);
-      } else if (event === 'TOKEN_REFRESHED') {
-        console.log('Session refreshed');
       }
 
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
       setSessionWarningShown(false);
+
+      // Defer audit logging so it never blocks the auth client.
+      const previousUserId = lastUserId;
+      lastUserId = session?.user?.id;
+      setTimeout(() => {
+        if (event === 'SIGNED_IN' && session?.user?.id !== previousUserId) {
+          securityLogger.logAuthEvent('auth.login.success', session?.user?.id);
+        } else if (event === 'SIGNED_OUT') {
+          securityLogger.logAuthEvent('auth.logout', previousUserId);
+        }
+      }, 0);
+    });
+
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      lastUserId = session?.user?.id ?? lastUserId;
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, [user?.id]);
+  }, []);
 
   const signUp = async (email: string, password: string) => {
     // Validate inputs

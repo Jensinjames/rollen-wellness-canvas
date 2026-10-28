@@ -39,18 +39,22 @@ export default function OAuthConsent() {
         setError("Missing authorization_id in the request.");
         return;
       }
-      const { data, error } = await oauthApi().getAuthorizationDetails(authorizationId);
-      if (!active) return;
-      if (error) {
-        setError(error.message);
-        return;
+      try {
+        const { data, error } = await oauthApi().getAuthorizationDetails(authorizationId);
+        if (!active) return;
+        if (error) {
+          setError(error.message);
+          return;
+        }
+        const immediate = data?.redirect_url ?? data?.redirect_to;
+        if (immediate && !data?.client) {
+          window.location.href = immediate;
+          return;
+        }
+        setDetails(data);
+      } catch (e) {
+        if (active) setError(e instanceof Error ? e.message : "Could not load this authorization request.");
       }
-      const immediate = data?.redirect_url ?? data?.redirect_to;
-      if (immediate && !data?.client) {
-        window.location.href = immediate;
-        return;
-      }
-      setDetails(data);
     })();
 
     return () => {
@@ -60,23 +64,28 @@ export default function OAuthConsent() {
 
   const decide = async (approve: boolean) => {
     setBusy(true);
-    const api = oauthApi();
-    const { data, error } = approve
-      ? await api.approveAuthorization(authorizationId)
-      : await api.denyAuthorization(authorizationId);
+    try {
+      const api = oauthApi();
+      const { data, error } = approve
+        ? await api.approveAuthorization(authorizationId)
+        : await api.denyAuthorization(authorizationId);
 
-    if (error) {
+      if (error) {
+        setBusy(false);
+        setError(error.message);
+        return;
+      }
+      const target = data?.redirect_url ?? data?.redirect_to;
+      if (!target) {
+        setBusy(false);
+        setError("No redirect returned by the authorization server.");
+        return;
+      }
+      window.location.href = target;
+    } catch (e) {
       setBusy(false);
-      setError(error.message);
-      return;
+      setError(e instanceof Error ? e.message : "Could not complete this request.");
     }
-    const target = data?.redirect_url ?? data?.redirect_to;
-    if (!target) {
-      setBusy(false);
-      setError("No redirect returned by the authorization server.");
-      return;
-    }
-    window.location.href = target;
   };
 
   if (authLoading) {
