@@ -217,7 +217,7 @@ var log_habit_default = defineTool5({
 // src/lib/mcp/index.ts
 var projectRef = "flgbjadjravxlwjpblrr";
 var mcp_default = defineMcp({
-  name: "rollen-mcp",
+  name: "rollen",
   title: "Rollen",
   version: "0.1.0",
   instructions: "Tools for Rollen, a personal wellness and time tracking app. Use `list_categories` to discover the user's categories, `log_activity` to record time spent, `list_activities` to review logged time, and `list_habits`/`log_habit` for daily habit tracking. All tools act as the signed-in user.",
