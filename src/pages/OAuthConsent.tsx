@@ -39,18 +39,22 @@ export default function OAuthConsent() {
         setError("Missing authorization_id in the request.");
         return;
       }
-      const { data, error } = await oauthApi().getAuthorizationDetails(authorizationId);
-      if (!active) return;
-      if (error) {
-        setError(error.message);
-        return;
+      try {
+        const { data, error } = await oauthApi().getAuthorizationDetails(authorizationId);
+        if (!active) return;
+        if (error) {
+          setError(error.message);
+          return;
+        }
+        const immediate = data?.redirect_url ?? data?.redirect_to;
+        if (immediate && !data?.client) {
+          window.location.href = immediate;
+          return;
+        }
+        setDetails(data);
+      } catch (e) {
+        if (active) setError(e instanceof Error ? e.message : "Could not load this authorization request.");
       }
-      const immediate = data?.redirect_url ?? data?.redirect_to;
-      if (immediate && !data?.client) {
-        window.location.href = immediate;
-        return;
-      }
-      setDetails(data);
     })();
 
     return () => {
