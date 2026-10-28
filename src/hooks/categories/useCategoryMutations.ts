@@ -61,9 +61,12 @@ export const useUpdateCategory = () => {
       // Log the operation
       logCategoryOperation('update', { id, ...updates });
 
+      // `children` is a client-side tree field, not a database column.
+      const { children: _children, ...columns } = updates;
+
       const { data, error } = await supabase
         .from('categories')
-        .update(updates)
+        .update(columns)
         .eq('id', id)
         .eq('user_id', user.id)
         .select()
