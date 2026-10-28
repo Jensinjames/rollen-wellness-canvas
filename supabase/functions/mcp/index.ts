@@ -148,7 +148,6 @@ var log_activity_default = defineTool3({
       category_id,
       start_time: start.toISOString(),
       end_time: end.toISOString(),
-      date_time: start.toISOString(),
       duration_minutes: rounded,
       notes: notes?.slice(0, 1e3) ?? null
     }).select().single();
