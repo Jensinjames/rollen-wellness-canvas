@@ -142,7 +142,10 @@ export function ActivityModal({
   };
 
   const updateActivityMutation = useMutation({
-    mutationFn: async (data: { id: string; updates: Partial<Activity> }) => {
+    mutationFn: async (data: {
+      id: string;
+      updates: Pick<Partial<Activity>, 'category_id' | 'duration_minutes' | 'notes' | 'start_time' | 'end_time'>;
+    }) => {
       const { error } = await supabase
         .from('activities')
         .update(data.updates)

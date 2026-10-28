@@ -8,7 +8,7 @@ import logHabit from "./tools/log-habit";
 const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID ?? "project-ref-unset";
 
 export default defineMcp({
-  name: "rollen-mcp",
+  name: "rollen",
   title: "Rollen",
   version: "0.1.0",
   instructions:
